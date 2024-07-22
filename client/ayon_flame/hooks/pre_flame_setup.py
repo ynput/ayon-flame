@@ -33,6 +33,13 @@ class FlamePrelaunch(PreLaunchHook):
 
     def execute(self):
         _env = self.launch_context.env
+        ayon_root = os.path.dirname(os.environ["AYON_EXECUTABLE"])
+        _env["PATH"] = os.pathsep.join([
+            path
+            for path in _env["PATH"].split(os.pathsep)
+            if not path.startswith(ayon_root)
+        ])
+
         self.flame_python_exe = _env["AYON_FLAME_PYTHON_EXEC"]
         self.flame_pythonpath = _env["AYON_FLAME_PYTHONPATH"]
 
@@ -108,9 +115,6 @@ class FlamePrelaunch(PreLaunchHook):
         self.log.info(pformat(dict(_env)))
         self.log.info(pformat(data_to_script))
 
-        # add to python path from settings
-        self._add_pythonpath()
-
         app_arguments = self._get_launch_arguments(data_to_script)
 
         # fix project data permission issue
@@ -169,14 +173,14 @@ class FlamePrelaunch(PreLaunchHook):
                 "Following keys are available: {}".format(fps_table.keys())
             )) from msg
 
-    def _add_pythonpath(self):
-        pythonpath = self.launch_context.env.get("PYTHONPATH")
+    def _add_pythonpath(self, env):
+        pythonpath = env.get("PYTHONPATH")
 
         # separate it explicitly by `;` that is what we use in settings
         new_pythonpath = self.flame_pythonpath.split(os.pathsep)
         new_pythonpath += pythonpath.split(os.pathsep)
 
-        self.launch_context.env["PYTHONPATH"] = os.pathsep.join(new_pythonpath)
+        env["PYTHONPATH"] = os.pathsep.join(new_pythonpath)
 
     def _get_launch_arguments(self, script_data):
         # Dump data to string
@@ -184,18 +188,18 @@ class FlamePrelaunch(PreLaunchHook):
 
         with make_temp_file(dumped_script_data) as tmp_json_path:
             # Prepare subprocess arguments
+            env = self.launch_context.env.copy()
+            self._add_pythonpath(env)
             args = [
-                self.flame_python_exe.format(
-                    **self.launch_context.env
-                ),
+                self.flame_python_exe.format(**env),
                 self.wtc_script_path,
                 tmp_json_path
             ]
             self.log.info("Executing: {}".format(" ".join(args)))
-
+            
             process_kwargs = {
                 "logger": self.log,
-                "env": self.launch_context.env
+                "env": env
             }
 
             run_subprocess(args, **process_kwargs)

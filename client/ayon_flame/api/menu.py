@@ -6,7 +6,7 @@ from qtpy import QtWidgets
 from ayon_core.pipeline import get_current_project_name
 from ayon_core.tools.utils.host_tools import HostToolsHelper
 
-menu_group_name = 'OpenPype'
+menu_group_name = 'AYON'
 
 default_flame_export_presets = {
     'Publish': {

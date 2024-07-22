@@ -37,8 +37,12 @@ class CTX:
 
 @contextlib.contextmanager
 def io_preferences_file(klass, filepath, write=False):
+    if not os.path.exists(filepath):
+        file = open(filepath, "w")
+        file.close()
+
     try:
-        flag = "w" if write else "r"
+        flag = "wb" if write else "rb"
         yield open(filepath, flag)
 
     except IOError as _error:
@@ -101,7 +105,7 @@ class FlameAppFramework(object):
 
     def __init__(self):
         self.name = self.__class__.__name__
-        self.bundle_name = "OpenPypeFlame"
+        self.bundle_name = "AYONFlame"
         # self.prefs scope is limited to flame project and user
         self.prefs = {}
         self.prefs_user = {}
@@ -126,13 +130,13 @@ class FlameAppFramework(object):
                 os.path.expanduser("~"),
                 "Library",
                 "Caches",
-                "OpenPype",
+                "AYON",
                 self.bundle_name
             )
         elif sys.platform.startswith("linux"):
             self.prefs_folder = os.path.join(
                 os.path.expanduser("~"),
-                ".OpenPype",
+                ".AYON",
                 self.bundle_name)
 
         self.prefs_folder = os.path.join(
@@ -142,6 +146,7 @@ class FlameAppFramework(object):
 
         self.log.info("[{}] waking up".format(self.__class__.__name__))
 
+        
         try:
             self.load_prefs()
         except RuntimeError:
