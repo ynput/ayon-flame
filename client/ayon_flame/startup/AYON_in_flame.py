@@ -117,7 +117,7 @@ except ImportError:
 
 def rescan_hooks():
     import flame  # noqa
-    flame.execute_shortcut("Re-scan Python Hooks")
+    flame.execute_shortcut("Rescan Python Hooks")
 
 
 def _build_app_menu(app_name):
