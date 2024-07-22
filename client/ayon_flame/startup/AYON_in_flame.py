@@ -16,11 +16,10 @@ def ayon_flame_install():
     """Registering AYON in context
     """
     install_host(flame_api)
-    print("Registered host: {}".format(registered_host()))
+    print(f"Registered host: {registered_host()}")
 
 
-# Exception handler
-def exeption_handler(exctype, value, _traceback):
+def exception_handler(exctype, value, _traceback):
     """Exception handler for improving UX
 
     Args:
@@ -28,18 +27,18 @@ def exeption_handler(exctype, value, _traceback):
         value (str): exception value
         tb (str): traceback to show
     """
-    msg = "AYON: Python exception {} in {}".format(value, exctype)
+    msg = f"AYON: Python exception {value} in {exctype}"
     mbox = QtWidgets.QMessageBox()
     mbox.setText(msg)
     mbox.setDetailedText(
         pformat(traceback.format_exception(exctype, value, _traceback)))
-    mbox.setStyleSheet('QLabel{min-width: 800px;}')
+    mbox.setStyleSheet("QLabel{min-width: 800px;}")
     mbox.exec_()
     sys.__excepthook__(exctype, value, _traceback)
 
 
 # add exception handler into sys module
-sys.excepthook = exeption_handler
+sys.excepthook = exception_handler
 
 
 # register clean up logic to be called at Flame exit
@@ -47,18 +46,18 @@ def cleanup():
     """Cleaning up Flame framework context
     """
     if flame_api.CTX.flame_apps:
-        print('`{}` cleaning up flame_apps:\n {}\n'.format(
-            __file__, pformat(flame_api.CTX.flame_apps)))
+        print(
+            f"`{__file__}` cleaning up flame_apps:\n "
+            f"{pformat(flame_api.CTX.flame_apps)}\n"
+        )
         while len(flame_api.CTX.flame_apps):
             app = flame_api.CTX.flame_apps.pop()
-            print('`{}` removing : {}'.format(__file__, app.name))
+            print(f"`{__file__}` removing : {app.name}")
             del app
         flame_api.CTX.flame_apps = []
 
     if flame_api.CTX.app_framework:
-        print('AYON\t: {} cleaning up'.format(
-            flame_api.CTX.app_framework.bundle_name)
-        )
+        print(f"AYON\t: {flame_api.CTX.app_framework.bundle_name} cleaning up")
         flame_api.CTX.app_framework.save_prefs()
         flame_api.CTX.app_framework = None
 
@@ -86,24 +85,22 @@ def project_changed_dict(info):
     """
     cleanup()
 
+
 def app_initialized(parent=None):
     """Inicialization of Framework
 
     Args:
         parent (obj, optional): Parent object. Defaults to None.
     """
-    print(">> init of framework")
     flame_api.CTX.app_framework = flame_api.FlameAppFramework()
 
-    print("{} initializing".format(
-        flame_api.CTX.app_framework.bundle_name))
+    print(f"{flame_api.CTX.app_framework.bundle_name} initializing")
 
     load_apps()
 
 
-print(">>>>> initialisation of hooks")
 """
-Initialisation of the hook is starting from here
+Initialization of the hook is starting from here
 
 First it needs to test if it can import the flame module.
 This will happen only in case a project has been loaded.
@@ -116,12 +113,12 @@ try:
     app_initialized(parent=None)
 except ImportError:
     print("!!!! not able to import flame module !!!!")
-print(">>>> app_initialised")
+
 
 def rescan_hooks():
     import flame  # noqa
-    flame.execute_shortcut('Rescan Python Hooks')
-print(">>>> rescan_hooks")
+    flame.execute_shortcut("Re-scan Python Hooks")
+
 
 def _build_app_menu(app_name):
     """Flame menu object generator
@@ -145,8 +142,8 @@ def _build_app_menu(app_name):
 
     if flame_api.CTX.app_framework:
         menu_auto_refresh = flame_api.CTX.app_framework.prefs_global.get(
-            'menu_auto_refresh', {})
-        if menu_auto_refresh.get('timeline_menu', True):
+            "menu_auto_refresh", {})
+        if menu_auto_refresh.get("timeline_menu", True):
             try:
                 import flame  # noqa
                 flame.schedule_idle_event(rescan_hooks)
