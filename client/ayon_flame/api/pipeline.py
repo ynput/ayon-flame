@@ -5,6 +5,8 @@ import os
 import contextlib
 from pyblish import api as pyblish
 
+from ayon_core.host import HostBase, IWorkfileHost, ILoadHost, IPublishHost
+
 from ayon_core.lib import Logger
 from ayon_core.pipeline import (
     register_loader_plugin_path,
@@ -21,6 +23,15 @@ from .lib import (
     get_current_sequence,
     reset_segment_selection
 )
+from .workio import (
+    open_file,
+    save_file,
+    file_extensions,
+    has_unsaved_changes,
+    work_root,
+    current_file,
+)
+
 
 PLUGINS_DIR = os.path.join(FLAME_ADDON_ROOT, "plugins")
 PUBLISH_PATH = os.path.join(PLUGINS_DIR, "publish")
@@ -29,6 +40,46 @@ CREATE_PATH = os.path.join(PLUGINS_DIR, "create")
 
 
 log = Logger.get_logger(__name__)
+
+
+class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
+    name = "flame"
+
+    # object variables
+    session_context_data = {}
+
+    def open_workfile(self, filepath):
+        return open_file(filepath)
+
+    def save_workfile(self, filepath=None):
+        return save_file(filepath)
+
+    def work_root(self, session):
+        return work_root(session)
+
+    def get_current_workfile(self):
+        return current_file()
+
+    def workfile_has_unsaved_changes(self):
+        return has_unsaved_changes()
+
+    def get_workfile_extensions(self):
+        return file_extensions()
+
+    def get_containers(self):
+        return ls()
+
+    def install(self):
+        """Installing all requirements for Nuke host"""
+        install()
+
+    def get_context_data(self):
+        # TODO: find a way to implement this
+        return self.session_context_data
+
+    def update_context_data(self, data, changes):
+        # TODO: find a way to implement this
+        self.session_context_data = data
 
 
 def install():
@@ -78,8 +129,8 @@ def containerise(flame_clip_segment,
         for k, v in data.items():
             data_imprint[k] = v
 
-    log.debug("_ data_imprint: {}".format(data_imprint))
-
+    # TODO: implement also openClip loaded data
+    # timeline item imprinted data
     set_segment_data_marker(flame_clip_segment, data_imprint)
 
     return True

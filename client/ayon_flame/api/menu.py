@@ -4,7 +4,7 @@ from pprint import pformat
 from qtpy import QtWidgets
 
 from ayon_core.pipeline import get_current_project_name
-from ayon_core.tools.utils.host_tools import HostToolsHelper
+from ayon_core.tools.utils import host_tools
 
 menu_group_name = 'AYON'
 
@@ -69,7 +69,7 @@ class _FlameMenuApp(object):
                 {"name": f"0 - {project_name or 'project'}", "isEnabled": False}],
             "name": self.menu_group_name,
         }
-        self.tools_helper = HostToolsHelper()
+        self.tools_helper = host_tools.HostToolsHelper()
 
     def __getattr__(self, name):
         def method(*args, **kwargs):
@@ -169,11 +169,14 @@ class FlameMenuTimeline(_FlameMenuApp):
             "execute": lambda x: callback_selection(
                 x, self.tools_helper.show_creator)
         })
-        menu['actions'].append({
-            "name": "2 - Publish...",
-            "execute": lambda x: callback_selection(
-                x, self.tools_helper.show_publish)
-        })
+        menu["actions"].append(
+            {
+                "name": "2 - Publish...",
+                "execute": lambda x: callback_selection(
+                    x, host_tools.show_publisher(tab="publish")
+                ),
+            }
+        )
         menu['actions'].append({
             "name": "3 - Load...",
             "execute": lambda x: self.tools_helper.show_loader()
