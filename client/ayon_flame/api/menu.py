@@ -66,7 +66,7 @@ class _FlameMenuApp(object):
         project_name = get_current_project_name()
         self.menu = {
             "actions": [
-                {"name": project_name or "project", "isEnabled": False}],
+                {"name": f"0 - {project_name or 'project'}", "isEnabled": False}],
             "name": self.menu_group_name,
         }
         self.tools_helper = HostToolsHelper()
@@ -114,7 +114,7 @@ class FlameMenuProjectConnect(_FlameMenuApp):
         #     "execute": lambda x: self.tools_helper.show_workfiles()
         # })
         menu['actions'].append({
-            "name": "Load...",
+            "name": "1 - Load...",
             "execute": lambda x: self.tools_helper.show_loader()
         })
         # menu['actions'].append({
@@ -122,12 +122,10 @@ class FlameMenuProjectConnect(_FlameMenuApp):
         #     "execute": lambda x: self.tools_helper.show_scene_inventory()
         # })
         menu['actions'].append({
-            "name": "Library...",
+            "name": "2 - Library...",
             "execute": lambda x: self.tools_helper.show_library_loader()
         })
 
-        # reverse order of action list
-        menu['actions'] = menu['actions'][::-1]
         return menu
 
     def refresh(self, *args, **kwargs):
@@ -167,17 +165,17 @@ class FlameMenuTimeline(_FlameMenuApp):
         menu = deepcopy(self.menu)
 
         menu['actions'].append({
-            "name": "Create...",
+            "name": "1 - Create...",
             "execute": lambda x: callback_selection(
                 x, self.tools_helper.show_creator)
         })
         menu['actions'].append({
-            "name": "Publish...",
+            "name": "2 - Publish...",
             "execute": lambda x: callback_selection(
                 x, self.tools_helper.show_publish)
         })
         menu['actions'].append({
-            "name": "Load...",
+            "name": "3 - Load...",
             "execute": lambda x: self.tools_helper.show_loader()
         })
         # menu['actions'].append({
@@ -185,12 +183,10 @@ class FlameMenuTimeline(_FlameMenuApp):
         #     "execute": lambda x: self.tools_helper.show_scene_inventory()
         # })
         menu['actions'].append({
-            "name": "Library...",
+            "name": "4 - Library...",
             "execute": lambda x: self.tools_helper.show_library_loader()
         })
 
-        # reverse order of action list
-        menu['actions'] = menu['actions'][::-1]
         return menu
 
     def refresh(self, *args, **kwargs):
@@ -230,7 +226,7 @@ class FlameMenuUniversal(_FlameMenuApp):
         menu = deepcopy(self.menu)
 
         menu['actions'].append({
-            "name": "Load...",
+            "name": "1 - Load...",
             "execute": lambda x: callback_selection(
                 x, self.tools_helper.show_loader)
         })
@@ -239,12 +235,10 @@ class FlameMenuUniversal(_FlameMenuApp):
         #     "execute": lambda x: self.tools_helper.show_scene_inventory()
         # })
         menu['actions'].append({
-            "name": "Library...",
+            "name": "2 - Library...",
             "execute": lambda x: self.tools_helper.show_library_loader()
         })
 
-        # reverse order of action list
-        menu['actions'] = menu['actions'][::-1]
         return menu
 
     def refresh(self, *args, **kwargs):
