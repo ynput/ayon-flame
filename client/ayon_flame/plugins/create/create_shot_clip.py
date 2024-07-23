@@ -1,8 +1,8 @@
 from copy import deepcopy
-import ayon_flame.api as opfapi
+import ayon_flame.api as ayfapi
 
 
-class CreateShotClip(opfapi.Creator):
+class CreateShotClip(ayfapi.Creator):
     """Publishable clip"""
 
     label = "Create Publishable Clip"
@@ -68,11 +68,11 @@ class CreateShotClip(opfapi.Creator):
         for i, segment in enumerate(sorted_selected_segments):
             kwargs["rename_index"] = i
             # convert track item to timeline media pool item
-            opfapi.PublishableClip(segment, **kwargs).convert()
+            ayfapi.PublishableClip(segment, **kwargs).convert()
 
     def get_gui_inputs(self):
         gui_tracks = self._get_video_track_names(
-            opfapi.get_current_sequence(opfapi.CTX.selection)
+            ayfapi.get_current_sequence(ayfapi.CTX.selection)
         )
         return deepcopy({
             "renameHierarchy": {

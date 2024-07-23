@@ -1,7 +1,7 @@
 import os
 import pyblish.api
 import tempfile
-import ayon_flame.api as opfapi
+import ayon_flame.api as ayfapi
 from ayon_flame.otio import flame_export as otio_export
 import opentimelineio as otio
 from pprint import pformat
@@ -20,9 +20,9 @@ class CollectTestSelection(pyblish.api.ContextPlugin):
 
     def process(self, context):
         self.log.info(
-            "Active Selection: {}".format(opfapi.CTX.selection))
+            "Active Selection: {}".format(ayfapi.CTX.selection))
 
-        sequence = opfapi.get_current_sequence(opfapi.CTX.selection)
+        sequence = ayfapi.get_current_sequence(ayfapi.CTX.selection)
 
         self.test_imprint_data(sequence)
         self.test_otio_export(sequence)
@@ -49,7 +49,7 @@ class CollectTestSelection(pyblish.api.ContextPlugin):
         self.log.info("Otio exported to: {}".format(export_path))
 
     def test_imprint_data(self, sequence):
-        with opfapi.maintained_segment_selection(sequence) as sel_segments:
+        with ayfapi.maintained_segment_selection(sequence) as sel_segments:
             for segment in sel_segments:
                 if str(segment.name)[1:-1] == "":
                     continue
@@ -57,7 +57,7 @@ class CollectTestSelection(pyblish.api.ContextPlugin):
                 self.log.debug("Segment with AYONData: {}".format(
                     segment.name))
 
-                opfapi.imprint(segment, {
+                ayfapi.imprint(segment, {
                     'asset': segment.name.get_value(),
                     'productType': 'render',
                     'productName': 'productMain'

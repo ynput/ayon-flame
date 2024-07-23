@@ -2,14 +2,14 @@ from copy import deepcopy
 import os
 import flame
 from pprint import pformat
-import ayon_flame.api as opfapi
+import ayon_flame.api as ayfapi
 from ayon_core.lib import StringTemplate
 from ayon_core.lib.transcoding import (
     VIDEO_EXTENSIONS,
     IMAGE_EXTENSIONS
 )
 
-class LoadClipBatch(opfapi.ClipLoader):
+class LoadClipBatch(ayfapi.ClipLoader):
     """Load a product to timeline as clip
 
     Place clip to timeline on its asset origin timings collected
@@ -112,7 +112,7 @@ class LoadClipBatch(opfapi.ClipLoader):
         self.log.debug(openclip_path)
 
         # make AYON clip file
-        opfapi.OpenClipSolver(
+        ayfapi.OpenClipSolver(
             openclip_path, loading_context, logger=self.log).make()
 
         # prepare Reel group in actual desktop
@@ -140,9 +140,9 @@ class LoadClipBatch(opfapi.ClipLoader):
         })
 
         # TODO: finish the containerisation
-        # opc_segment = opfapi.get_clip_segment(opc)
+        # opc_segment = ayfapi.get_clip_segment(opc)
 
-        # return opfapi.containerise(
+        # return ayfapi.containerise(
         #     opc_segment,
         #     name, namespace, context,
         #     self.__class__.__name__,

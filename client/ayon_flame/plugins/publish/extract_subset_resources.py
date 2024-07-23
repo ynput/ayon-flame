@@ -279,7 +279,7 @@ class ExtractProductResources(publish.Extractor):
 
             # resolve xml preset dir if not filled
             if preset_dir == "":
-                preset_dir = opfapi.get_preset_path_by_xml_name(
+                preset_dir = ayfapi.get_preset_path_by_xml_name(
                     preset_file)
 
                 if not preset_dir:
@@ -315,7 +315,7 @@ class ExtractProductResources(publish.Extractor):
                     "out_mark": out_mark
                 })
 
-            preset_path = opfapi.modify_preset_file(
+            preset_path = ayfapi.modify_preset_file(
                 preset_orig_xml_path, staging_dir, modify_xml_data)
 
             # get and make export dir paths
@@ -325,7 +325,7 @@ class ExtractProductResources(publish.Extractor):
             os.makedirs(export_dir_path)
 
             # export
-            opfapi.export_clip(
+            ayfapi.export_clip(
                 export_dir_path, exporting_clip, preset_path, **export_kwargs)
 
             repr_name = unique_name

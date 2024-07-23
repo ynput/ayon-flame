@@ -29,12 +29,12 @@ default_flame_export_presets = {
 
 
 def callback_selection(selection, function):
-    import ayon_flame.api as opfapi
-    opfapi.CTX.selection = selection
+    import ayon_flame.api as ayfapi
+    ayfapi.CTX.selection = selection
     print("Hook Selection: \n\t{}".format(
         pformat({
             index: (type(item), item.name)
-            for index, item in enumerate(opfapi.CTX.selection)})
+            for index, item in enumerate(ayfapi.CTX.selection)})
     ))
     function()
 

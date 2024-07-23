@@ -3,7 +3,7 @@ import copy
 from collections import OrderedDict
 from pprint import pformat
 import pyblish
-import ayon_flame.api as opfapi
+import ayon_flame.api as ayfapi
 import ayon_core.pipeline as op_pipeline
 from ayon_core.pipeline.workfile import get_workdir
 
@@ -81,7 +81,7 @@ class IntegrateBatchGroup(pyblish.api.InstancePlugin):
         ]
 
         # add nodes into batch group
-        return opfapi.create_batch_group_conent(
+        return ayfapi.create_batch_group_conent(
             batch_nodes, batch_links, batch_group)
 
     def _load_clip_to_context(self, instance, bgroup):
@@ -186,13 +186,13 @@ class IntegrateBatchGroup(pyblish.api.InstancePlugin):
             "__ batch_data: {}".format(pformat(batch_data)))
 
         # check if the batch group already exists
-        bgroup = opfapi.get_batch_group_from_desktop(batchgroup_name)
+        bgroup = ayfapi.get_batch_group_from_desktop(batchgroup_name)
 
         if not bgroup:
             self.log.info(
                 "Creating new batch group: {}".format(batchgroup_name))
             # create batch with utils
-            bgroup = opfapi.create_batch_group(
+            bgroup = ayfapi.create_batch_group(
                 batchgroup_name,
                 frame_start,
                 frame_duration,
@@ -203,7 +203,7 @@ class IntegrateBatchGroup(pyblish.api.InstancePlugin):
             self.log.info(
                 "Updating batch group: {}".format(batchgroup_name))
             # update already created batch group
-            bgroup = opfapi.create_batch_group(
+            bgroup = ayfapi.create_batch_group(
                 batchgroup_name,
                 frame_start,
                 frame_duration,

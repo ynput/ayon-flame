@@ -1,7 +1,7 @@
 import re
 from types import NoneType
 import pyblish
-import ayon_flame.api as opfapi
+import ayon_flame.api as ayfapi
 from ayon_flame.otio import flame_export
 from ayon_core.pipeline import AYON_INSTANCE_ID, AVALON_INSTANCE_ID
 from ayon_core.pipeline.editorial import (
@@ -42,7 +42,7 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
         # process all selected
         for segment in selected_segments:
             # get AYON tag data
-            marker_data = opfapi.get_segment_data_marker(segment)
+            marker_data = ayfapi.get_segment_data_marker(segment)
 
             self.log.debug("__ marker_data: {}".format(
                 pformat(marker_data)))
@@ -64,7 +64,7 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
             self.log.debug("_ comment_attributes: {}".format(
                 pformat(comment_attributes)))
 
-            clip_data = opfapi.get_segment_attributes(segment)
+            clip_data = ayfapi.get_segment_attributes(segment)
             clip_name = clip_data["segment_name"]
             self.log.debug("clip_name: {}".format(clip_name))
 
@@ -75,7 +75,7 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
             # get file path
             file_path = clip_data["fpath"]
 
-            first_frame = opfapi.get_frame_from_filename(file_path) or 0
+            first_frame = ayfapi.get_frame_from_filename(file_path) or 0
 
             head, tail = self._get_head_tail(
                 clip_data,
@@ -405,7 +405,7 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
 
                 # add pypedata marker to otio_clip metadata
                 for marker in otio_clip.markers:
-                    if opfapi.MARKER_NAME in marker.name:
+                    if ayfapi.MARKER_NAME in marker.name:
                         otio_clip.metadata.update(marker.metadata)
                 return {"otioClip": otio_clip}
 
