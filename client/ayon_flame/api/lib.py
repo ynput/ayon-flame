@@ -324,14 +324,14 @@ def get_metadata(project_name, _log=None):
 
 def get_segment_data_marker(segment, with_marker=None):
     """
-    Get openpype track item tag created by creator or loader plugin.
+    Get AYON track item tag created by creator or loader plugin.
 
     Attributes:
         segment (flame.PySegment): flame api object
         with_marker (bool)[optional]: if true it will return also marker object
 
     Returns:
-        dict: openpype tag data
+        dict: AYON tag data
 
     Returns(with_marker=True):
         flame.PyMarker, dict
@@ -351,7 +351,7 @@ def get_segment_data_marker(segment, with_marker=None):
 
 def set_segment_data_marker(segment, data=None):
     """
-    Set openpype track item tag to input segment.
+    Set AYON track item tag to input segment.
 
     Attributes:
         segment (flame.PySegment): flame api object
@@ -364,7 +364,7 @@ def set_segment_data_marker(segment, data=None):
     marker_data = get_segment_data_marker(segment, True)
 
     if marker_data:
-        # get available openpype tag if any
+        # get available AYON tag if any
         marker, tag_data = marker_data
         # update tag data with new data
         tag_data.update(data)
@@ -410,7 +410,7 @@ def get_publish_attribute(segment):
 
 
 def create_segment_data_marker(segment):
-    """ Create openpype marker on a segment.
+    """ Create AYON marker on a segment.
 
     Attributes:
         segment (flame.PySegment): flame api object

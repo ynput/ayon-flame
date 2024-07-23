@@ -177,7 +177,7 @@ class IntegrateBatchGroup(pyblish.api.InstancePlugin):
 
         batch_data = {
             "shematic_reels": [
-                "OP_LoadedReel"
+                "AYON_LoadedReel"
             ],
             "handleStart": handle_start,
             "handleEnd": handle_end

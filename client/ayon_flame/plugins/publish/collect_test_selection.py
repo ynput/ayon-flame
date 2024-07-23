@@ -54,7 +54,7 @@ class CollectTestSelection(pyblish.api.ContextPlugin):
                 if str(segment.name)[1:-1] == "":
                     continue
 
-                self.log.debug("Segment with OpenPypeData: {}".format(
+                self.log.debug("Segment with AYONData: {}".format(
                     segment.name))
 
                 opfapi.imprint(segment, {

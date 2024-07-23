@@ -29,7 +29,7 @@ class LoadClip(opfapi.ClipLoader):
     color = "orange"
 
     # settings
-    reel_group_name = "OpenPype_Reels"
+    reel_group_name = "AYON_Reels"
     reel_name = "Loaded"
     clip_name_template = "{folder[name]}_{product[name]}<_{output}>"
 
@@ -95,7 +95,7 @@ class LoadClip(opfapi.ClipLoader):
         ))
         self.log.debug(openclip_path)
 
-        # make openpype clip file
+        # make AYON clip file
         opfapi.OpenClipSolver(
             openclip_path, loading_context, logger=self.log).make()
 

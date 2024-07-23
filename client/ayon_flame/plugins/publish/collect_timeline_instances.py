@@ -41,7 +41,7 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
 
         # process all selected
         for segment in selected_segments:
-            # get openpype tag data
+            # get AYON tag data
             marker_data = opfapi.get_segment_data_marker(segment)
 
             self.log.debug("__ marker_data: {}".format(
@@ -320,20 +320,20 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
                 "otioClip"].media_reference.metadata
             data.update({
                 "resolutionWidth": otio_clip_metadata[
-                        "openpype.source.width"],
+                        "ayon.source.width"],
                 "resolutionHeight": otio_clip_metadata[
-                    "openpype.source.height"],
+                    "ayon.source.height"],
                 "pixelAspect": otio_clip_metadata[
-                    "openpype.source.pixelAspect"]
+                    "ayon.source.pixelAspect"]
             })
         else:
             otio_tl_metadata = context.data["otioTimeline"].metadata
             data.update({
-                "resolutionWidth": otio_tl_metadata["openpype.timeline.width"],
+                "resolutionWidth": otio_tl_metadata["ayon.timeline.width"],
                 "resolutionHeight": otio_tl_metadata[
-                    "openpype.timeline.height"],
+                    "ayon.timeline.height"],
                 "pixelAspect": otio_tl_metadata[
-                    "openpype.timeline.pixelAspect"]
+                    "ayon.timeline.pixelAspect"]
             })
 
     def _create_shot_instance(self, context, clip_name, **data):

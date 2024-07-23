@@ -28,7 +28,7 @@ class LoadClipBatch(opfapi.ClipLoader):
     color = "orange"
 
     # settings
-    reel_name = "OP_LoadedReel"
+    reel_name = "AYON_LoadedReel"
     clip_name_template = "{batch}_{folder[name]}_{product[name]}<_{output}>"
 
     """ Anatomy keys from version context data and dynamically added:
@@ -111,7 +111,7 @@ class LoadClipBatch(opfapi.ClipLoader):
         ))
         self.log.debug(openclip_path)
 
-        # make openpype clip file
+        # make AYON clip file
         opfapi.OpenClipSolver(
             openclip_path, loading_context, logger=self.log).make()
 
