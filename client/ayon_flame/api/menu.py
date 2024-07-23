@@ -111,18 +111,18 @@ class FlameMenuProjectConnect(_FlameMenuApp):
 
         menu = deepcopy(self.menu)
 
-        menu['actions'].append({
-            "name": "Workfiles...",
-            "execute": lambda x: self.tools_helper.show_workfiles()
-        })
+        # menu['actions'].append({
+        #     "name": "Workfiles...",
+        #     "execute": lambda x: self.tools_helper.show_workfiles()
+        # })
         menu['actions'].append({
             "name": "Load...",
             "execute": lambda x: self.tools_helper.show_loader()
         })
-        menu['actions'].append({
-            "name": "Manage...",
-            "execute": lambda x: self.tools_helper.show_scene_inventory()
-        })
+        # menu['actions'].append({
+        #     "name": "Manage...",
+        #     "execute": lambda x: self.tools_helper.show_scene_inventory()
+        # })
         menu['actions'].append({
             "name": "Library...",
             "execute": lambda x: self.tools_helper.show_library_loader()
@@ -179,10 +179,10 @@ class FlameMenuTimeline(_FlameMenuApp):
             "name": "Load...",
             "execute": lambda x: self.tools_helper.show_loader()
         })
-        menu['actions'].append({
-            "name": "Manage...",
-            "execute": lambda x: self.tools_helper.show_scene_inventory()
-        })
+        # menu['actions'].append({
+        #     "name": "Manage...",
+        #     "execute": lambda x: self.tools_helper.show_scene_inventory()
+        # })
         menu['actions'].append({
             "name": "Library...",
             "execute": lambda x: self.tools_helper.show_library_loader()
@@ -230,10 +230,10 @@ class FlameMenuUniversal(_FlameMenuApp):
             "execute": lambda x: callback_selection(
                 x, self.tools_helper.show_loader)
         })
-        menu['actions'].append({
-            "name": "Manage...",
-            "execute": lambda x: self.tools_helper.show_scene_inventory()
-        })
+        # menu['actions'].append({
+        #     "name": "Manage...",
+        #     "execute": lambda x: self.tools_helper.show_scene_inventory()
+        # })
         menu['actions'].append({
             "name": "Library...",
             "execute": lambda x: self.tools_helper.show_library_loader()
