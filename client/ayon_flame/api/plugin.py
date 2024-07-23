@@ -368,7 +368,7 @@ class PublishableClip:
 
     def __init__(self, segment, **kwargs):
         self.rename_index = kwargs["rename_index"]
-        self.product_type = kwargs["family"]
+        self.product_type = kwargs["productType"]
         self.log = kwargs["log"]
 
         # get main parent objects
@@ -388,9 +388,8 @@ class PublishableClip:
         self.track_name = str(track_name).replace(" ", "_").replace(
             "*", "noname{}".format(self.track_index))
 
-        # adding tag.family into tag
-        if kwargs.get("avalon"):
-            self.marker_data.update(kwargs["avalon"])
+        if kwargs.get("basicProductData"):
+            self.marker_data.update(kwargs["basicProductData"])
 
         # add publish attribute to marker data
         self.marker_data.update({"publish": True})

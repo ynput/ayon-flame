@@ -61,8 +61,8 @@ class CreateShotClip(ayfapi.Creator):
         kwargs = {
             "log": self.log,
             "ui_inputs": results_back,
-            "avalon": self.data,
-            "product_type": self.data["productType"]
+            "basicProductData": self.data,
+            "productType": self.data["productType"]
         }
 
         for i, segment in enumerate(sorted_selected_segments):

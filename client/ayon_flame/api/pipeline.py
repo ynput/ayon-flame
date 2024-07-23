@@ -1,5 +1,5 @@
 """
-Basic avalon integration
+Basic AYON integration
 """
 import os
 import contextlib
@@ -11,7 +11,7 @@ from ayon_core.pipeline import (
     register_creator_plugin_path,
     deregister_loader_plugin_path,
     deregister_creator_plugin_path,
-    AVALON_CONTAINER_ID,
+    AYON_CONTAINER_ID,
 )
 from ayon_flame import FLAME_ADDON_ROOT
 from .lib import (
@@ -27,7 +27,6 @@ PUBLISH_PATH = os.path.join(PLUGINS_DIR, "publish")
 LOAD_PATH = os.path.join(PLUGINS_DIR, "load")
 CREATE_PATH = os.path.join(PLUGINS_DIR, "create")
 
-AVALON_CONTAINERS = "AVALON_CONTAINERS"
 
 log = Logger.get_logger(__name__)
 
@@ -68,7 +67,7 @@ def containerise(flame_clip_segment,
 
     data_imprint = {
         "schema": "ayon:container-3.0",
-        "id": AVALON_CONTAINER_ID,
+        "id": AYON_CONTAINER_ID,
         "name": str(name),
         "namespace": str(namespace),
         "loader": str(loader),
