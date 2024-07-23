@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from copy import deepcopy
 from pprint import pformat
 
@@ -64,13 +65,13 @@ class _FlameMenuApp(object):
 
         self.mbox = QtWidgets.QMessageBox()
         project_name = get_current_project_name()
-        self.menu = {
-            "actions": [{
-                'name': project_name or "project",
-                'isEnabled': False
-            }],
-            "name": self.menu_group_name
-        }
+        self.menu = OrderedDict(
+            {
+                "actions": [
+                    {"name": project_name or "project", "isEnabled": False}],
+                "name": self.menu_group_name,
+            }
+        )
         self.tools_helper = HostToolsHelper()
 
     def __getattr__(self, name):
