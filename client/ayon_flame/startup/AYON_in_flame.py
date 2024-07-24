@@ -7,10 +7,7 @@ import traceback
 
 import ayon_flame.api as flame_api
 from ayon_flame.api import FlameHost
-from ayon_core.pipeline import (
-    install_host,
-    registered_host,
-)
+from ayon_core.pipeline import install_host
 
 
 def ayon_flame_install():
