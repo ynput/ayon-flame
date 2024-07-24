@@ -225,7 +225,7 @@ def create_otio_reference(clip_data, fps=None):
 
     is_sequence = frame_number = utils.get_frame_from_filename(file_name)
     if is_sequence:
-        file_head = file_name.split(frame_number)[:-1]
+        file_head = file_name.split(frame_number)[0]
         frame_start = int(frame_number)
         padding = len(frame_number)
 
