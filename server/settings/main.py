@@ -6,10 +6,30 @@ from .publish_plugins import PublishPluginsModel, DEFAULT_PUBLISH_SETTINGS
 from .loader_plugins import LoaderPluginsModel, DEFAULT_LOADER_SETTINGS
 
 
+class InstallOpenTimelineIOToFlameModel(BaseSettingsModel):
+    enabled: bool = SettingsField(
+        default=True,
+        title="Enable"
+    )
+
+
+# hooks configurations
+class FlameHooksModel(BaseSettingsModel):
+    InstallOpenTimelineIOToFlame: InstallOpenTimelineIOToFlameModel = \
+        SettingsField(
+            default_factory=InstallOpenTimelineIOToFlameModel,
+            title="Install OpenTimelineIO to Flame"
+        )
+
+
 class FlameSettings(BaseSettingsModel):
     imageio: FlameImageIOModel = SettingsField(
         default_factory=FlameImageIOModel,
         title="Color Management (ImageIO)"
+    )
+    hooks: FlameHooksModel = SettingsField(
+        default_factory=FlameHooksModel,
+        title="Hooks"
     )
     create: CreatePluginsModel = SettingsField(
         default_factory=CreatePluginsModel,

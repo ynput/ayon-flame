@@ -20,6 +20,7 @@ class FlamePrelaunch(PreLaunchHook):
     in environment var FLAME_SCRIPT_DIR.
     """
     app_groups = {"flame"}
+    order = 1
     permissions = 0o777
 
     wtc_script_path = os.path.join(
@@ -41,6 +42,10 @@ class FlamePrelaunch(PreLaunchHook):
         ])
 
         self.flame_python_exe = _env["AYON_FLAME_PYTHON_EXEC"]
+
+        # add it to data for other hooks
+        self.data["fusion_python_executable"] = self.flame_python_exe
+
         self.flame_pythonpath = _env["AYON_FLAME_PYTHONPATH"]
 
         """Hook entry method."""
@@ -196,7 +201,7 @@ class FlamePrelaunch(PreLaunchHook):
                 tmp_json_path
             ]
             self.log.info("Executing: {}".format(" ".join(args)))
-            
+
             process_kwargs = {
                 "logger": self.log,
                 "env": env
