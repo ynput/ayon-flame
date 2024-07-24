@@ -3,6 +3,7 @@ Basic AYON integration
 """
 import os
 import contextlib
+from copy import deepcopy
 from pyblish import api as pyblish
 
 from ayon_core.host import HostBase, IWorkfileHost, ILoadHost, IPublishHost
@@ -46,7 +47,7 @@ class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
     name = "flame"
 
     # object variables
-    session_context_data = {}
+    _context = {}
 
     def open_workfile(self, filepath):
         return open_file(filepath)
@@ -75,11 +76,11 @@ class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
 
     def get_context_data(self):
         # TODO: find a way to implement this
-        return self.session_context_data
+        return deepcopy(self._context)
 
     def update_context_data(self, data, changes):
         # TODO: find a way to implement this
-        self.session_context_data = data
+        self._context = deepcopy(data)
 
 
 def install():
