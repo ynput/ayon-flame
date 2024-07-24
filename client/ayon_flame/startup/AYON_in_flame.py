@@ -6,6 +6,7 @@ from qtpy import QtWidgets
 import traceback
 
 import ayon_flame.api as flame_api
+from ayon_flame.api import FlameHost
 from ayon_core.pipeline import (
     install_host,
     registered_host,
@@ -15,8 +16,8 @@ from ayon_core.pipeline import (
 def ayon_flame_install():
     """Registering AYON in context
     """
-    install_host(flame_api)
-    print(f"Registered host: {registered_host()}")
+    flame_host = FlameHost()
+    install_host(flame_host)
 
 
 def exception_handler(exctype, value, _traceback):

@@ -5,10 +5,8 @@ import ayon_flame.api as ayfapi
 from ayon_flame.otio import flame_export as otio_export
 import opentimelineio as otio
 from pprint import pformat
-reload(otio_export)  # noqa
 
 
-@pyblish.api.log
 class CollectTestSelection(pyblish.api.ContextPlugin):
     """testing selection sharing
     """
@@ -36,6 +34,7 @@ class CollectTestSelection(pyblish.api.ContextPlugin):
                 test_dir, "otio_timeline_export.otio"
             )
         )
+        self.log.debug(export_path)
         otio_timeline = otio_export.create_otio_timeline(sequence)
         otio_export.write_to_file(
             otio_timeline, export_path

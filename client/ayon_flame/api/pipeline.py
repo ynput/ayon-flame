@@ -6,7 +6,7 @@ import contextlib
 from copy import deepcopy
 from pyblish import api as pyblish
 
-from ayon_core.host import HostBase, IWorkfileHost, ILoadHost, IPublishHost
+from ayon_core.host import HostBase, ILoadHost, IPublishHost
 
 from ayon_core.lib import Logger
 from ayon_core.pipeline import (
@@ -24,14 +24,6 @@ from .lib import (
     get_current_sequence,
     reset_segment_selection
 )
-from .workio import (
-    open_file,
-    save_file,
-    file_extensions,
-    has_unsaved_changes,
-    work_root,
-    current_file,
-)
 
 
 PLUGINS_DIR = os.path.join(FLAME_ADDON_ROOT, "plugins")
@@ -43,29 +35,11 @@ CREATE_PATH = os.path.join(PLUGINS_DIR, "create")
 log = Logger.get_logger(__name__)
 
 
-class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
+class FlameHost(HostBase, ILoadHost, IPublishHost):
     name = "flame"
 
     # object variables
-    _context = {}
-
-    def open_workfile(self, filepath):
-        return open_file(filepath)
-
-    def save_workfile(self, filepath=None):
-        return save_file(filepath)
-
-    def work_root(self, session):
-        return work_root(session)
-
-    def get_current_workfile(self):
-        return current_file()
-
-    def workfile_has_unsaved_changes(self):
-        return has_unsaved_changes()
-
-    def get_workfile_extensions(self):
-        return file_extensions()
+    _publish_context_data = {}
 
     def get_containers(self):
         return ls()
@@ -76,11 +50,11 @@ class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
 
     def get_context_data(self):
         # TODO: find a way to implement this
-        return deepcopy(self._context)
+        return deepcopy(self._publish_context_data)
 
     def update_context_data(self, data, changes):
         # TODO: find a way to implement this
-        self._context = deepcopy(data)
+        self._publish_context_data = deepcopy(data)
 
 
 def install():
