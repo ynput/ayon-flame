@@ -3,7 +3,7 @@ from types import NoneType
 import pyblish
 import ayon_flame.api as ayfapi
 from ayon_flame.otio import flame_export
-from ayon_core.pipeline import AYON_INSTANCE_ID
+from ayon_core.pipeline import AYON_INSTANCE_ID, AVALON_INSTANCE_ID
 from ayon_core.pipeline.editorial import (
     is_overlapping_otio_ranges,
     get_media_range_with_retimes
@@ -50,7 +50,8 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
             if not marker_data:
                 continue
 
-            if marker_data.get("id") is not AYON_INSTANCE_ID:
+            if marker_data.get("id") not in {
+                AYON_INSTANCE_ID, AVALON_INSTANCE_ID}:
                 continue
 
             self.log.debug("__ segment.name: {}".format(
@@ -117,14 +118,12 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
             inst_data.update(otio_data)
 
             folder_path = marker_data["folderPath"]
-            folder_name = folder_path.rsplit("/")[-1]
+            folder_name = marker_data["folderName"]
             product_name = marker_data["productName"]
 
             # insert product type into families
             product_type = marker_data["productType"]
-            families = [str(f) for f in marker_data["families"]]
-            families.insert(0, str(product_type))
-
+            families = [product_type, "clip"]
             # form label
             label = folder_name
             if folder_name != clip_name:
@@ -365,7 +364,8 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
             "folderPath": folder_path,
             "productType": product_type,
             "family": product_type,
-            "families": [product_type]
+            "families": [product_type],
+            "integrate": False,
         })
 
         instance = context.create_instance(**data)
@@ -391,7 +391,7 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
         timeline_range = self._create_otio_time_range_from_timeline_item_data(
             clip_data)
 
-        for otio_clip in self.otio_timeline.each_clip():
+        for otio_clip in self.otio_timeline.find_clips():
             track_name = otio_clip.parent().name
             parent_range = otio_clip.range_in_parent()
             if s_track_name not in track_name:

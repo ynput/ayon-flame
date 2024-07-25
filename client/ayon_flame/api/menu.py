@@ -38,6 +38,23 @@ def callback_selection(selection, function):
     function()
 
 
+_MAIN_WINDOW = None
+
+
+def _get_main_window():
+    global _MAIN_WINDOW
+    if _MAIN_WINDOW is None:
+        _MAIN_WINDOW = next(
+            (
+                obj
+                for obj in QtWidgets.QApplication.topLevelWidgets()
+                if isinstance(obj, QtWidgets.QMainWindow)
+            ),
+            None
+        )
+    return _MAIN_WINDOW
+        
+
 class _FlameMenuApp(object):
     def __init__(self, framework):
         self.name = self.__class__.__name__
@@ -69,7 +86,9 @@ class _FlameMenuApp(object):
                 {"name": f"0 - {project_name or 'project'}", "isEnabled": False}],
             "name": self.menu_group_name,
         }
-        self.tools_helper = host_tools.HostToolsHelper()
+        self.tools_helper = host_tools.HostToolsHelper(
+            parent=_get_main_window()
+        )
 
     def __getattr__(self, name):
         def method(*args, **kwargs):
@@ -173,7 +192,9 @@ class FlameMenuTimeline(_FlameMenuApp):
             {
                 "name": "2 - Publish...",
                 "execute": lambda x: callback_selection(
-                    x, host_tools.show_publisher(tab="publish")
+                    x, host_tools.show_publisher(
+                        tab="publish", parent=_get_main_window()
+                    )
                 ),
             }
         )

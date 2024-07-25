@@ -422,17 +422,32 @@ class PublishableClip:
 
         # deal with clip name
         new_name = self.marker_data.pop("newClipName")
+        hierarchy_filled = self.marker_data["hierarchy"]
 
         if self.rename and not self.use_shot_name:
             # rename segment
             self.current_segment.name = str(new_name)
-            self.marker_data["asset"] = str(new_name)
+            self.marker_data.update({
+                "folderName": str(new_name),
+                "folderPath": f"/{hierarchy_filled}/{new_name}"
+            })
+
         elif self.use_shot_name:
-            self.marker_data["asset"] = self.shot_name
-            self.marker_data["hierarchyData"]["shot"] = self.shot_name
+            self.marker_data.update({
+                "folderName": self.shot_name,
+                "folderPath": f"/{hierarchy_filled}/{self.shot_name}",
+                "hierarchyData": {
+                    "shot": self.shot_name
+                }
+            })
         else:
-            self.marker_data["asset"] = self.cs_name
-            self.marker_data["hierarchyData"]["shot"] = self.cs_name
+            self.marker_data.update({
+                "folderName": self.cs_name,
+                "folderPath": f"/{hierarchy_filled}/{self.cs_name}",
+                "hierarchyData": {
+                    "shot": self.cs_name
+                }
+            })
 
         if self.marker_data["heroTrack"] and self.review_layer:
             self.marker_data["reviewTrack"] = self.review_layer
@@ -640,7 +655,6 @@ class PublishableClip:
             "hierarchyData": hierarchy_formatting_data,
             "productName": self.product_name,
             "productType": self.base_product_type,
-            "families": [self.base_product_type, self.product_type]
         }
 
     def _convert_to_entity(self, src_type, template):
