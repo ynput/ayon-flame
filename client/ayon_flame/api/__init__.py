@@ -39,6 +39,7 @@ from .utils import (
     get_flame_install_root
 )
 from .pipeline import (
+    FlameHost,
     install,
     uninstall,
     ls,
@@ -112,6 +113,7 @@ __all__ = [
     "TimeEffectMetadata",
 
     # pipeline
+    "FlameHost",
     "install",
     "uninstall",
     "ls",

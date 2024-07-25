@@ -3,7 +3,7 @@
 AYON Flame api constances
 """
 # AYON marker workflow variables
-MARKER_NAME = "OpenPypeData"
+MARKER_NAME = "AYONData"
 MARKER_DURATION = 0
 MARKER_COLOR = "cyan"
 MARKER_PUBLISH_DEFAULT = False

@@ -37,8 +37,12 @@ class CTX:
 
 @contextlib.contextmanager
 def io_preferences_file(klass, filepath, write=False):
+    if not os.path.exists(filepath):
+        with open(filepath, "w"):
+            pass
+
     try:
-        flag = "w" if write else "r"
+        flag = "wb" if write else "rb"
         yield open(filepath, flag)
 
     except IOError as _error:
@@ -101,7 +105,7 @@ class FlameAppFramework(object):
 
     def __init__(self):
         self.name = self.__class__.__name__
-        self.bundle_name = "OpenPypeFlame"
+        self.bundle_name = "AYONFlame"
         # self.prefs scope is limited to flame project and user
         self.prefs = {}
         self.prefs_user = {}
@@ -126,13 +130,13 @@ class FlameAppFramework(object):
                 os.path.expanduser("~"),
                 "Library",
                 "Caches",
-                "OpenPype",
+                "AYON",
                 self.bundle_name
             )
         elif sys.platform.startswith("linux"):
             self.prefs_folder = os.path.join(
                 os.path.expanduser("~"),
-                ".OpenPype",
+                ".AYON",
                 self.bundle_name)
 
         self.prefs_folder = os.path.join(
@@ -142,6 +146,7 @@ class FlameAppFramework(object):
 
         self.log.info("[{}] waking up".format(self.__class__.__name__))
 
+        
         try:
             self.load_prefs()
         except RuntimeError:
@@ -319,14 +324,14 @@ def get_metadata(project_name, _log=None):
 
 def get_segment_data_marker(segment, with_marker=None):
     """
-    Get openpype track item tag created by creator or loader plugin.
+    Get AYON track item tag created by creator or loader plugin.
 
     Attributes:
         segment (flame.PySegment): flame api object
         with_marker (bool)[optional]: if true it will return also marker object
 
     Returns:
-        dict: openpype tag data
+        dict: AYON tag data
 
     Returns(with_marker=True):
         flame.PyMarker, dict
@@ -346,7 +351,7 @@ def get_segment_data_marker(segment, with_marker=None):
 
 def set_segment_data_marker(segment, data=None):
     """
-    Set openpype track item tag to input segment.
+    Set AYON track item tag to input segment.
 
     Attributes:
         segment (flame.PySegment): flame api object
@@ -359,7 +364,7 @@ def set_segment_data_marker(segment, data=None):
     marker_data = get_segment_data_marker(segment, True)
 
     if marker_data:
-        # get available openpype tag if any
+        # get available AYON tag if any
         marker, tag_data = marker_data
         # update tag data with new data
         tag_data.update(data)
@@ -405,7 +410,7 @@ def get_publish_attribute(segment):
 
 
 def create_segment_data_marker(segment):
-    """ Create openpype marker on a segment.
+    """ Create AYON marker on a segment.
 
     Attributes:
         segment (flame.PySegment): flame api object

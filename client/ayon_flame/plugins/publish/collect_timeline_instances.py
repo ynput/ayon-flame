@@ -1,7 +1,7 @@
 import re
 from types import NoneType
 import pyblish
-import ayon_flame.api as opfapi
+import ayon_flame.api as ayfapi
 from ayon_flame.otio import flame_export
 from ayon_core.pipeline import AYON_INSTANCE_ID, AVALON_INSTANCE_ID
 from ayon_core.pipeline.editorial import (
@@ -41,8 +41,8 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
 
         # process all selected
         for segment in selected_segments:
-            # get openpype tag data
-            marker_data = opfapi.get_segment_data_marker(segment)
+            # get AYON tag data
+            marker_data = ayfapi.get_segment_data_marker(segment)
 
             self.log.debug("__ marker_data: {}".format(
                 pformat(marker_data)))
@@ -51,8 +51,7 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
                 continue
 
             if marker_data.get("id") not in {
-                AYON_INSTANCE_ID, AVALON_INSTANCE_ID
-            }:
+                AYON_INSTANCE_ID, AVALON_INSTANCE_ID}:
                 continue
 
             self.log.debug("__ segment.name: {}".format(
@@ -64,7 +63,7 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
             self.log.debug("_ comment_attributes: {}".format(
                 pformat(comment_attributes)))
 
-            clip_data = opfapi.get_segment_attributes(segment)
+            clip_data = ayfapi.get_segment_attributes(segment)
             clip_name = clip_data["segment_name"]
             self.log.debug("clip_name: {}".format(clip_name))
 
@@ -75,7 +74,7 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
             # get file path
             file_path = clip_data["fpath"]
 
-            first_frame = opfapi.get_frame_from_filename(file_path) or 0
+            first_frame = ayfapi.get_frame_from_filename(file_path) or 0
 
             head, tail = self._get_head_tail(
                 clip_data,
@@ -119,14 +118,12 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
             inst_data.update(otio_data)
 
             folder_path = marker_data["folderPath"]
-            folder_name = folder_path.rsplit("/")[-1]
+            folder_name = marker_data["folderName"]
             product_name = marker_data["productName"]
 
             # insert product type into families
             product_type = marker_data["productType"]
-            families = [str(f) for f in marker_data["families"]]
-            families.insert(0, str(product_type))
-
+            families = [product_type, "clip"]
             # form label
             label = folder_name
             if folder_name != clip_name:
@@ -320,20 +317,20 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
                 "otioClip"].media_reference.metadata
             data.update({
                 "resolutionWidth": otio_clip_metadata[
-                        "openpype.source.width"],
+                        "ayon.source.width"],
                 "resolutionHeight": otio_clip_metadata[
-                    "openpype.source.height"],
+                    "ayon.source.height"],
                 "pixelAspect": otio_clip_metadata[
-                    "openpype.source.pixelAspect"]
+                    "ayon.source.pixelAspect"]
             })
         else:
             otio_tl_metadata = context.data["otioTimeline"].metadata
             data.update({
-                "resolutionWidth": otio_tl_metadata["openpype.timeline.width"],
+                "resolutionWidth": otio_tl_metadata["ayon.timeline.width"],
                 "resolutionHeight": otio_tl_metadata[
-                    "openpype.timeline.height"],
+                    "ayon.timeline.height"],
                 "pixelAspect": otio_tl_metadata[
-                    "openpype.timeline.pixelAspect"]
+                    "ayon.timeline.pixelAspect"]
             })
 
     def _create_shot_instance(self, context, clip_name, **data):
@@ -367,7 +364,8 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
             "folderPath": folder_path,
             "productType": product_type,
             "family": product_type,
-            "families": [product_type]
+            "families": [product_type],
+            "integrate": False,
         })
 
         instance = context.create_instance(**data)
@@ -393,7 +391,7 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
         timeline_range = self._create_otio_time_range_from_timeline_item_data(
             clip_data)
 
-        for otio_clip in self.otio_timeline.each_clip():
+        for otio_clip in self.otio_timeline.find_clips():
             track_name = otio_clip.parent().name
             parent_range = otio_clip.range_in_parent()
             if s_track_name not in track_name:
@@ -405,7 +403,7 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
 
                 # add pypedata marker to otio_clip metadata
                 for marker in otio_clip.markers:
-                    if opfapi.MARKER_NAME in marker.name:
+                    if ayfapi.MARKER_NAME in marker.name:
                         otio_clip.metadata.update(marker.metadata)
                 return {"otioClip": otio_clip}
 

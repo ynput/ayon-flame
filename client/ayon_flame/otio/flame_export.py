@@ -225,7 +225,7 @@ def create_otio_reference(clip_data, fps=None):
 
     is_sequence = frame_number = utils.get_frame_from_filename(file_name)
     if is_sequence:
-        file_head = file_name.split(frame_number)[:-1]
+        file_head = file_name.split(frame_number)[0]
         frame_start = int(frame_number)
         padding = len(frame_number)
 
@@ -389,7 +389,7 @@ def _get_colourspace_policy():
     policy_dir = "/opt/Autodesk/project/{}/synColor/policy".format(
         CTX.project.name
     )
-    log.debug(policy_dir)
+
     policy_fp = os.path.join(policy_dir, "policy.cfg")
 
     if not os.path.exists(policy_fp):
@@ -398,7 +398,7 @@ def _get_colourspace_policy():
     with open(policy_fp) as file:
         dict_conf = dict(line.strip().split(' = ', 1) for line in file)
         output.update(
-            {"openpype.flame.{}".format(k): v for k, v in dict_conf.items()}
+            {"ayon.flame.{}".format(k): v for k, v in dict_conf.items()}
         )
     return output
 
@@ -412,9 +412,9 @@ def _create_otio_timeline(sequence):
     metadata.update(colorspace_policy)
 
     metadata.update({
-        "openpype.timeline.width": int(sequence.width),
-        "openpype.timeline.height": int(sequence.height),
-        "openpype.timeline.pixelAspect": 1
+        "ayon.timeline.width": int(sequence.width),
+        "ayon.timeline.height": int(sequence.height),
+        "ayon.timeline.pixelAspect": 1
     })
 
     rt_start_time = create_otio_rational_time(

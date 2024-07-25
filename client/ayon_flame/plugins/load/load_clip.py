@@ -2,7 +2,7 @@ from copy import deepcopy
 import os
 import flame
 from pprint import pformat
-import ayon_flame.api as opfapi
+import ayon_flame.api as ayfapi
 from ayon_core.lib import StringTemplate
 from ayon_core.lib.transcoding import (
     VIDEO_EXTENSIONS,
@@ -10,7 +10,7 @@ from ayon_core.lib.transcoding import (
 )
 
 
-class LoadClip(opfapi.ClipLoader):
+class LoadClip(ayfapi.ClipLoader):
     """Load a product to timeline as clip
 
     Place clip to timeline on its asset origin timings collected
@@ -29,7 +29,7 @@ class LoadClip(opfapi.ClipLoader):
     color = "orange"
 
     # settings
-    reel_group_name = "OpenPype_Reels"
+    reel_group_name = "AYON_Reels"
     reel_name = "Loaded"
     clip_name_template = "{folder[name]}_{product[name]}<_{output}>"
 
@@ -95,8 +95,8 @@ class LoadClip(opfapi.ClipLoader):
         ))
         self.log.debug(openclip_path)
 
-        # make openpype clip file
-        opfapi.OpenClipSolver(
+        # make AYON clip file
+        ayfapi.OpenClipSolver(
             openclip_path, loading_context, logger=self.log).make()
 
         # prepare Reel group in actual desktop
@@ -105,7 +105,7 @@ class LoadClip(opfapi.ClipLoader):
             openclip_path
         )
 
-        # add additional metadata from the version to imprint Avalon knob
+        # add additional metadata from the version to imprint basic folder attributes
         add_keys = [
             "frameStart", "frameEnd", "source", "author",
             "fps", "handleStart", "handleEnd"
@@ -125,9 +125,9 @@ class LoadClip(opfapi.ClipLoader):
         })
 
         # TODO: finish the containerisation
-        # opc_segment = opfapi.get_clip_segment(opc)
+        # opc_segment = ayfapi.get_clip_segment(opc)
 
-        # return opfapi.containerise(
+        # return ayfapi.containerise(
         #     opc_segment,
         #     name, namespace, context,
         #     self.__class__.__name__,
@@ -209,7 +209,7 @@ class LoadClip(opfapi.ClipLoader):
     #     if colorspace:
     #         clip.setSourceMediaColourTransform(colorspace)
 
-    #     # add additional metadata from the version to imprint Avalon knob
+    #     # add additional metadata from the version to imprint basic folder attributes
     #     add_keys = [
     #         "frameStart", "frameEnd", "source", "author",
     #         "fps", "handleStart", "handleEnd"

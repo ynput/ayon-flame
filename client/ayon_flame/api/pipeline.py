@@ -1,9 +1,12 @@
 """
-Basic avalon integration
+Basic AYON integration
 """
 import os
 import contextlib
+from copy import deepcopy
 from pyblish import api as pyblish
+
+from ayon_core.host import HostBase, ILoadHost, IPublishHost
 
 from ayon_core.lib import Logger
 from ayon_core.pipeline import (
@@ -11,7 +14,7 @@ from ayon_core.pipeline import (
     register_creator_plugin_path,
     deregister_loader_plugin_path,
     deregister_creator_plugin_path,
-    AVALON_CONTAINER_ID,
+    AYON_CONTAINER_ID,
 )
 from ayon_flame import FLAME_ADDON_ROOT
 from .lib import (
@@ -22,14 +25,36 @@ from .lib import (
     reset_segment_selection
 )
 
+
 PLUGINS_DIR = os.path.join(FLAME_ADDON_ROOT, "plugins")
 PUBLISH_PATH = os.path.join(PLUGINS_DIR, "publish")
 LOAD_PATH = os.path.join(PLUGINS_DIR, "load")
 CREATE_PATH = os.path.join(PLUGINS_DIR, "create")
 
-AVALON_CONTAINERS = "AVALON_CONTAINERS"
 
 log = Logger.get_logger(__name__)
+
+
+class FlameHost(HostBase, ILoadHost, IPublishHost):
+    name = "flame"
+
+    # object variables
+    _publish_context_data = {}
+
+    def get_containers(self):
+        return ls()
+
+    def install(self):
+        """Installing all requirements for Nuke host"""
+        install()
+
+    def get_context_data(self):
+        # TODO: find a way to implement this
+        return deepcopy(self._publish_context_data)
+
+    def update_context_data(self, data, changes):
+        # TODO: find a way to implement this
+        self._publish_context_data = deepcopy(data)
 
 
 def install():
@@ -67,8 +92,8 @@ def containerise(flame_clip_segment,
                  data=None):
 
     data_imprint = {
-        "schema": "openpype:container-2.0",
-        "id": AVALON_CONTAINER_ID,
+        "schema": "ayon:container-3.0",
+        "id": AYON_CONTAINER_ID,
         "name": str(name),
         "namespace": str(namespace),
         "loader": str(loader),
@@ -79,8 +104,8 @@ def containerise(flame_clip_segment,
         for k, v in data.items():
             data_imprint[k] = v
 
-    log.debug("_ data_imprint: {}".format(data_imprint))
-
+    # TODO: implement also openClip loaded data
+    # timeline item imprinted data
     set_segment_data_marker(flame_clip_segment, data_imprint)
 
     return True
@@ -93,14 +118,14 @@ def ls():
 
 
 def parse_container(tl_segment, validate=True):
-    """Return container data from timeline_item's openpype tag.
+    """Return container data from timeline_item's AYON tag.
     """
     # TODO: parse_container
     pass
 
 
 def update_container(tl_segment, data=None):
-    """Update container data to input timeline_item's openpype tag.
+    """Update container data to input timeline_item's AYON tag.
     """
     # TODO: update_container
     pass
@@ -131,7 +156,7 @@ def list_instances():
 
 def imprint(segment, data=None):
     """
-    Adding openpype data to Flame timeline segment.
+    Adding AYON data to Flame timeline segment.
 
     Also including publish attribute into tag.
 
