@@ -38,8 +38,8 @@ class CTX:
 @contextlib.contextmanager
 def io_preferences_file(klass, filepath, write=False):
     if not os.path.exists(filepath):
-        file = open(filepath, "w")
-        file.close()
+        with open(filepath, "w"):
+            pass
 
     try:
         flag = "wb" if write else "rb"
