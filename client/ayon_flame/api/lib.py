@@ -45,7 +45,7 @@ def io_preferences_file(klass, filepath, write=False):
         flag = "wb" if write else "rb"
         yield open(filepath, flag)
 
-    except IOError as _error:
+    except (IOError, EOFError) as _error:
         klass.log.info("Unable to work with preferences `{}`: {}".format(
             filepath, _error))
 
