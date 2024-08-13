@@ -38,9 +38,10 @@ class InstallOpenTimelineIOToFlame(PreLaunchHook):
         env = self.launch_context.env
         # first try if OpenTimeline is installed into Flame python environment
         result = subprocess.run(
-            [flame_py_exe, "-c", "import OpenTimelineIO"], env=env
+            [flame_py_exe, "-c", "import opentimelineio"], env=env
         )
         if result.returncode == 0:
+            self.log.info("OpenTimelineIO is installed within Flame env.")
             return
 
         # secondly if OpenTimelineIO is installed in our custom site-packages
@@ -52,9 +53,11 @@ class InstallOpenTimelineIOToFlame(PreLaunchHook):
         # add custom site-packages to PYTHONPATH
         env["PYTHONPATH"] += f"{os.pathsep}{custom_site_path}"
         result = subprocess.run(
-            [flame_py_exe, "-c", "import OpenTimelineIO"], env=env
+            [flame_py_exe, "-c", "import opentimelineio"], env=env
         )
         if result.returncode == 0:
+            self.log.info(
+                "OpenTimelineIO is installed within AYON Flame env.")
             return
 
         # lastly install OpenTimelineIO into our custom site-packages
@@ -70,6 +73,10 @@ class InstallOpenTimelineIOToFlame(PreLaunchHook):
             ]
         )
         if result.returncode == 0:
+            self.log.info(
+                "OpenTimelineIO is installed now within AYON Flame "
+                "env and ready to be used."
+            )
             return
 
         raise ApplicationLaunchFailed("Failed to install OpenTimelineIO")
