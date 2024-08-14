@@ -146,7 +146,6 @@ class FlameAppFramework(object):
 
         self.log.info("[{}] waking up".format(self.__class__.__name__))
 
-        
         try:
             self.load_prefs()
         except RuntimeError:
@@ -179,6 +178,15 @@ class FlameAppFramework(object):
 
         (proj_pref_path, user_pref_path,
          glob_pref_path) = self.get_pref_file_paths()
+
+        # make directories if not exists
+        if not os.path.isdir(self.prefs_folder):
+            try:
+                os.makedirs(self.prefs_folder)
+            except Exception as err:
+                self.log.error(
+                    f"Unable to create folder {self.prefs_folder}")
+                raise err
 
         with io_preferences_file(self, proj_pref_path) as prefs_file:
             self.prefs = pickle.load(prefs_file)
