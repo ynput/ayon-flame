@@ -104,16 +104,16 @@ def create_time_effects(otio_clip, speed):
     # retime on track item
     if speed != 1.:
         # make effect
-        otio_effect = otio.schema.LinearTimeWarp()
-        otio_effect.name = "Speed"
-        otio_effect.time_scalar = speed
-        otio_effect.metadata = {}
+        otio_effect = otio.schema.LinearTimeWarp(
+            name="Speed",
+            time_scalar=speed
+        )
 
     # freeze frame effect
     if speed == 0.:
-        otio_effect = otio.schema.FreezeFrame()
-        otio_effect.name = "FreezeFrame"
-        otio_effect.metadata = {}
+        otio_effect = otio.schema.FreezeFrame(
+            name="FreezeFrame"
+        )
 
     if otio_effect:
         # add otio effect to clip effects
