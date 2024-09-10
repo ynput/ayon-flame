@@ -337,6 +337,7 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
         master_layer = data.get("heroTrack")
         hierarchy_data = data.get("hierarchyData")
 
+        self.log.info(f"Creating Shot instance for: {clip_name}")
         if not master_layer:
             return
 
@@ -369,9 +370,9 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
         })
 
         instance = context.create_instance(**data)
-        self.log.info("Creating instance: {}".format(instance))
+        self.log.info("Creating Shot instance: {}".format(instance))
         self.log.debug(
-            "_ instance.data: {}".format(pformat(instance.data)))
+            "_ shot instance.data: {}".format(pformat(instance.data)))
 
     def _get_otio_clip_instance_data(self, clip_data):
         """
