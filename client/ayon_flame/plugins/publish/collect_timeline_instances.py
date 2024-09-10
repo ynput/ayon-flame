@@ -338,8 +338,6 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
         hierarchy_data = data.get("hierarchyData")
 
         self.log.info(f"Creating Shot instance for: {clip_name}")
-        self.log.debug(f"__ master_layer: {master_layer}")
-        self.log.debug(f"__ hierarchy_data: {hierarchy_data}")
         if not master_layer:
             return
 
