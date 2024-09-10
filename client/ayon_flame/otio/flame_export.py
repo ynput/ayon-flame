@@ -205,8 +205,16 @@ def create_otio_markers(otio_item, item):
         otio_item.markers.append(otio_marker)
 
 
-def create_otio_reference(clip_data, fps=None):
+def create_otio_reference(clip_data, media_info, fps=None):
     metadata = _get_metadata(clip_data)
+
+    metadata.update(
+        {
+            "ayon.source.width": media_info.width,
+            "ayon.source.height": media_info.height,
+            "ayon.source.pixelAspect": media_info.pixel_aspect,
+        }
+    )
     duration = int(clip_data["source_duration"])
 
     # get file info for path and start frame
@@ -346,8 +354,7 @@ def create_otio_clip(clip_data):
     log.debug("_ _clip_record_duration: {}".format(_clip_record_duration))
 
     # create media reference
-    media_reference = create_otio_reference(
-        clip_data, media_fps)
+    media_reference = create_otio_reference(clip_data, media_info, media_fps)
 
     # creatae source range
     source_range = create_otio_time_range(
