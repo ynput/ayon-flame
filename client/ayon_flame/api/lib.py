@@ -812,6 +812,12 @@ class MediaInfoFile(object):
             self.log.debug("start_frame: {}".format(self.start_frame))
             self.log.debug("fps: {}".format(self.fps))
             self.log.debug("drop frame: {}".format(self.drop_mode))
+            # get all resolution related data and assign them
+            self._get_resolution_info_from_origin(xml_data)
+            self.log.debug("width: {}".format(self.width))
+            self.log.debug("height: {}".format(self.height))
+            self.log.debug("pixel aspect: {}".format(self.pixel_aspect))
+
             self.clip_data = xml_data
 
     def _get_collection(self, feed_basename, feed_dir, feed_ext):
@@ -1105,6 +1111,31 @@ class MediaInfoFile(object):
                     out_feed_drop_mode_obj = out_feed.find(
                         "startTimecode/dropMode")
                     self.drop_mode = out_feed_drop_mode_obj.text
+                    break
+        except Exception as msg:
+            self.log.warning(msg)
+
+    def _get_resolution_info_from_origin(self, xml_data):
+        """Set resolution info to class attributes
+
+        Args:
+            xml_data (ET.Element): clip data
+        """
+        try:
+            for out_track in xml_data.iter("track"):
+                for out_feed in out_track.iter("feed"):
+                    # width
+                    out_feed_width_obj = out_feed.find("storageFormat/width")
+                    self.width = out_feed_width_obj.text
+
+                    # height
+                    out_feed_height_obj = out_feed.find("storageFormat/height")
+                    self.height = out_feed_height_obj.text
+
+                    # pixel aspect ratio
+                    out_feed_pixel_aspect_obj = out_feed.find(
+                        "storageFormat/pixelRatio")
+                    self.pixel_aspect = out_feed_pixel_aspect_obj.text
                     break
         except Exception as msg:
             self.log.warning(msg)
