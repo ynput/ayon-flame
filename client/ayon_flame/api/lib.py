@@ -179,6 +179,14 @@ class FlameAppFramework(object):
         (proj_pref_path, user_pref_path,
          glob_pref_path) = self.get_pref_file_paths()
 
+        # make directories if not exists
+        try:
+            os.makedirs(self.prefs_folder, exist_ok=True)
+        except Exception as err:
+            self.log.error(
+                f"Unable to create folder {self.prefs_folder}")
+            raise err
+
         with io_preferences_file(self, proj_pref_path) as prefs_file:
             self.prefs = pickle.load(prefs_file)
             self.log.info(
