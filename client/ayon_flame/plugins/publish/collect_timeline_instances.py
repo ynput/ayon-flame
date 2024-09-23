@@ -30,6 +30,9 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
 
     # settings
     xml_preset_attrs_from_comments = []
+
+    # TODO: add to own plugin for Flame
+    # TODO: toggle for marking task which should be used for product parent
     add_tasks = []
 
     def process(self, context):
