@@ -15,6 +15,7 @@ class InstallOpenTimelineIOToFlameModel(BaseSettingsModel):
 
 # hooks configurations
 class FlameHooksModel(BaseSettingsModel):
+    _layout = "expanded"
     InstallOpenTimelineIOToFlame: InstallOpenTimelineIOToFlameModel = \
         SettingsField(
             default_factory=InstallOpenTimelineIOToFlameModel,

@@ -223,7 +223,7 @@ class ExtractProductResources(publish.Extractor):
             )
 
             exporting_clip = None
-            name_patern_xml = "<name>_{}.".format(
+            name_pattern_xml = "<name>_{}.".format(
                 unique_name)
 
             if export_type == "Sequence Publish":
@@ -235,7 +235,7 @@ class ExtractProductResources(publish.Extractor):
                     exporting_clip, segment_name, s_track_name)
 
                 # change name pattern
-                name_patern_xml = (
+                name_pattern_xml = (
                     "<segment name>_<shot name>_{}.").format(
                         unique_name)
 
@@ -258,7 +258,7 @@ class ExtractProductResources(publish.Extractor):
                 # enum position low start from 0
                 "frameIndex": 0,
                 "startFrame": repre_frame_start,
-                "namePattern": name_patern_xml
+                "namePattern": name_pattern_xml
             })
 
             if parsed_comment_attrs:
@@ -440,7 +440,7 @@ class ExtractProductResources(publish.Extractor):
             )
         )
 
-        # skip if not activated presete
+        # skip if not activated presets
         if not activated_preset:
             return True
 
