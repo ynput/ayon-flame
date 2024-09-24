@@ -819,7 +819,32 @@ class MediaInfoFile(object):
             self.log.debug("start_frame: {}".format(self.start_frame))
             self.log.debug("fps: {}".format(self.fps))
             self.log.debug("drop frame: {}".format(self.drop_mode))
+            # get all resolution related data and assign them
+            self._get_resolution_info_from_origin(xml_data)
+            self.log.debug("width: {}".format(self.width))
+            self.log.debug("height: {}".format(self.height))
+            self.log.debug("pixel aspect: {}".format(self.pixel_aspect))
+
             self.clip_data = xml_data
+
+    def _get_typed_value(self, xml_obj):
+        """ Get typed value from xml object
+
+        Args:
+            xml_obj (xml.etree.ElementTree.Element): xml object
+
+        Returns:
+            str: value
+        """
+        if hasattr(xml_obj, "type"):
+            if xml_obj.type in ["int", "uint"]:
+                return int(xml_obj.text)
+            if xml_obj.type == "float":
+                return float(xml_obj.text)
+            if xml_obj.type == "string":
+                return str(xml_obj.text)
+
+        return xml_obj.text
 
     def _get_collection(self, feed_basename, feed_dir, feed_ext):
         """ Get collection string
@@ -1101,17 +1126,45 @@ class MediaInfoFile(object):
                     # start frame
                     out_feed_nb_ticks_obj = out_feed.find(
                         "startTimecode/nbTicks")
-                    self.start_frame = out_feed_nb_ticks_obj.text
+                    self.start_frame = self._get_typed_value(
+                        out_feed_nb_ticks_obj)
 
                     # fps
                     out_feed_fps_obj = out_feed.find(
                         "startTimecode/rate")
-                    self.fps = out_feed_fps_obj.text
+                    self.fps = self._get_typed_value(out_feed_fps_obj)
 
                     # drop frame mode
                     out_feed_drop_mode_obj = out_feed.find(
                         "startTimecode/dropMode")
-                    self.drop_mode = out_feed_drop_mode_obj.text
+                    self.drop_mode = self._get_typed_value(
+                        out_feed_drop_mode_obj)
+                    break
+        except Exception as msg:
+            self.log.warning(msg)
+
+    def _get_resolution_info_from_origin(self, xml_data):
+        """Set resolution info to class attributes
+
+        Args:
+            xml_data (ET.Element): clip data
+        """
+        try:
+            for out_track in xml_data.iter("track"):
+                for out_feed in out_track.iter("feed"):
+                    # width
+                    out_feed_width_obj = out_feed.find("storageFormat/width")
+                    self.width = self._get_typed_value(out_feed_width_obj)
+
+                    # height
+                    out_feed_height_obj = out_feed.find("storageFormat/height")
+                    self.height = self._get_typed_value(out_feed_height_obj)
+
+                    # pixel aspect ratio
+                    out_feed_pixel_aspect_obj = out_feed.find(
+                        "storageFormat/pixelRatio")
+                    self.pixel_aspect = self._get_typed_value(
+                        out_feed_pixel_aspect_obj)
                     break
         except Exception as msg:
             self.log.warning(msg)
