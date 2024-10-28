@@ -223,8 +223,7 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
             ):
                 continue
 
-            self._get_xml_preset_attrs(
-                attributes, split)
+            self._get_xml_preset_attrs(attributes, split)
 
         # add xml overrides resolution to instance data
         xml_overrides = attributes["xml_overrides"]
