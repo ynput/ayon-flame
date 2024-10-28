@@ -643,36 +643,27 @@ class PublishableClip:
                     self.log.debug(
                         f">> clip_product_name: {clip_product_name}")
 
+                    # in case track name and product name is the same then add
+                    if self.base_product_name == self.track_name:
+                        clip_product_name = self.product_name
+
                     # add track index in case duplicity of names in hero data
                     # INFO: this is for case where hero clip product name
                     #    is the same as current clip product name
                     if clip_product_name in data_product_name:
                         clip_product_name = (
                             f"{clip_product_name}{self.track_index}")
-                        _distrib_data["productName"] = clip_product_name
 
-                    self.log.debug(
-                        f">> clip_product_name: {clip_product_name}")
                     # in case track clip product name had been already used
                     # then add product name with clip index
                     if clip_product_name in used_names_list:
                         clip_product_name = (
                             f"{clip_product_name}{self.cs_index}"
                         )
-                        _distrib_data["productName"] = clip_product_name
 
                     self.log.debug(
                         f">> clip_product_name: {clip_product_name}")
-
-                    self.log.debug(
-                        f">> self.base_product_name: {self.base_product_name}"
-                    )
-                    self.log.debug(
-                        f">> self.track_name: {self.track_name}")
-                    # in case track name and product name is the same then add
-                    if self.base_product_name == self.track_name:
-                        _distrib_data["productName"] = self.product_name
-
+                    _distrib_data["productName"] = clip_product_name
                     # assign data to return hierarchy data to tag
                     tag_hierarchy_data = _distrib_data
 
