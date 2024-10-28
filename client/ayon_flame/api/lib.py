@@ -538,10 +538,10 @@ def get_segment_attributes(segment):
         "shot_name": segment.shot_name.get_value(),
         "segment_name": segment.name.get_value(),
         "segment_comment": segment.comment.get_value(),
-        "tape_name": segment.tape_name,
-        "source_name": segment.source_name,
-        "fpath": segment.file_path,
-        "PySegment": segment
+        "tape_name": segment.tape_name.get_value(),
+        "source_name": segment.source_name.get_value(),
+        "fpath": segment.file_path.get_value(),
+        "PySegment": segment,
     }
 
     # head and tail with forward compatibility

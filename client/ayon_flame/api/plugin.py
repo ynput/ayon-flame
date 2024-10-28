@@ -3,6 +3,7 @@ import re
 import shutil
 from copy import deepcopy
 from xml.etree import ElementTree as ET
+from pprint import pformat
 
 import qargparse
 from qtpy import QtCore, QtWidgets
@@ -337,6 +338,7 @@ class PublishableClip:
         flame.PySegment: flame api object
     """
     vertical_clip_match = {}
+    vertical_clip_used = {}
     marker_data = {}
     types = {
         "shot": "shot",
@@ -377,6 +379,8 @@ class PublishableClip:
         self.sequence_name = str(sequence_name).replace(" ", "_")
 
         self.clip_data = flib.get_segment_attributes(segment)
+        self.log.debug(f"clip_data: {pformat(self.clip_data)}")
+
         # segment (clip) main attributes
         self.cs_name = self.clip_data["segment_name"]
         self.cs_index = int(self.clip_data["segment"])
@@ -385,8 +389,13 @@ class PublishableClip:
         # get track name and index
         self.track_index = int(self.clip_data["track"])
         track_name = self.clip_data["track_name"]
-        self.track_name = str(track_name).replace(" ", "_").replace(
-            "*", "noname{}".format(self.track_index))
+        self.track_name = (
+            # make sure no space and other special characters are in track name
+            # default track name is `*`
+            str(track_name)
+            .replace(" ", "_")
+            .replace("*", f"noname{self.track_index}")
+        )
 
         if kwargs.get("basicProductData"):
             self.marker_data.update(kwargs["basicProductData"])
@@ -397,9 +406,7 @@ class PublishableClip:
         # adding ui inputs if any
         self.ui_inputs = kwargs.get("ui_inputs", {})
 
-        self.log.info("Inside of plugin: {}".format(
-            self.marker_data
-        ))
+        self.log.info(f"Inside of plugin: {self.marker_data}")
         # populate default data before we get other attributes
         self._populate_segment_default_data()
 
@@ -479,8 +486,7 @@ class PublishableClip:
 
         # define ui inputs if non gui mode was used
         self.shot_num = self.cs_index
-        self.log.debug(
-            "____ self.shot_num: {}".format(self.shot_num))
+        self.log.debug(f"____ self.shot_num: {self.shot_num}")
 
         # ui_inputs data or default values if gui was not used
         self.rename = self.ui_inputs.get(
@@ -621,19 +627,39 @@ class PublishableClip:
                 `tag_hierarchy_data` will be set only once for every
                 clip which is not hero clip.
                 """
-                _hero_data = deepcopy(hero_data)
-                _hero_data.update({"heroTrack": False})
+                _distrib_data = deepcopy(hero_data)
+                _distrib_data.update({"heroTrack": False})
                 if _in <= self.clip_in and _out >= self.clip_out:
                     data_product_name = hero_data["productName"]
+                    used_names_list = self.vertical_clip_used.setdefault(
+                        data_product_name, [])
+
+                    clip_product_name = self.product_name
                     # add track index in case duplicity of names in hero data
-                    if self.product_name in data_product_name:
-                        _hero_data["productName"] = self.product_name + str(
-                            self.track_index)
+                    # INFO: this is for case where hero clip product name
+                    #    is the same as current clip product name
+                    if clip_product_name in data_product_name:
+                        clip_product_name = (
+                            f"{clip_product_name}{self.track_index}")
+                        _distrib_data["productName"] = clip_product_name
+
+                    # in case track clip product name had been already used
+                    # then add product name with clip index
+                    if clip_product_name in used_names_list:
+                        clip_product_name = (
+                            f"{clip_product_name}{self.cs_index}"
+                        )
+                        _distrib_data["productName"] = clip_product_name
+
                     # in case track name and product name is the same then add
                     if self.base_product_name == self.track_name:
-                        _hero_data["productName"] = self.product_name
+                        _distrib_data["productName"] = self.product_name
+
                     # assign data to return hierarchy data to tag
-                    tag_hierarchy_data = _hero_data
+                    tag_hierarchy_data = _distrib_data
+
+                    # add used product name to used list to avoid duplicity
+                    used_names_list.append(clip_product_name)
                     break
 
         # add data to return data dict
