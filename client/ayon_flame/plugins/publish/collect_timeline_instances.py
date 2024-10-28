@@ -13,8 +13,8 @@ from ayon_core.pipeline.editorial import (
 from pprint import pformat
 
 # constatns
-NUM_PATERN = re.compile(r"([0-9\.]+)")
-TXT_PATERN = re.compile(r"([a-zA-Z]+)")
+NUM_PATTERN = re.compile(r"([0-9\.]+)")
+TXT_PATTERN = re.compile(r"([a-zA-Z]+)")
 
 
 class CollectTimelineInstances(pyblish.api.ContextPlugin):
@@ -209,11 +209,18 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
                 "pixelRatio": 1.00}
         }
         # search for `:`
+        # INFO: clip based overrides needs to have specific format
+        #      `key: value` separated `,` or `;`. This is for cases where we
+        #      need to override resolution, aspect ratio, etc. per clip.
         for split in self._split_comments(comment):
             self.log.debug(f"__ split: {split}")
 
             # make sure we ignore if not `:` in key
-            if ":" not in split:
+            # of if there is more than one `:` in key
+            if (
+                ":" not in split
+                or split.count(":") > 1
+            ):
                 continue
 
             self._get_xml_preset_attrs(
@@ -244,36 +251,36 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
                 continue
 
             # get pattern defined by type
-            pattern = TXT_PATERN
+            pattern = TXT_PATTERN
             if a_type in ("number", "float"):
-                pattern = NUM_PATERN
+                pattern = NUM_PATTERN
 
-            res_goup = pattern.findall(value)
+            res_group = pattern.findall(value)
 
             # raise if nothing is found as it is not correctly defined
-            if not res_goup:
+            if not res_group:
                 raise ValueError((
                     "Value for `{}` attribute is not "
                     "set correctly: `{}`").format(a_name, split))
 
             if "string" in a_type:
-                _value = res_goup[0]
+                _value = res_group[0]
             if "float" in a_type:
-                _value = float(res_goup[0])
+                _value = float(res_group[0])
             if "number" in a_type:
-                _value = int(res_goup[0])
+                _value = int(res_group[0])
 
             attributes["xml_overrides"][a_name] = _value
 
         # condition for resolution in key
         if "resolution" in key.lower():
-            res_goup = NUM_PATERN.findall(value)
-            # check if axpect was also defined
+            res_group = NUM_PATTERN.findall(value)
+            # check if aspect was also defined
             # 1920x1080x1.5
-            aspect = res_goup[2] if len(res_goup) > 2 else 1
+            aspect = res_group[2] if len(res_group) > 2 else 1
 
-            width = int(res_goup[0])
-            height = int(res_goup[1])
+            width = int(res_group[0])
+            height = int(res_group[1])
             pixel_ratio = float(aspect)
             attributes["xml_overrides"].update({
                 "width": width,
