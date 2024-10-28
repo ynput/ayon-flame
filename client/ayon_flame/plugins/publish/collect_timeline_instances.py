@@ -210,6 +210,8 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
         }
         # search for `:`
         for split in self._split_comments(comment):
+            self.log.debug(f"__ split: {split}")
+
             # make sure we ignore if not `:` in key
             if ":" not in split:
                 continue
