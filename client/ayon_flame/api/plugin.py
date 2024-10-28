@@ -661,6 +661,14 @@ class PublishableClip:
                         )
                         _distrib_data["productName"] = clip_product_name
 
+                    self.log.debug(
+                        f">> clip_product_name: {clip_product_name}")
+
+                    self.log.debug(
+                        f">> self.base_product_name: {self.base_product_name}"
+                    )
+                    self.log.debug(
+                        f">> self.track_name: {self.track_name}")
                     # in case track name and product name is the same then add
                     if self.base_product_name == self.track_name:
                         _distrib_data["productName"] = self.product_name
