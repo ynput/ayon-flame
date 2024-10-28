@@ -633,7 +633,9 @@ class PublishableClip:
                     data_product_name = hero_data["productName"]
                     used_names_list = self.vertical_clip_used.setdefault(
                         data_product_name, [])
-
+                    self.log.debug(
+                        f"used_names_list: {used_names_list}"
+                    )
                     clip_product_name = self.product_name
                     # add track index in case duplicity of names in hero data
                     # INFO: this is for case where hero clip product name

@@ -1,8 +1,10 @@
+import logging
 from copy import deepcopy
-from ayon_core.lib import Logger
 import ayon_flame.api as ayfapi
 
-log = Logger.get_logger(__name__)
+log = logging.getLogger(__name__)
+# debug level
+log.setLevel(logging.DEBUG)
 
 
 class CreateShotClip(ayfapi.Creator):
