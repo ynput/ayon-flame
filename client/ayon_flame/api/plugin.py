@@ -641,8 +641,8 @@ class PublishableClip:
                     )
                     clip_product_name = self.product_name
                     self.log.debug(
-                        f">> clip_product_name: {clip_product_name}"
-                    )
+                        f">> clip_product_name: {clip_product_name}")
+
                     # add track index in case duplicity of names in hero data
                     # INFO: this is for case where hero clip product name
                     #    is the same as current clip product name
@@ -651,6 +651,8 @@ class PublishableClip:
                             f"{clip_product_name}{self.track_index}")
                         _distrib_data["productName"] = clip_product_name
 
+                    self.log.debug(
+                        f">> clip_product_name: {clip_product_name}")
                     # in case track clip product name had been already used
                     # then add product name with clip index
                     if clip_product_name in used_names_list:
