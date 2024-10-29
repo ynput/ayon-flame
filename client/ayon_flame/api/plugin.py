@@ -621,55 +621,57 @@ class PublishableClip:
 
         if not hero_track and self.vertical_sync:
             # driving layer is set as negative match
-            for (_in, _out), hero_data in self.vertical_clip_match.items():
-                """
-                Since only one instance of hero clip is expected in
-                `self.vertical_clip_match`, this will loop only once
-                until none hero clip will be matched with hero clip.
+            for (hero_in, hero_out), hero_data in self.vertical_clip_match.items():  # noqa
+                """ Iterate over all clips in vertical sync match
 
-                `tag_hierarchy_data` will be set only once for every
-                clip which is not hero clip.
+                If clip frame range is outside of hero clip frame range
+                then skip this clip and do not add to hierarchical shared
+                metadata to them.
                 """
-                if _in <= self.clip_in and _out >= self.clip_out:
-                    _distrib_data = deepcopy(hero_data)
-                    _distrib_data["heroTrack"] = False
-                    data_product_name = hero_data["productName"]
-                    used_names_list = self.vertical_clip_used.setdefault(
-                        data_product_name, [])
-                    self.log.debug(
-                        f">> used_names_list: {used_names_list}"
-                    )
+                if self.clip_in < hero_in and self.clip_out > hero_out:
+                    continue
+
+                _distrib_data = deepcopy(hero_data)
+                _distrib_data["heroTrack"] = False
+                data_product_name = hero_data["productName"]
+
+                # get used names list for duplicity check
+                used_names_list = self.vertical_clip_used.setdefault(
+                    data_product_name, [])
+                self.log.debug(
+                    f">> used_names_list: {used_names_list}"
+                )
+                clip_product_name = self.product_name
+                self.log.debug(
+                    f">> clip_product_name: {clip_product_name}")
+
+                # in case track name and product name is the same then add
+                if self.base_product_name == self.track_name:
                     clip_product_name = self.product_name
-                    self.log.debug(
-                        f">> clip_product_name: {clip_product_name}")
 
-                    # in case track name and product name is the same then add
-                    if self.base_product_name == self.track_name:
-                        clip_product_name = self.product_name
+                # add track index in case duplicity of names in hero data
+                # INFO: this is for case where hero clip product name
+                #    is the same as current clip product name
+                if clip_product_name in data_product_name:
+                    clip_product_name = (
+                        f"{clip_product_name}{self.track_index}")
 
-                    # add track index in case duplicity of names in hero data
-                    # INFO: this is for case where hero clip product name
-                    #    is the same as current clip product name
-                    if clip_product_name in data_product_name:
-                        clip_product_name = (
-                            f"{clip_product_name}{self.track_index}")
+                # in case track clip product name had been already used
+                # then add product name with clip index
+                if clip_product_name in used_names_list:
+                    clip_product_name = (
+                        f"{clip_product_name}{self.cs_index}"
+                    )
 
-                    # in case track clip product name had been already used
-                    # then add product name with clip index
-                    if clip_product_name in used_names_list:
-                        clip_product_name = (
-                            f"{clip_product_name}{self.cs_index}"
-                        )
+                self.log.debug(
+                    f">> clip_product_name: {clip_product_name}")
+                _distrib_data["productName"] = clip_product_name
+                # assign data to return hierarchy data to tag
+                tag_hierarchy_data = _distrib_data
 
-                    self.log.debug(
-                        f">> clip_product_name: {clip_product_name}")
-                    _distrib_data["productName"] = clip_product_name
-                    # assign data to return hierarchy data to tag
-                    tag_hierarchy_data = _distrib_data
-
-                    # add used product name to used list to avoid duplicity
-                    used_names_list.append(clip_product_name)
-                    break
+                # add used product name to used list to avoid duplicity
+                used_names_list.append(clip_product_name)
+                break
 
         # add data to return data dict
         self.marker_data.update(tag_hierarchy_data)
