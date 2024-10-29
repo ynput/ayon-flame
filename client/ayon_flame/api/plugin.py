@@ -630,9 +630,9 @@ class PublishableClip:
                 `tag_hierarchy_data` will be set only once for every
                 clip which is not hero clip.
                 """
-                _distrib_data = deepcopy(hero_data)
-                _distrib_data.update({"heroTrack": False})
                 if _in <= self.clip_in and _out >= self.clip_out:
+                    _distrib_data = deepcopy(hero_data)
+                    _distrib_data["heroTrack"] = False
                     data_product_name = hero_data["productName"]
                     used_names_list = self.vertical_clip_used.setdefault(
                         data_product_name, [])
