@@ -217,10 +217,7 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
 
             # make sure we ignore if not `:` in key
             # of if there is more than one `:` in key
-            if (
-                ":" not in split
-                or split.count(":") > 1
-            ):
+            if split.count(":") != 1:
                 continue
 
             self._get_xml_preset_attrs(attributes, split)
