@@ -218,8 +218,8 @@ def create_otio_reference(clip_data, media_info, fps=None):
     duration = int(clip_data["source_duration"])
 
     # get file info for path and start frame
-    frame_start = 0
-    fps = fps or CTX.get_fps()
+    frame_start = media_info.start_frame or 0
+    fps = fps or media_info.fps or CTX.get_fps()
 
     path = clip_data["fpath"]
 
@@ -286,8 +286,6 @@ def create_otio_clip(clip_data):
     from ayon_flame.api import MediaInfoFile, TimeEffectMetadata
 
     segment = clip_data["PySegment"]
-
-    import rpdb ; rpdb.Rpdb().set_trace()
 
     # calculate source in
     media_info = MediaInfoFile(clip_data["fpath"], logger=log)
@@ -359,8 +357,10 @@ def create_otio_clip(clip_data):
     media_reference = create_otio_reference(clip_data, media_info, media_fps)
 
     # create source range
+    available_media_start = media_reference.available_range.start_time
+    conformed_media_start = available_media_start.value_rescaled_to(CTX.get_fps())
     source_range = create_otio_time_range(
-        source_in,
+        conformed_media_start + source_in,
         _clip_record_duration,
         CTX.get_fps()
     )
