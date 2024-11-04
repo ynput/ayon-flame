@@ -287,6 +287,8 @@ def create_otio_clip(clip_data):
 
     segment = clip_data["PySegment"]
 
+    import rpdb ; rpdb.Rpdb().set_trace()
+
     # calculate source in
     media_info = MediaInfoFile(clip_data["fpath"], logger=log)
     media_timecode_start = media_info.start_frame
@@ -356,7 +358,7 @@ def create_otio_clip(clip_data):
     # create media reference
     media_reference = create_otio_reference(clip_data, media_info, media_fps)
 
-    # creatae source range
+    # create source range
     source_range = create_otio_time_range(
         source_in,
         _clip_record_duration,
