@@ -234,7 +234,7 @@ def create_otio_reference(clip_data, media_info, fps=None):
     is_sequence = frame_number = utils.get_frame_from_filename(file_name)
     if is_sequence:
         file_head = file_name.split(frame_number)[0]
-        frame_start = int(frame_number)
+        media_start = int(frame_number)
         padding = len(frame_number)
 
         metadata.update({
@@ -254,7 +254,7 @@ def create_otio_reference(clip_data, media_info, fps=None):
                 frame_zero_padding=padding,
                 rate=fps,
                 available_range=create_otio_time_range(
-                    frame_start,
+                    media_start,
                     duration,
                     fps
                 )
@@ -270,7 +270,7 @@ def create_otio_reference(clip_data, media_info, fps=None):
         otio_ex_ref_item = otio.schema.ExternalReference(
             target_url=reformated_path,
             available_range=create_otio_time_range(
-                frame_start,
+                media_start,
                 duration,
                 fps
             )
