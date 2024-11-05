@@ -18,6 +18,11 @@ from adsk.libwiretapPythonClientAPI import (
 import ayon_flame.api as flapi
 
 
+wiretap_client = WireTapClient()
+good = wiretap_client.init()
+server = WireTapServerHandle("localhost:IFFFS")
+
+
 class CreateWorkfile(AutoCreator):
     """Workfile auto-creator."""
     settings_category = "flame"
@@ -39,12 +44,7 @@ class CreateWorkfile(AutoCreator):
             object. Flame wiretap handle for current project
         """
         current_project = flapi.get_current_project()
-
-        wiretap_client = WireTapClient()
-        wiretap_client.init()
-
-        server = WireTapServerHandle("localhost:IFFFS")
-        project_node_handle = WireTapNodeHandle(server, "/projects/{current_project.name}")
+        project_node_handle = WireTapNodeHandle(server, f"/projects/{current_project.name}")
         return project_node_handle
 
     @classmethod
@@ -65,10 +65,18 @@ class CreateWorkfile(AutoCreator):
 
         Args:
             data (dict): The data to push to the project tag.
+
+        Returns:
+            bool. Has the metadata been updated.
         """
         metadata = cls._get_project_metadata()
         nickname_entry, = metadata.findall(cls._METADATA_KEY)
         nickname_entry.text = json.dumps(data)
+        updated = ET.tostring(metadata, encoding='unicode')
+
+        project_node_handle = cls._get_project_metadata_handle()
+        new_metadata = WireTapStr(updated)
+        return project_node_handle.setMetaData("XML", new_metadata.c_str())
 
     @classmethod
     def _load_instance_data(cls):
@@ -79,7 +87,10 @@ class CreateWorkfile(AutoCreator):
         """
         metadata = cls._get_project_metadata()
         nickname_entry, = metadata.findall(cls._METADATA_KEY)
-        return json.loads(nickname_entry.text) if nickname_entry.text else {}
+        try:
+                return json.loads(nickname_entry.text)
+        except json.JSONDecodeError as error:
+                return {}
 
     def _create_new_instance(self):
         """Create a new workfile instance.
@@ -122,18 +133,16 @@ class CreateWorkfile(AutoCreator):
         current_instance = CreatedInstance(
             self.product_type, product_name, data, self)
         self._add_instance_to_context(current_instance)
+        return current_instance
 
     def create(self, options=None):
         """Auto-create an instance by default."""
-        instance_data = self._load_instance_data()
+        instance_data = self._load_instance_data()        
         if instance_data:
-            return
+                return
 
         self.log.info("Auto-creating workfile instance...")
-        data = self._create_new_instance()
-        current_instance = CreatedInstance(
-            self.product_type, data["productName"], data, self)
-        self._add_instance_to_context(current_instance)
+        self._create_new_instance()
 
     def collect_instances(self):
         """Collect from timeline marker or create a new one."""
