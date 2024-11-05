@@ -143,6 +143,8 @@ __all__ = [
     "PublishableClip",
     "ClipLoader",
     "OpenClipSolver",
+    "FlameCreator",
+    "HiddenFlameCreator",
 
     # workio
     "open_file",

@@ -89,7 +89,7 @@ class CreateWorkfile(AutoCreator):
         nickname_entry, = metadata.findall(cls._METADATA_KEY)
         try:
                 return json.loads(nickname_entry.text)
-        except json.JSONDecodeError as error:
+        except json.JSONDecodeError:
                 return {}
 
     def _create_new_instance(self):
