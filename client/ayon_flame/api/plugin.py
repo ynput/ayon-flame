@@ -9,7 +9,7 @@ from qtpy import QtCore, QtWidgets
 
 from ayon_core import style
 from ayon_core.lib import Logger, StringTemplate
-from ayon_core.pipeline import LegacyCreator, LoaderPlugin
+from ayon_core.pipeline import LegacyCreator, LoaderPlugin, HiddenCreator, Creator
 from ayon_core.pipeline.colorspace import get_remapped_colorspace_to_native
 from ayon_core.settings import get_current_project_settings
 
@@ -323,6 +323,51 @@ class Creator(LegacyCreator):
         widget = CreatorWidget(*args, **kwargs)
         widget.exec_()
         return widget.get_results_back()
+
+
+class HiddenFlameCreator(HiddenCreator):
+    """HiddenCreator class wrapper
+    """
+    settings_category = "flame"
+
+    def collect_instances(self):
+        pass
+
+    def update_instances(self, update_list):
+        pass
+
+    def remove_instances(self, instances):
+        pass
+
+
+class FlameCreator(Creator):
+    """Creator class wrapper
+    """
+    settings_category = "flame"
+
+    def __init__(self, *args, **kwargs):
+        super(Creator, self).__init__(*args, **kwargs)
+        self.presets = get_current_project_settings()[
+            "flame"]["create"].get(self.__class__.__name__, {})
+
+    def create(self, product_name, instance_data, pre_create_data):
+        """Prepare data for new instance creation.
+
+        Args:
+            product_name(str): Product name of created instance.
+            instance_data(dict): Base data for instance.
+            pre_create_data(dict): Data based on pre creation attributes.
+                Those may affect how creator works.
+        """
+        # adding basic current context resolve objects
+        self.project = flib.get_current_project()
+        self.sequence = flib.get_current_sequence(flib.CTX.selection)
+
+        selected = pre_create_data.get("use_selection", False)
+        self.selected = flib.get_sequence_segments(
+            self.sequence,
+            selected=selected
+        )
 
 
 class PublishableClip:

@@ -59,7 +59,9 @@ from .plugin import (
     Creator,
     PublishableClip,
     ClipLoader,
-    OpenClipSolver
+    OpenClipSolver,
+    FlameCreator,
+    HiddenFlameCreator,
 )
 from .workio import (
     open_file,
