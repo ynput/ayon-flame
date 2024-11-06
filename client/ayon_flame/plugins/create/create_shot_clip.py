@@ -1,51 +1,531 @@
 from copy import deepcopy
+import uuid
+
 import ayon_flame.api as ayfapi
+from ayon_flame.api import plugin, lib, pipeline
+from ayon_flame.otio import flame_export
+
+from ayon_core.pipeline.create import CreatorError, CreatedInstance
+from ayon_core.lib import BoolDef, EnumDef, TextDef, UILabelDef, NumberDef
 
 
-class CreateShotClip(ayfapi.Creator):
+# Used as a key by the creators in order to
+# retrieve the instances data into clip markers.
+_CONTENT_ID = "flame_sub_products"
+
+
+# Shot attributes
+CLIP_ATTR_DEFS = [
+    EnumDef(
+        "fps",
+        items=[
+            {"value": "from_selection", "label": "From selection"},
+            {"value": 23.997, "label": "23.976"},
+            {"value": 24, "label": "24"},
+            {"value": 25, "label": "25"},
+            {"value": 29.97, "label": "29.97"},
+            {"value": 30, "label": "30"}
+        ],
+        label="FPS"
+    ),
+    NumberDef(
+        "workfileFrameStart",
+        default=1001,
+        label="Workfile start frame"
+    ),
+    NumberDef(
+        "handleStart",
+        default=0,
+        label="Handle start"
+    ),
+    NumberDef(
+        "handleEnd",
+        default=0,
+        label="Handle end"
+    ),
+    NumberDef(
+        "frameStart",
+        default=0,
+        label="Frame start",
+        disabled=True,
+    ),
+    NumberDef(
+        "frameEnd",
+        default=0,
+        label="Frame end",
+        disabled=True,
+    ),
+    NumberDef(
+        "clipIn",
+        default=0,
+        label="Clip in",
+        disabled=True,
+    ),
+    NumberDef(
+        "clipOut",
+        default=0,
+        label="Clip out",
+        disabled=True,
+    ),
+    NumberDef(
+        "clipDuration",
+        default=0,
+        label="Clip duration",
+        disabled=True,
+    ),
+    NumberDef(
+        "sourceIn",
+        default=0,
+        label="Media source in",
+        disabled=True,
+    ),
+    NumberDef(
+        "sourceOut",
+        default=0,
+        label="Media source out",
+        disabled=True,
+    ),
+    BoolDef(
+        "includeHandles",
+        label="Include handles",
+        default=False,
+    ),
+    BoolDef(
+        "retimedHandles",
+        label="Retimed handles",
+        default=True,
+    ),
+    BoolDef(
+        "retimedFramerange",
+        label="Retimed framerange",
+        default=True,
+    ),    
+]
+
+
+class _FlameInstanceCreator(plugin.HiddenFlameCreator):
+    """Wrapper class for clip types products.
+    """
+
+    def create(self, instance_data, _):
+        """Return a new CreateInstance for new shot from Flame.
+
+        Args:
+            instance_data (dict): global data from original instance
+
+        Return:
+            CreatedInstance: The created instance object for the new shot.
+        """
+        instance_data.update({
+            "productName": f"{self.product_type}{instance_data['variant']}",
+            "productType": self.product_type,
+            "newHierarchyIntegration": True,
+            # Backwards compatible (Deprecated since 24/06/06)
+            "newAssetPublishing": True,
+        })
+
+        new_instance = CreatedInstance(
+            self.product_type, instance_data["productName"], instance_data, self
+        )
+        self._add_instance_to_context(new_instance)
+        new_instance.transient_data["has_promised_context"] = True
+        return new_instance
+
+    def update_instances(self, update_list):
+        """Store changes of existing instances so they can be recollected.
+
+        Args:
+            update_list(List[UpdateData]): Gets list of tuples. Each item
+                contain changed instance and it's changes.
+        """
+        for created_inst, _changes in update_list:
+            segment_item = created_inst.transient_data["segment_item"]
+            marker_data = ayfapi.get_segment_data_marker(segment_item)
+
+            try:
+                instances_data = marker_data[_CONTENT_ID]
+
+            # Backwards compatible (Deprecated since 24/09/05)
+            except KeyError:
+                marker_data[_CONTENT_ID] = {}
+                instances_data = marker_data[_CONTENT_ID]
+
+            instances_data[self.identifier] = created_inst.data_to_store()
+            pipeline.imprint(
+                segment_item,
+                data=  {
+                    _CONTENT_ID: instances_data,
+                    "clip_index": marker_data["clip_index"],
+                }
+            )
+
+    def remove_instances(self, instances):
+        """Remove instance marker from track item.
+
+        Args:
+            instance(List[CreatedInstance]): Instance objects which should be
+                removed.
+        """
+        for instance in instances:
+            segment_item = instance.transient_data["segment_item"]
+            marker_data = ayfapi.get_segment_data_marker(segment_item)
+
+            instances_data = marker_data.get(_CONTENT_ID, {})
+            instances_data.pop(self.identifier, None)
+            self._remove_instance_from_context(instance)
+
+            pipeline.imprint(
+                segment_item,
+                data=  {
+                    _CONTENT_ID: {},
+                    "clip_index": marker_data["clip_index"],
+                }
+            )
+
+
+class FlameShotInstanceCreator(_FlameInstanceCreator):
+    """Shot product type creator class"""
+    identifier = "io.ayon.creators.flame.shot"
+    product_type = "shot"
+    label = "Editorial Shot"
+
+    def get_instance_attr_defs(self):
+        instance_attributes = CLIP_ATTR_DEFS
+        return instance_attributes
+
+
+class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
+    """ Base clip product creator.
+    """
+
+    def get_instance_attr_defs(self):
+
+        current_sequence = lib.get_current_sequence(lib.CTX.selection)
+        if current_sequence is not None:
+            gui_tracks = get_video_track_names(current_sequence)
+        else:
+            gui_tracks = []
+
+        instance_attributes = [
+            TextDef(
+                "parentInstance",
+                label="Linked to",
+                disabled=True,
+            )
+        ]
+        if self.product_type == "plate":
+            instance_attributes.extend([
+                BoolDef(
+                    "vSyncOn",
+                    label="Enable Vertical Sync",
+                    tooltip="Switch on if you want clips above "
+                            "each other to share its attributes",
+                    default=True,
+                ),
+                EnumDef(
+                    "vSyncTrack",
+                    label="Hero Track",
+                    tooltip="Select driving track name which should "
+                            "be mastering all others",
+                    items=gui_tracks or ["<nothing to select>"],
+                ),
+            ])
+
+        return instance_attributes
+
+
+class EditorialPlateInstanceCreator(_FlameInstanceClipCreatorBase):
+    """Plate product type creator class"""
+    identifier = "io.ayon.creators.flame.plate"
+    product_type = "plate"
+    label = "Editorial Plate"
+
+    def create(self, instance_data, _):
+        """Return a new CreateInstance for new shot from Resolve.
+
+        Args:
+            instance_data (dict): global data from original instance
+
+        Return:
+            CreatedInstance: The created instance object for the new shot.
+        """
+        if instance_data.get("clip_variant") == "<track_name>":
+            instance_data["variant"] = instance_data["hierarchyData"]["track"]
+
+        else:
+            instance_data["variant"] = instance_data["clip_variant"]
+
+        return super().create(instance_data, None)
+
+
+class EditorialAudioInstanceCreator(_FlameInstanceClipCreatorBase):
+    """Audio product type creator class"""
+    identifier = "io.ayon.creators.flame.audio"
+    product_type = "audio"
+    label = "Editorial Audio"
+
+
+class CreateShotClip(plugin.FlameCreator):
     """Publishable clip"""
 
+    identifier = "io.ayon.creators.flame.clip"
     label = "Create Publishable Clip"
-    product_type = "clip"
+    product_type = "editorial"
     icon = "film"
     defaults = ["Main"]
 
-    presets = None
+    detailed_description = """
+Publishing clips/plate, audio for new shots to project
+or updating already created from Flame. Publishing will create
+OTIO file.
+"""
 
-    def process(self):
-        # Creator copy of object attributes that are modified during `process`
-        presets = deepcopy(self.presets)
-        gui_inputs = self.get_gui_inputs()
+    create_allow_thumbnail = False
 
-        # get key pairs from presets and match it on ui inputs
-        for k, v in gui_inputs.items():
-            if v["type"] in ("dict", "section"):
-                # nested dictionary (only one level allowed
-                # for sections and dict)
-                for _k, _v in v["value"].items():
-                    if presets.get(_k) is not None:
-                        gui_inputs[k][
-                            "value"][_k]["value"] = presets[_k]
+    def get_pre_create_attr_defs(self):
 
-            if presets.get(k) is not None:
-                gui_inputs[k]["value"] = presets[k]
+        def header_label(text):
+            return f"<br><b>{text}</b>"
 
-        # open widget for plugins inputs
-        results_back = self.create_widget(
-            "AYON publish attributes creator",
-            "Define sequential rename and fill hierarchy data.",
-            gui_inputs
-        )
+        tokens_help = """\nUsable tokens:
+    {_clip_}: name of used clip
+    {_track_}: name of parent track layer
+    {_sequence_}: name of parent sequence (timeline)"""
+
+        current_sequence = lib.get_current_sequence(lib.CTX.selection)
+        if current_sequence is not None:
+            gui_tracks = get_video_track_names(current_sequence)
+        else:
+            gui_tracks = []
+
+        # Project settings might be applied to this creator via
+        # the inherited `Creator.apply_settings`
+        presets = self.presets
+
+        return [
+
+            BoolDef("use_selection",
+                    label="Use only selected clip(s).",
+                    tooltip=(
+                        "When enabled it restricts create process "
+                        "to selected clips."
+                    ),
+                    default=True),
+
+            # renameHierarchy
+            UILabelDef(
+                label=header_label("Shot Hierarchy And Rename Settings")
+            ),
+            TextDef(
+                "hierarchy",
+                label="Shot Parent Hierarchy",
+                tooltip="Parents folder for shot root folder, "
+                        "Template filled with *Hierarchy Data* section",
+                default=presets.get("hierarchy", "{folder}/{sequence}"),
+            ),
+            BoolDef(
+                "useShotName",
+                label="Use shot name",
+                tooltip="Use name form Shot name clip attribute.",
+                default=presets.get("useShotName", True),
+            ),            
+            BoolDef(
+                "clipRename",
+                label="Rename clips",
+                tooltip="Renaming selected clips on fly",
+                default=presets.get("clipRename", False),
+            ),
+            TextDef(
+                "clipName",
+                label="Clip Name Template",
+                tooltip="template for creating shot names, used for "
+                        "renaming (use rename: on)",
+                default=presets.get("clipName", "{sequence}{shot}"),
+            ),
+            BoolDef(
+                "segmentIndex",
+                label="Segment Index",
+                tooltip="Take number from segment index",
+                default=True,
+            ),            
+            NumberDef(
+                "countFrom",
+                label="Count sequence from",
+                tooltip="Set where the sequence number starts from",
+                default=presets.get("countFrom", 10),
+            ),
+            NumberDef(
+                "countSteps",
+                label="Stepping number",
+                tooltip="What number is adding every new step",
+                default=presets.get("countSteps", 10),
+            ),
+
+            # hierarchyData
+            UILabelDef(
+                label=header_label("Shot Template Keywords")
+            ),
+            TextDef(
+                "folder",
+                label="{folder}",
+                tooltip="Name of folder used for root of generated shots.\n"
+                        f"{tokens_help}",
+                default=presets.get("folder", "shots"),
+            ),
+            TextDef(
+                "episode",
+                label="{episode}",
+                tooltip=f"Name of episode.\n{tokens_help}",
+                default=presets.get("episode", "ep01"),
+            ),
+            TextDef(
+                "sequence",
+                label="{sequence}",
+                tooltip=f"Name of sequence of shots.\n{tokens_help}",
+                default=presets.get("sequence", "sq01"),
+            ),
+            TextDef(
+                "track",
+                label="{track}",
+                tooltip=f"Name of timeline track.\n{tokens_help}",
+                default=presets.get("track", "{_track_}"),
+            ),
+            TextDef(
+                "shot",
+                label="{shot}",
+                tooltip="Name of shot. '#' is converted to padded number."
+                        f"\n{tokens_help}",
+                default=presets.get("shot", "sh###"),
+            ),
+
+            # verticalSync
+            UILabelDef(
+                label=header_label("Vertical Synchronization Of Attributes")
+            ),
+            BoolDef(
+                "vSyncOn",
+                label="Enable Vertical Sync",
+                tooltip="Switch on if you want clips above "
+                        "each other to share its attributes",
+                default=presets.get("vSyncOn", True),
+            ),
+            EnumDef(
+                "vSyncTrack",
+                label="Hero track",
+                tooltip="Select driving track name which should "
+                        "be mastering all others",
+                items=gui_tracks or ["<nothing to select>"],
+            ),
+
+            # publishSettings
+            UILabelDef(
+                label=header_label("Publish Settings")
+            ),
+            EnumDef(
+                "clip_variant",
+                label="Product Variant",
+                tooltip="Chose variant which will be then used for "
+                        "product name, if <track_name> "
+                        "is selected, name of track layer will be used",
+                items=['<track_name>', 'main', 'bg', 'fg', 'bg', 'animatic'],
+            ),
+            EnumDef(
+                "productType",
+                label="Product Type",
+                tooltip="How the product will be used",
+                items=['plate', 'take'],
+            ),
+            EnumDef(
+                "reviewTrack",
+                label="Use Review Track",
+                tooltip="Generate preview videos on fly, if "
+                        "'< none >' is defined nothing will be generated.",
+                items=['< none >'] + gui_tracks,
+            ),
+            BoolDef(
+                "export_audio",
+                label="Include audio",
+                tooltip="Process subsets with corresponding audio",
+                default=False,
+            ),
+            BoolDef(
+                "sourceResolution",
+                label="Source resolution",
+                tooltip="Is resloution taken from timeline or source?",
+                default=False,
+            ),
+
+            # shotAttr
+            UILabelDef(
+                label=header_label("Shot Attributes"),
+            ),
+            NumberDef(
+                "workfileFrameStart",
+                label="Workfiles Start Frame",
+                tooltip="Set workfile starting frame number",
+                default=presets.get("workfileFrameStart", 1001),
+            ),
+            NumberDef(
+                "handleStart",
+                label="Handle start (head)",
+                tooltip="Handle at start of clip",
+                default=presets.get("handleStart", 0),
+            ),
+            NumberDef(
+                "handleEnd",
+                label="Handle end (tail)",
+                tooltip="Handle at end of clip",
+                default=presets.get("handleEnd", 0),
+            ),
+            BoolDef(
+                "includeHandles",
+                label="Include handles",
+                tooltip="Should the handles be included?",
+                default=False,
+            ),
+            BoolDef(
+                "retimedHandles",
+                label="Retimed handles",
+                tooltip="Should the handles be retimed?",
+                default=True,
+            ),
+            BoolDef(
+                "retimedFramerange",
+                label="Retimed framerange",
+                tooltip="Should the framerange be retimed?",
+                default=True,
+            ),
+        ]
+
+
+    def create(self, subset_name, instance_data, pre_create_data):
+        super(CreateShotClip, self).create(subset_name,
+                                           instance_data,
+                                           pre_create_data)
 
         if len(self.selected) < 1:
             return
 
-        if not results_back:
-            print("Operation aborted")
-            return
+        self.log.info(self.selected)
+        self.log.debug(f"Selected: {self.selected}")
 
-        # get ui output for track name for vertical sync
-        v_sync_track = results_back["vSyncTrack"]["value"]
+        audio_clips = []
+        for audio_track in self.sequence.audio_tracks:
+            audio_clips.append(audio_track.segments)
+
+        if not any(audio_clips) and pre_create_data.get("export_audio"):
+            raise CreatorError(
+                "You must have audio in your active "
+                "timeline in order to export audio."
+            )
+
+        instance_data.update(pre_create_data)
+        instance_data["task"] = None
+
+        # sort selected trackItems by
+        sorted_selected_segments = list()
+        unsorted_selected_segments = list()
+        v_sync_track = pre_create_data.get("vSyncTrack", "")
 
         # sort selected trackItems by
         sorted_selected_segments = []
@@ -58,250 +538,278 @@ class CreateShotClip(ayfapi.Creator):
 
         sorted_selected_segments.extend(unsorted_selected_segments)
 
-        kwargs = {
-            "log": self.log,
-            "ui_inputs": results_back,
-            "basicProductData": self.data,
-            "productType": self.data["productType"]
+        # detect enabled creators for review, plate and audio
+        all_creators = {
+            "io.ayon.creators.flame.shot": True,
+            "io.ayon.creators.flame.plate": True,
+            "io.ayon.creators.flame.audio": pre_create_data.get("export_audio", False),
         }
+        enabled_creators = tuple(cre for cre, enabled in all_creators.items() if enabled)
 
-        for i, segment in enumerate(sorted_selected_segments):
-            kwargs["rename_index"] = i
+        instances = []
+
+        for idx, segment in enumerate(sorted_selected_segments):
+
+            clip_index = str(uuid.uuid4())
+            instance_data["clip_index"] = clip_index
+
             # convert track item to timeline media pool item
-            ayfapi.PublishableClip(segment, **kwargs).convert()
+            publish_clip = ayfapi.PublishableClip(
+                segment,
+                log=self.log,
+                ui_inputs=instance_data,
+                productType=self.product_type,
+                rename_index=idx,
+            )
 
-    def get_gui_inputs(self):
-        gui_tracks = self._get_video_track_names(
-            ayfapi.get_current_sequence(ayfapi.CTX.selection)
-        )
-        return deepcopy({
-            "renameHierarchy": {
-                "type": "section",
-                "label": "Shot Hierarchy And Rename Settings",
-                "target": "ui",
-                "order": 0,
-                "value": {
-                    "hierarchy": {
-                        "value": "{folder}/{sequence}",
-                        "type": "QLineEdit",
-                        "label": "Shot Parent Hierarchy",
-                        "target": "tag",
-                        "toolTip": "Parents folder for shot root folder, Template filled with `Hierarchy Data` section",  # noqa
-                        "order": 0},
-                    "useShotName": {
-                        "value": True,
-                        "type": "QCheckBox",
-                        "label": "Use Shot Name",
-                        "target": "ui",
-                        "toolTip": "Use name form Shot name clip attribute",  # noqa
-                        "order": 1},
-                    "clipRename": {
-                        "value": False,
-                        "type": "QCheckBox",
-                        "label": "Rename clips",
-                        "target": "ui",
-                        "toolTip": "Renaming selected clips on fly",  # noqa
-                        "order": 2},
-                    "clipName": {
-                        "value": "{sequence}{shot}",
-                        "type": "QLineEdit",
-                        "label": "Clip Name Template",
-                        "target": "ui",
-                        "toolTip": "template for creating shot namespaused for renaming (use rename: on)",  # noqa
-                        "order": 3},
-                    "segmentIndex": {
-                        "value": True,
-                        "type": "QCheckBox",
-                        "label": "Segment index",
-                        "target": "ui",
-                        "toolTip": "Take number from segment index",  # noqa
-                        "order": 4},
-                    "countFrom": {
-                        "value": 10,
-                        "type": "QSpinBox",
-                        "label": "Count sequence from",
-                        "target": "ui",
-                        "toolTip": "Set when the sequence number stafrom",  # noqa
-                        "order": 5},
-                    "countSteps": {
-                        "value": 10,
-                        "type": "QSpinBox",
-                        "label": "Stepping number",
-                        "target": "ui",
-                        "toolTip": "What number is adding every new step",  # noqa
-                        "order": 6},
+            segment = publish_clip.convert()
+            if segment is None:
+                # Ignore input clips that do not convert into a track item
+                # from `PublishableClip.convert`
+                continue
+
+            instance_data.update(publish_clip.marker_data)
+            self.log.info(
+                "Processing track item data: {} (index: {})".format(
+                    segment, idx)
+            )
+
+            # Delete any existing instances previously generated for the clip.
+            prev_tag_data = lib.get_segment_data_marker(segment)
+            if prev_tag_data:
+                for creator_id, inst_data in prev_tag_data.get(_CONTENT_ID, {}).items():
+                    creator = self.create_context.creators[creator_id]
+                    prev_instances = [
+                        inst for inst_id, inst
+                        in self.create_context.instances_by_id.items()
+                        if inst_id == inst_data["instance_id"]
+                    ]
+                    creator.remove_instances(prev_instances)
+
+            # Create new product(s) instances.
+            clip_instances = {}
+            shot_creator_id = "io.ayon.creators.flame.shot"
+            for creator_id in enabled_creators:
+                creator = self.create_context.creators[creator_id]
+                sub_instance_data = deepcopy(instance_data)
+                shot_folder_path = sub_instance_data["folderPath"]
+
+                # Shot creation
+                if creator_id == shot_creator_id:
+                    segment_data = flame_export.get_segment_attributes(segment)
+                    segment_duration = int(segment_data["record_duration"])
+                    workfileFrameStart = \
+                        sub_instance_data["workfileFrameStart"]
+                    sub_instance_data.update({
+                        "creator_attributes": {
+                            "workfileFrameStart": \
+                                sub_instance_data["workfileFrameStart"],
+                            "handleStart": sub_instance_data["handleStart"],
+                            "handleEnd": sub_instance_data["handleEnd"],
+                            "frameStart": workfileFrameStart,
+                            "frameEnd": (workfileFrameStart +
+                                segment_duration),
+                            "clipIn": int(segment_data["record_in"]),
+                            "clipIn": int(segment_data["record_out"]),
+                            "clipDuration": segment_duration,
+                            "sourceIn": int(segment_data["source_in"]),
+                            "sourceOut": int(segment_data["source_out"]),
+                            "includeHandles": pre_create_data["includeHandles"],
+                            "retimedHandles": pre_create_data["retimedHandles"],
+                            "retimedFramerange": pre_create_data["retimedFramerange"],                         
+                        },
+                        "label": (
+                            f"{shot_folder_path} shot"
+                        ),
+                    })
+
+                # Plate, Audio
+                # insert parent instance data to allow
+                # metadata recollection as publish time.
+                else:
+                    parenting_data = clip_instances[shot_creator_id]
+                    sub_instance_data.update({
+                        "parent_instance_id": parenting_data["instance_id"],
+                        "label": (
+                            f"{shot_folder_path} "
+                            f"{creator.product_type}"
+                        ),
+                        "creator_attributes": {
+                            "parentInstance": parenting_data["label"],
+                        }
+                    })
+
+                instance = creator.create(sub_instance_data, None)
+                instance.transient_data["segment_item"] = segment
+                self._add_instance_to_context(instance)
+                clip_instances[creator_id] = instance.data_to_store()
+
+            pipeline.imprint(
+                segment,
+                data={
+                    _CONTENT_ID: clip_instances,
+                    "clip_index": clip_index,
                 }
+            )
+            instances.append(instance)
+
+        return instances
+
+    def _create_and_add_instance(self, data, creator_id,
+            segment, instances):
+        """
+        Args:
+            data (dict): The data to re-recreate the instance from.
+            creator_id (str): The creator id to use.
+            segment (obj): The associated segment item.
+            instances (list): Result instance container.
+
+        Returns:
+            CreatedInstance: The newly created instance.
+        """
+        creator = self.create_context.creators[creator_id]
+        instance = creator.create(data, None)
+        instance.transient_data["segment_item"] = segment
+        self._add_instance_to_context(instance)
+        instances.append(instance)
+        return instance
+
+    def _collect_legacy_instance(self, segment, marker_data):
+        """ Create some instances from legacy marker data.
+
+        Args:
+            segment (object): The segment associated to the marker.
+            marker_data (dict): The marker data.
+
+        Returns:
+            list. All of the created legacy instances.
+        """
+        instance_data = marker_data
+        instance_data["task"] = None
+
+        clip_index = str(uuid.uuid4())
+        instance_data["clip_index"] = clip_index
+        clip_instances = {}
+
+        # Create parent shot instance.
+        sub_instance_data = instance_data.copy()
+        segment_data = flame_export.get_segment_attributes(segment)
+        segment_duration = int(segment_data["record_duration"])
+        workfileFrameStart = \
+            sub_instance_data["workfileFrameStart"]
+        sub_instance_data.update({
+            "creator_attributes": {
+                "workfileFrameStart": \
+                    sub_instance_data["workfileFrameStart"],
+                "handleStart": sub_instance_data["handleStart"],
+                "handleEnd": sub_instance_data["handleEnd"],
+                "frameStart": workfileFrameStart,
+                "frameEnd": (workfileFrameStart +
+                    segment_duration),
+                "clipIn": int(segment_data["record_in"]),
+                "clipIn": int(segment_data["record_out"]),
+                "clipDuration": segment_duration,
+                "sourceIn": int(segment_data["source_in"]),
+                "sourceOut": int(segment_data["source_out"]),
+                "includeHandles": sub_instance_data["includeHandles"],
+                "retimedHandles": sub_instance_data["retimedHandles"],
+                "retimedFramerange": sub_instance_data["retimedFramerange"],                         
             },
-            "hierarchyData": {
-                "type": "dict",
-                "label": "Shot Template Keywords",
-                "target": "tag",
-                "order": 1,
-                "value": {
-                    "folder": {
-                        "value": "shots",
-                        "type": "QLineEdit",
-                        "label": "{folder}",
-                        "target": "tag",
-                        "toolTip": "Name of folder used for root of generated shots.\nUsable tokens:\n\t{_clip_}: name of used clip\n\t{_track_}: name of parent track layer\n\t{_sequence_}: name of parent sequence (timeline)",  # noqa
-                        "order": 0},
-                    "episode": {
-                        "value": "ep01",
-                        "type": "QLineEdit",
-                        "label": "{episode}",
-                        "target": "tag",
-                        "toolTip": "Name of episode.\nUsable tokens:\n\t{_clip_}: name of used clip\n\t{_track_}: name of parent track layer\n\t{_sequence_}: name of parent sequence (timeline)",  # noqa
-                        "order": 1},
-                    "sequence": {
-                        "value": "sq01",
-                        "type": "QLineEdit",
-                        "label": "{sequence}",
-                        "target": "tag",
-                        "toolTip": "Name of sequence of shots.\nUsable tokens:\n\t{_clip_}: name of used clip\n\t{_track_}: name of parent track layer\n\t{_sequence_}: name of parent sequence (timeline)",  # noqa
-                        "order": 2},
-                    "track": {
-                        "value": "{_track_}",
-                        "type": "QLineEdit",
-                        "label": "{track}",
-                        "target": "tag",
-                        "toolTip": "Name of sequence of shots.\nUsable tokens:\n\t{_clip_}: name of used clip\n\t{_track_}: name of parent track layer\n\t{_sequence_}: name of parent sequence (timeline)",  # noqa
-                        "order": 3},
-                    "shot": {
-                        "value": "sh###",
-                        "type": "QLineEdit",
-                        "label": "{shot}",
-                        "target": "tag",
-                        "toolTip": "Name of shot. `#` is converted to paded number. \nAlso could be used with usable tokens:\n\t{_clip_}: name of used clip\n\t{_track_}: name of parent track layer\n\t{_sequence_}: name of parent sequence (timeline)",  # noqa
-                        "order": 4}
-                }
-            },
-            "verticalSync": {
-                "type": "section",
-                "label": "Vertical Synchronization Of Attributes",
-                "target": "ui",
-                "order": 2,
-                "value": {
-                    "vSyncOn": {
-                        "value": True,
-                        "type": "QCheckBox",
-                        "label": "Enable Vertical Sync",
-                        "target": "ui",
-                        "toolTip": "Switch on if you want clips above each other to share its attributes",  # noqa
-                        "order": 0},
-                    "vSyncTrack": {
-                        "value": gui_tracks,  # noqa
-                        "type": "QComboBox",
-                        "label": "Hero track",
-                        "target": "ui",
-                        "toolTip": "Select driving track name which should be hero for all others",  # noqa
-                        "order": 1}
-                }
-            },
-            "publishSettings": {
-                "type": "section",
-                "label": "Publish Settings",
-                "target": "ui",
-                "order": 3,
-                "value": {
-                    "productName": {
-                        "value": ["[ track name ]", "main", "bg", "fg", "bg",
-                                "animatic"],
-                        "type": "QComboBox",
-                        "label": "Product Name",
-                        "target": "ui",
-                        "toolTip": "chose product name pattern, if [ track name ] is selected, name of track layer will be used",  # noqa
-                        "order": 0},
-                    "productType": {
-                        "value": ["plate", "take"],
-                        "type": "QComboBox",
-                        "label": "Product Type",
-                        "target": "ui", "toolTip": "What use of this product is for",  # noqa
-                        "order": 1},
-                    "reviewTrack": {
-                        "value": ["< none >"] + gui_tracks,
-                        "type": "QComboBox",
-                        "label": "Use Review Track",
-                        "target": "ui",
-                        "toolTip": "Generate preview videos on fly, if `< none >` is defined nothing will be generated.",  # noqa
-                        "order": 2},
-                    "audio": {
-                        "value": False,
-                        "type": "QCheckBox",
-                        "label": "Include audio",
-                        "target": "tag",
-                        "toolTip": "Process products with corresponding audio",  # noqa
-                        "order": 3},
-                    "sourceResolution": {
-                        "value": False,
-                        "type": "QCheckBox",
-                        "label": "Source resolution",
-                        "target": "tag",
-                        "toolTip": "Is resolution taken from timeline or source?",  # noqa
-                        "order": 4},
-                }
-            },
-            "frameRangeAttr": {
-                "type": "section",
-                "label": "Shot Attributes",
-                "target": "ui",
-                "order": 4,
-                "value": {
-                    "workfileFrameStart": {
-                        "value": 1001,
-                        "type": "QSpinBox",
-                        "label": "Workfiles Start Frame",
-                        "target": "tag",
-                        "toolTip": "Set workfile starting frame number",  # noqa
-                        "order": 0
-                    },
-                    "handleStart": {
-                        "value": 0,
-                        "type": "QSpinBox",
-                        "label": "Handle Start",
-                        "target": "tag",
-                        "toolTip": "Handle at start of clip",  # noqa
-                        "order": 1
-                    },
-                    "handleEnd": {
-                        "value": 0,
-                        "type": "QSpinBox",
-                        "label": "Handle End",
-                        "target": "tag",
-                        "toolTip": "Handle at end of clip",  # noqa
-                        "order": 2
-                    },
-                    "includeHandles": {
-                        "value": False,
-                        "type": "QCheckBox",
-                        "label": "Include handles",
-                        "target": "tag",
-                        "toolTip": "By default handles are excluded",  # noqa
-                        "order": 3
-                    },
-                    "retimedHandles": {
-                        "value": True,
-                        "type": "QCheckBox",
-                        "label": "Retimed handles",
-                        "target": "tag",
-                        "toolTip": "By default handles are retimed.",  # noqa
-                        "order": 4
-                    },
-                    "retimedFramerange": {
-                        "value": True,
-                        "type": "QCheckBox",
-                        "label": "Retimed framerange",
-                        "target": "tag",
-                        "toolTip": "By default framerange is retimed.",  # noqa
-                        "order": 5
-                    }
-                }
-            }
+            "label": (
+                f"{sub_instance_data['folderPath']} shot"
+            ),
         })
 
-    def _get_video_track_names(self, sequence):
-        track_names = []
-        for ver in sequence.versions:
-            for track in ver.tracks:
-                track_names.append(track.name.get_value())
+        shot_creator_id = "io.ayon.creators.flame.shot"
+        creator = self.create_context.creators[shot_creator_id]
+        instance = creator.create(sub_instance_data, None)
+        instance.transient_data["segment_item"] = segment
+        self._add_instance_to_context(instance)
+        clip_instances[shot_creator_id] = instance.data_to_store()
+        parenting_data = instance
 
-        return track_names
+        # Create plate/audio instance
+        if instance_data["audio"]:
+            sub_creators = (
+                "io.ayon.creators.flame.plate",
+                "io.ayon.creators.flame.audio"
+            )
+        else:
+            sub_creators = ("io.ayon.creators.flame.plate",)
+
+        for sub_creator_id in sub_creators:
+            sub_instance_data = instance_data.copy()
+            creator = self.create_context.creators[sub_creator_id]
+            sub_instance_data.update({
+                "clip_variant": sub_instance_data["variant"],
+                "parent_instance_id": parenting_data["instance_id"],
+                "label": (
+                    f"{sub_instance_data['folderPath']} "
+                    f"{creator.product_type}"
+                ),
+                "creator_attributes": {
+                    "parentInstance": parenting_data["label"],
+                }
+            })
+
+            instance = creator.create(sub_instance_data, None)
+            instance.transient_data["segment_item"] = segment
+            self._add_instance_to_context(instance)
+            clip_instances[sub_creator_id] = instance.data_to_store()
+
+        # Adjust clip tag to match new publisher
+        pipeline.imprint(
+            segment,
+            data={
+                _CONTENT_ID: clip_instances,
+                "clip_index": clip_index,
+            }
+        )
+        return clip_instances.values()
+
+    def collect_instances(self):
+        """Collect all created instances from current timeline."""        
+        current_sequence = lib.get_current_sequence(lib.CTX.selection)
+
+        for segment in lib.get_sequence_segments(current_sequence):
+            instances = []
+
+            # attempt to get AYON tag data
+            marker_data = lib.get_segment_data_marker(segment)
+            if not marker_data:
+                continue
+
+            if _CONTENT_ID in marker_data:
+                for creator_id, data in marker_data[_CONTENT_ID].items():
+                    self._create_and_add_instance(
+                        data, creator_id, segment, instances)
+
+            else:
+                instances.extend(self._collect_legacy_instance(segment, marker_data))
+
+        return instances
+
+    def update_instances(self, update_list):
+        """Never called, update is handled via _FlameInstanceCreator."""
+        pass
+
+    def remove_instances(self, instances):
+        """Never called, update is handled via _FlameInstanceCreator."""
+        pass
+
+
+def get_video_track_names(sequence):
+    """ Get video track names.
+
+    Args:
+        sequence (object): The sequence object.
+
+    Returns:
+        list. The track names.
+    """
+    track_names = []
+    for ver in sequence.versions:
+        for track in ver.tracks:
+            track_names.append(track.name.get_value())
+
+    return track_names

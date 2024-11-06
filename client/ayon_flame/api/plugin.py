@@ -347,7 +347,7 @@ class FlameCreator(CoreCreator):
     settings_category = "flame"
 
     def __init__(self, *args, **kwargs):
-        super(Creator, self).__init__(*args, **kwargs)
+        super(CoreCreator, self).__init__(*args, **kwargs)
         self.presets = get_current_project_settings()[
             "flame"]["create"].get(self.__class__.__name__, {})
 
@@ -500,9 +500,6 @@ class PublishableClip:
         else:
             self.marker_data["reviewTrack"] = None
 
-        # create pype tag on track_item and add data
-        fpipeline.imprint(self.current_segment, self.marker_data)
-
         return self.current_segment
 
     def _populate_segment_default_data(self):
@@ -530,42 +527,39 @@ class PublishableClip:
 
         # ui_inputs data or default values if gui was not used
         self.rename = self.ui_inputs.get(
-            "clipRename", {}).get("value") or self.rename_default
+            "clipRename") or self.rename_default
         self.use_shot_name = self.ui_inputs.get(
-            "useShotName", {}).get("value") or self.use_shot_name_default
+            "useShotName") or self.use_shot_name_default
         self.clip_name = self.ui_inputs.get(
-            "clipName", {}).get("value") or self.clip_name_default
+            "clipName") or self.clip_name_default
         self.hierarchy = self.ui_inputs.get(
-            "hierarchy", {}).get("value") or self.hierarchy_default
+            "hierarchy") or self.hierarchy_default
         self.hierarchy_data = self.ui_inputs.get(
-            "hierarchyData", {}).get("value") or \
-            self.current_segment_default_data.copy()
+            "hierarchyData") or self.current_segment_default_data.copy()
         self.index_from_segment = self.ui_inputs.get(
-            "segmentIndex", {}).get("value") or self.index_from_segment_default
+            "segmentIndex") or self.index_from_segment_default
         self.count_from = self.ui_inputs.get(
-            "countFrom", {}).get("value") or self.count_from_default
+            "countFrom") or self.count_from_default
         self.count_steps = self.ui_inputs.get(
-            "countSteps", {}).get("value") or self.count_steps_default
+            "countSteps") or self.count_steps_default
         self.base_product_name = self.ui_inputs.get(
-            "productName", {}).get("value") or self.base_product_name_default
-        self.base_product_type = self.ui_inputs.get(
-            "productType", {}).get("value") or self.base_product_type_default
+            "productName") or self.base_product_name_default
+        self.base_product_type = self.product_type
         self.vertical_sync = self.ui_inputs.get(
-            "vSyncOn", {}).get("value") or self.vertical_sync_default
+            "vSyncOn") or self.vertical_sync_default
         self.driving_layer = self.ui_inputs.get(
-            "vSyncTrack", {}).get("value") or self.driving_layer_default
+            "vSyncTrack") or self.driving_layer_default
         self.review_track = self.ui_inputs.get(
-            "reviewTrack", {}).get("value") or self.review_track_default
-        self.audio = self.ui_inputs.get(
-            "audio", {}).get("value") or False
+            "reviewTrack") or self.review_track_default
+        self.audio = self.ui_inputs.get("audio") or False
         self.include_handles = self.ui_inputs.get(
-            "includeHandles", {}).get("value") or self.include_handles_default
+            "includeHandles") or self.include_handles_default
         self.retimed_handles = (
-            self.ui_inputs.get("retimedHandles", {}).get("value")
+            self.ui_inputs.get("retimedHandles")
             or self.retimed_handles_default
         )
         self.retimed_framerange = (
-            self.ui_inputs.get("retimedFramerange", {}).get("value")
+            self.ui_inputs.get("retimedFramerange")
             or self.retimed_framerange_default
         )
 
@@ -577,6 +571,12 @@ class PublishableClip:
         self.product_name = (
             self.base_product_type + self.base_product_name.capitalize()
         )
+
+        self.hierarchy_data = {
+            key: self.ui_inputs.get(key)
+            for key in ["folder", "episode", "sequence", "track", "shot"]
+        }
+
 
     def _replace_hash_to_expression(self, name, text):
         """ Replace hash with number in correct padding. """
@@ -605,10 +605,7 @@ class PublishableClip:
         hierarchy_data = deepcopy(self.hierarchy_data)
         _data = self.current_segment_default_data.copy()
         if self.ui_inputs:
-            # adding tag metadata from ui
-            for _k, _v in self.ui_inputs.items():
-                if _v["target"] == "tag":
-                    self.marker_data[_k] = _v["value"]
+            self.marker_data.update(self.ui_inputs)
 
             # driving layer is set as positive match
             if hero_track or self.vertical_sync:
@@ -633,15 +630,13 @@ class PublishableClip:
 
             # solve # in test to pythonic expression
             for _k, _v in hierarchy_data.items():
-                if "#" not in _v["value"]:
+                if "#" not in _v:
                     continue
-                hierarchy_data[
-                    _k]["value"] = self._replace_hash_to_expression(
-                        _k, _v["value"])
+                hierarchy_data[_k] = self._replace_hash_to_expression(_k, _v)
 
             # fill up pythonic expresisons in hierarchy data
             for k, _v in hierarchy_data.items():
-                hierarchy_formatting_data[k] = _v["value"].format(**_data)
+                hierarchy_formatting_data[k] = str(_v).format(**_data)
         else:
             # if no gui mode then just pass default data
             hierarchy_formatting_data = hierarchy_data
@@ -715,7 +710,7 @@ class PublishableClip:
         # first collect formatting data to use for formatting template
         formatting_data = {}
         for _k, _v in self.hierarchy_data.items():
-            value = _v["value"].format(
+            value = str(_v).format(
                 **self.current_segment_default_data)
             formatting_data[_k] = value
 
