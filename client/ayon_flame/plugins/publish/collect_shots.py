@@ -1,4 +1,5 @@
 import pyblish
+import re
 
 import ayon_flame.api as ayfapi
 from ayon_flame.otio import flame_export
@@ -85,7 +86,6 @@ class CollectShot(pyblish.api.InstancePlugin):
 
         # Retrieve AyonData marker for associated clip.
         instance.data["otioClip"] = otio_clip
-        creator_id = instance.data["creator_identifier"]
 
         # Compute additional data
         for segment_item in instance.context.data["flameSelectedSegments"]:
@@ -106,6 +106,7 @@ class CollectShot(pyblish.api.InstancePlugin):
 
         # Adjust info from track_item on timeline
         marker_metadata = marker.metadata
+        #creator_id = instance.data["creator_identifier"]
         workfile_start = self._set_workfile_start(marker_metadata)  #TODO investigate
 
         instance.data.update({
