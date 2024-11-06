@@ -610,7 +610,7 @@ OTIO file.
                             "frameEnd": (workfileFrameStart +
                                 segment_duration),
                             "clipIn": int(segment_data["record_in"]),
-                            "clipIn": int(segment_data["record_out"]),
+                            "clipOut": int(segment_data["record_out"]),
                             "clipDuration": segment_duration,
                             "sourceIn": int(segment_data["source_in"]),
                             "sourceOut": int(segment_data["source_out"]),
@@ -707,7 +707,7 @@ OTIO file.
                 "frameEnd": (workfileFrameStart +
                     segment_duration),
                 "clipIn": int(segment_data["record_in"]),
-                "clipIn": int(segment_data["record_out"]),
+                "clipOut": int(segment_data["record_out"]),
                 "clipDuration": segment_duration,
                 "sourceIn": int(segment_data["source_in"]),
                 "sourceOut": int(segment_data["source_out"]),

@@ -16,7 +16,6 @@ from ayon_core.settings import get_current_project_settings
 
 from . import constants
 from . import lib as flib
-from . import pipeline as fpipeline
 
 log = Logger.get_logger(__name__)
 

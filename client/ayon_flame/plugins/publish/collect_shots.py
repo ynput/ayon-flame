@@ -1,8 +1,11 @@
-import json
 import pyblish
 
 import ayon_flame.api as ayfapi
 from ayon_flame.otio import flame_export
+
+# constatns
+NUM_PATERN = re.compile(r"([0-9\.]+)")
+TXT_PATERN = re.compile(r"([a-zA-Z]+)")
 
 
 class CollectShot(pyblish.api.InstancePlugin):
@@ -84,9 +87,6 @@ class CollectShot(pyblish.api.InstancePlugin):
         instance.data["otioClip"] = otio_clip
         creator_id = instance.data["creator_identifier"]
 
-        marker_metadata = marker.metadata
-        inst_data = marker_metadata["flame_sub_products"].get(creator_id, {})
-
         # Compute additional data
         for segment_item in instance.context.data["flameSelectedSegments"]:
             data = ayfapi.get_segment_data_marker(segment_item) or {}
@@ -105,7 +105,8 @@ class CollectShot(pyblish.api.InstancePlugin):
         first_frame = ayfapi.get_frame_from_filename(file_path) or 0
 
         # Adjust info from track_item on timeline
-        workfile_start = self._set_workfile_start(marker_metadata)
+        marker_metadata = marker.metadata
+        workfile_start = self._set_workfile_start(marker_metadata)  #TODO investigate
 
         instance.data.update({
             "item": segment_item,
