@@ -659,9 +659,17 @@ class PublishableClip:
                 # in case track clip product name had been already used
                 # then add product name with clip index
                 if clip_product_name in used_names_list:
-                    clip_product_name = (
+                    _clip_product_name = (
                         f"{clip_product_name}{self.cs_index}"
                     )
+                    # just in case lets validate if new name is not used
+                    # in case the track_index is the same as clip_index
+                    if _clip_product_name in used_names_list:
+                        _clip_product_name = (
+                            f"{clip_product_name}"
+                            f"{self.track_index}{self.cs_index}"
+                        )
+                    clip_product_name = _clip_product_name
 
                 self.log.debug(
                     f">> clip_product_name: {clip_product_name}")
