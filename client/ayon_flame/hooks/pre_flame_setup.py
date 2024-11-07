@@ -44,7 +44,7 @@ class FlamePrelaunch(PreLaunchHook):
         self.flame_python_exe = _env["AYON_FLAME_PYTHON_EXEC"]
 
         # add it to data for other hooks
-        self.data["fusion_python_executable"] = self.flame_python_exe
+        self.data["flame_python_executable"] = self.flame_python_exe
 
         self.flame_pythonpath = _env["AYON_FLAME_PYTHONPATH"]
 
