@@ -652,7 +652,7 @@ class PublishableClip:
                 # add track index in case duplicity of names in hero data
                 # INFO: this is for case where hero clip product name
                 #    is the same as current clip product name
-                if clip_product_name in data_product_name:
+                if clip_product_name == data_product_name:
                     clip_product_name = (
                         f"{clip_product_name}{self.track_index}")
 
