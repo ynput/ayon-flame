@@ -31,57 +31,36 @@ class CreateWorkfile(AutoCreator):
     # https://forums.autodesk.com/t5/flame-forum/store-persistent-variable-with-flame-project/td-p/9437717
     _METADATA_KEY = "Nickname"
 
-    # https://help.autodesk.com/view/FLAME/2025/ENU/?guid=Flame_API_Wiretap_SDK_FAQs_and_Troubleshooting_General_API_html
-    _wiretap_client = None
-    _server = None
-
-    def __init__(
-        self, project_settings, create_context, headless=False
-    ):
-        super().__init__(
-            project_settings, create_context, headless=headless,
-        )
-        self._wiretap_client = WireTapClient()
-        wiretap_client.init()
-        self._server = WireTapServerHandle("localhost:IFFFS")
-
-    def __del__(self):
-        """ Explicit delete for workfile AutoCreator.
-        """
-        # Force wiretap disconnect to avoid hanging connection.
-        self.server.disconnect()
-
-        del self.server
-        del self._wiretap_client
-
-        self._server = None
-        self._wiretap_client = None
-
-    @classmethod
-    def _get_project_metadata_handle(cls):
+    def _get_project_metadata_handle(self):
         """ Initialize project metadata setup.
 
         Returns:
             object. Flame wiretap handle for current project
         """
+        wiretap_client = WireTapClient()
+        wiretap_client.init()
+
         current_project = flapi.get_current_project()
         project_node_handle = WireTapNodeHandle(server, f"/projects/{current_project.name}")
-        return project_node_handle
+        return wiretap_client, project_node_handle
 
-    @classmethod
-    def _get_project_metadata(cls):
+    def _get_project_metadata(self):
         """ Returns the metadata stored at current project.
 
         Returns:
             xml.etree.ElementTree. The project metadata data.
         """
-        project_node_handle = cls._get_project_metadata_handle()
+        client, handle = self._get_project_metadata_handle()
         metadata = WireTapStr()
-        project_node_handle.getMetaData("XML", "", 1, metadata)
+        handle.getMetaData("XML", "", 1, metadata)
+
+        handle.disconnect()
+        del client
+        del handle
+
         return ET.fromstring(metadata.c_str())
 
-    @classmethod
-    def _dump_instance_data(cls, data):
+    def _dump_instance_data(self, data):
         """ Dump instance data into AyonData project tag.
 
         Args:
@@ -90,24 +69,29 @@ class CreateWorkfile(AutoCreator):
         Returns:
             bool. Has the metadata been updated.
         """
-        metadata = cls._get_project_metadata()
-        nickname_entry, = metadata.findall(cls._METADATA_KEY)
+        metadata = self._get_project_metadata()
+        nickname_entry, = metadata.findall(self._METADATA_KEY)
         nickname_entry.text = json.dumps(data)
         updated = ET.tostring(metadata, encoding='unicode')
 
-        project_node_handle = cls._get_project_metadata_handle()
+        project_node_handle = self._get_project_metadata_handle()
         new_metadata = WireTapStr(updated)
-        return project_node_handle.setMetaData("XML", new_metadata.c_str())
+        ok = project_node_handle.setMetaData("XML", new_metadata.c_str())
 
-    @classmethod
-    def _load_instance_data(cls):
+        handle.disconnect()
+        del client
+        del handle
+
+        return ok
+
+    def _load_instance_data(self):
         """ Returns the data stored in AyonData project tag if any.
 
         Returns:
             dict. The metadata instance data.
         """
-        metadata = cls._get_project_metadata()
-        nickname_entry, = metadata.findall(cls._METADATA_KEY)
+        metadata = self._get_project_metadata()
+        nickname_entry, = metadata.findall(self._METADATA_KEY)
         try:
                 return json.loads(nickname_entry.text)
         except json.JSONDecodeError:
