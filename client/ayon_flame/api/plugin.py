@@ -10,7 +10,7 @@ from qtpy import QtCore, QtWidgets
 from ayon_core import style
 from ayon_core.lib import Logger, StringTemplate
 from ayon_core.pipeline import LegacyCreator, LoaderPlugin, HiddenCreator
-from ayon_core.pipeline import Creator as CoreCreator
+from ayon_core.pipeline import Creator
 from ayon_core.pipeline.colorspace import get_remapped_colorspace_to_native
 from ayon_core.settings import get_current_project_settings
 
@@ -35,13 +35,13 @@ class HiddenFlameCreator(HiddenCreator):
         pass
 
 
-class FlameCreator(CoreCreator):
+class FlameCreator(Creator):
     """Creator class wrapper
     """
     settings_category = "flame"
 
     def __init__(self, *args, **kwargs):
-        super(CoreCreator, self).__init__(*args, **kwargs)
+        super(Creator, self).__init__(*args, **kwargs)
         self.presets = get_current_project_settings()[
             "flame"]["create"].get(self.__class__.__name__, {})
 

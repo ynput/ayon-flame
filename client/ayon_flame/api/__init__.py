@@ -56,7 +56,6 @@ from .menu import (
     FlameMenuUniversal
 )
 from .plugin import (
-    Creator,
     PublishableClip,
     ClipLoader,
     OpenClipSolver,
