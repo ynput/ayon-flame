@@ -108,7 +108,7 @@ class CollectShot(pyblish.api.InstancePlugin):
         # get file path
         head, tail = self._get_head_tail(
             clip_data,
-            otio_data["otioClip"],
+            otio_clip,
             creator_attrs["handleStart"],
             creator_attrs["handleEnd"]
         )
