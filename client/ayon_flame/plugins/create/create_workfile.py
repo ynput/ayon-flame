@@ -39,10 +39,11 @@ class CreateWorkfile(AutoCreator):
         """
         wiretap_client = WireTapClient()
         wiretap_client.init()
+        server = WireTapServerHandle("localhost:IFFFS")
 
         current_project = flapi.get_current_project()
         project_node_handle = WireTapNodeHandle(server, f"/projects/{current_project.name}")
-        return wiretap_client, project_node_handle
+        return wiretap_client, server, project_node_handle
 
     def _get_project_metadata(self):
         """ Returns the metadata stored at current project.
@@ -50,13 +51,14 @@ class CreateWorkfile(AutoCreator):
         Returns:
             xml.etree.ElementTree. The project metadata data.
         """
-        client, handle = self._get_project_metadata_handle()
+        client, server, handle = self._get_project_metadata_handle()
         metadata = WireTapStr()
         handle.getMetaData("XML", "", 1, metadata)
 
         handle.disconnect()
         del client
         del handle
+        del server
 
         return ET.fromstring(metadata.c_str())
 
@@ -74,13 +76,14 @@ class CreateWorkfile(AutoCreator):
         nickname_entry.text = json.dumps(data)
         updated = ET.tostring(metadata, encoding='unicode')
 
-        project_node_handle = self._get_project_metadata_handle()
+        client, server, handle  = self._get_project_metadata_handle()
         new_metadata = WireTapStr(updated)
-        ok = project_node_handle.setMetaData("XML", new_metadata.c_str())
+        ok = handle.setMetaData("XML", new_metadata.c_str())
 
         handle.disconnect()
         del client
         del handle
+        del server
 
         return ok
 
