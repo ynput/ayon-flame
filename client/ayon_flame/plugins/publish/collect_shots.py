@@ -155,6 +155,8 @@ class CollectShot(pyblish.api.InstancePlugin):
 
         self._get_resolution_to_data(instance.data, instance.context)
         self._inject_editorial_shared_data(instance)
+
+        from pprint import pformat
         self.log.debug("__ inst_data: {}".format(pformat(inst_data)))
 
     @staticmethod
