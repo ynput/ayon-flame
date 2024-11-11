@@ -4,6 +4,11 @@ import re
 import ayon_flame.api as ayfapi
 from ayon_flame.otio import flame_export
 
+from ayon_core.pipeline.editorial import (
+    get_media_range_with_retimes
+)
+
+
 # constatns
 NUM_PATERN = re.compile(r"([0-9\.]+)")
 TXT_PATERN = re.compile(r"([a-zA-Z]+)")
