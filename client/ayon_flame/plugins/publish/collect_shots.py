@@ -1,5 +1,6 @@
 import pyblish
 import re
+from pprint import pformat
 
 import ayon_flame.api as ayfapi
 from ayon_flame.otio import flame_export
@@ -155,8 +156,6 @@ class CollectShot(pyblish.api.InstancePlugin):
 
         self._get_resolution_to_data(instance.data, instance.context)
         self._inject_editorial_shared_data(instance)
-
-        from pprint import pformat
         self.log.debug("__ inst_data: {}".format(pformat(instance.data)))
 
     @staticmethod
