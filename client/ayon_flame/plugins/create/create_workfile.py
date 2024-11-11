@@ -55,7 +55,7 @@ class CreateWorkfile(AutoCreator):
         metadata = WireTapStr()
         handle.getMetaData("XML", "", 1, metadata)
 
-        handle.disconnect()
+        server.disconnect()
         del client
         del handle
         del server
@@ -80,7 +80,7 @@ class CreateWorkfile(AutoCreator):
         new_metadata = WireTapStr(updated)
         ok = handle.setMetaData("XML", new_metadata.c_str())
 
-        handle.disconnect()
+        server.disconnect()
         del client
         del handle
         del server
