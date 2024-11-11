@@ -5,16 +5,13 @@ from copy import deepcopy
 from xml.etree import ElementTree as ET
 
 import qargparse
-from qtpy import QtCore, QtWidgets
 
-from ayon_core import style
 from ayon_core.lib import Logger, StringTemplate
-from ayon_core.pipeline import LegacyCreator, LoaderPlugin, HiddenCreator
+from ayon_core.pipeline import LoaderPlugin, HiddenCreator
 from ayon_core.pipeline import Creator
 from ayon_core.pipeline.colorspace import get_remapped_colorspace_to_native
 from ayon_core.settings import get_current_project_settings
 
-from . import constants
 from . import lib as flib
 
 log = Logger.get_logger(__name__)
