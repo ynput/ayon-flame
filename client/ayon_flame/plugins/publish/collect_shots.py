@@ -157,7 +157,7 @@ class CollectShot(pyblish.api.InstancePlugin):
         self._inject_editorial_shared_data(instance)
 
         from pprint import pformat
-        self.log.debug("__ inst_data: {}".format(pformat(inst_data)))
+        self.log.debug("__ inst_data: {}".format(pformat(instance.data)))
 
     @staticmethod
     def _set_workfile_start(data):
