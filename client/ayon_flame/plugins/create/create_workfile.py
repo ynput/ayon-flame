@@ -55,6 +55,10 @@ class CreateWorkfile(AutoCreator):
         metadata = WireTapStr()
         handle.getMetaData("XML", "", 1, metadata)
 
+        # Wiretap objects needs to be deleted right after usage.
+        # https://help.autodesk.com/view/FLAME/2025/ENU/
+        # ?guid=Flame_API_Wiretap_SDK_FAQs_and_Troubleshooting_General_API_html
+        # For weird reasons a context manager does not work here.
         server.disconnect()
         del client
         del handle
@@ -80,6 +84,8 @@ class CreateWorkfile(AutoCreator):
         new_metadata = WireTapStr(updated)
         ok = handle.setMetaData("XML", new_metadata.c_str())
 
+        # Wiretap objects needs to be deleted right after usage.
+        # (see above)
         server.disconnect()
         del client
         del handle
