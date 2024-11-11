@@ -18,11 +18,6 @@ from adsk.libwiretapPythonClientAPI import (
 import ayon_flame.api as flapi
 
 
-wiretap_client = WireTapClient()
-good = wiretap_client.init()
-server = WireTapServerHandle("localhost:IFFFS")
-
-
 class CreateWorkfile(AutoCreator):
     """Workfile auto-creator."""
     settings_category = "flame"
@@ -35,6 +30,32 @@ class CreateWorkfile(AutoCreator):
 
     # https://forums.autodesk.com/t5/flame-forum/store-persistent-variable-with-flame-project/td-p/9437717
     _METADATA_KEY = "Nickname"
+
+    # https://help.autodesk.com/view/FLAME/2025/ENU/?guid=Flame_API_Wiretap_SDK_FAQs_and_Troubleshooting_General_API_html
+    _wiretap_client = None
+    _server = None
+
+    def __init__(
+        self, project_settings, create_context, headless=False
+    ):
+        super().__init__(
+            project_settings, create_context, headless=headless,
+        )
+        self._wiretap_client = WireTapClient()
+        wiretap_client.init()
+        self._server = WireTapServerHandle("localhost:IFFFS")
+
+    def __del__(self):
+        """ Explicit delete for workfile AutoCreator.
+        """
+        # Force wiretap disconnect to avoid hanging connection.
+        self.server.disconnect()
+
+        del self.server
+        del self._wiretap_client
+
+        self._server = None
+        self._wiretap_client = None
 
     @classmethod
     def _get_project_metadata_handle(cls):
