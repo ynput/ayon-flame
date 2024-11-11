@@ -81,8 +81,9 @@ class CollectShot(pyblish.api.InstancePlugin):
             raise RuntimeError("Could not retrieve otioClip for shot %r", instance)
 
         # Compute fps from creator attribute.
-        if instance.data['creator_attributes']["fps"] == "from_selection":
-            instance.data['creator_attributes']["fps"] = instance.context.data["fps"]
+        creator_attrs = instance.data['creator_attributes']
+        if creator_attrs["fps"] == "from_selection":
+            creator_attrs["fps"] = instance.context.data["fps"]
 
         # Retrieve AyonData marker for associated clip.
         instance.data["otioClip"] = otio_clip
@@ -104,10 +105,34 @@ class CollectShot(pyblish.api.InstancePlugin):
         file_path = clip_data["fpath"]
         first_frame = ayfapi.get_frame_from_filename(file_path) or 0
 
+        # get file path
+        head, tail = self._get_head_tail(
+            clip_data,
+            otio_data["otioClip"],
+            creator_attrs["handleStart"],
+            creator_attrs["handleEnd"]
+        )
+
+        # make sure there is not NoneType rather 0
+        if head is None:
+            head = 0
+        if tail is None:
+            tail = 0
+
+        # make sure value is absolute
+        if head != 0:
+            head = abs(head)
+        if tail != 0:
+            tail = abs(tail)
+
+        # solve handles length
+        creator_attrs["handleStart"] = min(
+            creator_attrs["handleStart"], head)
+        creator_attrs["handleEnd"] = min(
+            creator_attrs["handleEnd"], tail)
+
         # Adjust info from track_item on timeline
-        marker_metadata = marker.metadata
-        #creator_id = instance.data["creator_identifier"]
-        workfile_start = self._set_workfile_start(marker_metadata)  #TODO investigate
+        workfile_start = self._set_workfile_start(creator_attrs)
 
         instance.data.update({
             "item": segment_item,
@@ -125,6 +150,7 @@ class CollectShot(pyblish.api.InstancePlugin):
 
         self._get_resolution_to_data(instance.data, instance.context)
         self._inject_editorial_shared_data(instance)
+        self.log.debug("__ inst_data: {}".format(pformat(inst_data)))
 
     @staticmethod
     def _set_workfile_start(data):
@@ -278,6 +304,26 @@ class CollectShot(pyblish.api.InstancePlugin):
                     return otio_clip, marker
 
         return None, None
+
+    def _get_head_tail(self, clip_data, otio_clip, handle_start, handle_end):
+        # calculate head and tail with forward compatibility
+        head = clip_data.get("segment_head")
+        tail = clip_data.get("segment_tail")
+        self.log.debug("__ head: `{}`".format(head))
+        self.log.debug("__ tail: `{}`".format(tail))
+
+        # HACK: it is here to serve for versions below 2021.1
+        if not any([head, tail]):
+            retimed_attributes = get_media_range_with_retimes(
+                otio_clip, handle_start, handle_end)
+            self.log.debug(
+                ">> retimed_attributes: {}".format(retimed_attributes))
+
+            # retimed head and tail
+            head = int(retimed_attributes["handleStart"])
+            tail = int(retimed_attributes["handleEnd"])
+
+        return head, tail
 
     def _create_otio_time_range_from_timeline_item_data(self, clip_data):
         frame_start = int(clip_data["record_in"])
