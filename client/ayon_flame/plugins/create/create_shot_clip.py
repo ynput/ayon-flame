@@ -177,7 +177,7 @@ class _FlameInstanceCreator(plugin.HiddenFlameCreator):
             pipeline.imprint(
                 segment_item,
                 data=  {
-                    _CONTENT_ID: {},
+                    _CONTENT_ID: instances_data,
                     "clip_index": marker_data["clip_index"],
                 }
             )
@@ -551,13 +551,14 @@ OTIO file.
         for idx, segment in enumerate(sorted_selected_segments):
 
             clip_index = str(uuid.uuid4())
-            instance_data["clip_index"] = clip_index
+            segment_instance_data = instance_data.copy()
+            segment_instance_data["clip_index"] = clip_index
 
             # convert track item to timeline media pool item
             publish_clip = ayfapi.PublishableClip(
                 segment,
                 log=self.log,
-                ui_inputs=instance_data,
+                ui_inputs=segment_instance_data,
                 productType=self.product_type,
                 rename_index=idx,
             )
@@ -568,7 +569,7 @@ OTIO file.
                 # from `PublishableClip.convert`
                 continue
 
-            instance_data.update(publish_clip.marker_data)
+            segment_instance_data.update(publish_clip.marker_data)
             self.log.info(
                 "Processing track item data: {} (index: {})".format(
                     segment, idx)
@@ -591,7 +592,7 @@ OTIO file.
             shot_creator_id = "io.ayon.creators.flame.shot"
             for creator_id in enabled_creators:
                 creator = self.create_context.creators[creator_id]
-                sub_instance_data = deepcopy(instance_data)
+                sub_instance_data = deepcopy(segment_instance_data)
                 shot_folder_path = sub_instance_data["folderPath"]
 
                 # Shot creation
