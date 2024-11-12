@@ -1,8 +1,5 @@
 from copy import deepcopy
-from ayon_core.lib import Logger
 import ayon_flame.api as ayfapi
-
-log = Logger.get_logger(__name__)
 
 
 class CreateShotClip(ayfapi.Creator):
@@ -62,7 +59,7 @@ class CreateShotClip(ayfapi.Creator):
         sorted_selected_segments.extend(unsorted_selected_segments)
 
         kwargs = {
-            "log": log,
+            "log": self.log,
             "ui_inputs": results_back,
             "basicProductData": self.data,
             "productType": self.data["productType"],
