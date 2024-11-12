@@ -32,7 +32,9 @@ class CreateWorkfile(AutoCreator):
             xml.etree.ElementTree. The project metadata data.
         """
         current_project = flapi.get_current_project()
-        metadata = flscripts.WireTapCom.get_project_metadata(current_project)
+        metadata = flscripts.WireTapCom.get_project_metadata(
+            current_project.name
+        )
         return ET.fromstring(metadata)
 
     def _dump_instance_data(self, data):
@@ -51,7 +53,7 @@ class CreateWorkfile(AutoCreator):
 
         current_project = flapi.get_current_project()
         return flscripts.WireTapCom.set_project_metadata(
-            current_project,
+            current_project.name,
             updated,
         )
 

@@ -10,7 +10,7 @@ import tempfile
 import xml.dom.minidom as minidom
 from copy import deepcopy
 import datetime
-from libwiretapPythonClientAPI import (  # noqa
+from adsk.libwiretapPythonClientAPI import (  # noqa
     WireTapClientInit,
     WireTapClientUninit,
     WireTapNodeHandle,
@@ -461,7 +461,7 @@ class WireTapCom(object):
             ))
 
     @staticmethod
-    def get_project_metadata(project_name)
+    def get_project_metadata(project_name):
         """Retrieve project metadata as XML.
 
         Args:
@@ -510,7 +510,7 @@ class WireTapCom(object):
             "wiretap_set_metadata",
         )
 
-        with tempfile.NamedTemporaryFile(delete=False) as tmp_file
+        with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
             tempfile.write(xml_metadata)
 
         cmd = [
