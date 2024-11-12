@@ -8,14 +8,8 @@ from ayon_core.pipeline import (
     CreatedInstance,
 )
 
-from adsk.libwiretapPythonClientAPI import (
-    WireTapClient,
-    WireTapServerHandle,
-    WireTapNodeHandle,
-    WireTapStr
-)
-
 import ayon_flame.api as flapi
+import ayon_flame.api.scripts as flscripts
 
 
 class CreateWorkfile(AutoCreator):
@@ -31,40 +25,15 @@ class CreateWorkfile(AutoCreator):
     # https://forums.autodesk.com/t5/flame-forum/store-persistent-variable-with-flame-project/td-p/9437717
     _METADATA_KEY = "Nickname"
 
-    def _get_project_metadata_handle(self):
-        """ Initialize project metadata setup.
-
-        Returns:
-            object. Flame wiretap handle for current project
-        """
-        wiretap_client = WireTapClient()
-        wiretap_client.init()
-        server = WireTapServerHandle("localhost:IFFFS")
-
-        current_project = flapi.get_current_project()
-        project_node_handle = WireTapNodeHandle(server, f"/projects/{current_project.name}")
-        return wiretap_client, server, project_node_handle
-
     def _get_project_metadata(self):
         """ Returns the metadata stored at current project.
 
         Returns:
             xml.etree.ElementTree. The project metadata data.
         """
-        client, server, handle = self._get_project_metadata_handle()
-        metadata = WireTapStr()
-        handle.getMetaData("XML", "", 1, metadata)
-
-        # Wiretap objects needs to be deleted right after usage.
-        # https://help.autodesk.com/view/FLAME/2025/ENU/
-        # ?guid=Flame_API_Wiretap_SDK_FAQs_and_Troubleshooting_General_API_html
-        # For weird reasons a context manager does not work here.
-        server.disconnect()
-        del client
-        del handle
-        del server
-
-        return ET.fromstring(metadata.c_str())
+        current_project = flapi.get_current_project()
+        metadata = flscripts.WireTapCom.get_project_metadata(current_project)
+        return ET.fromstring(metadata)
 
     def _dump_instance_data(self, data):
         """ Dump instance data into AyonData project tag.
@@ -80,18 +49,11 @@ class CreateWorkfile(AutoCreator):
         nickname_entry.text = json.dumps(data)
         updated = ET.tostring(metadata, encoding='unicode')
 
-        client, server, handle  = self._get_project_metadata_handle()
-        new_metadata = WireTapStr(updated)
-        ok = handle.setMetaData("XML", new_metadata.c_str())
-
-        # Wiretap objects needs to be deleted right after usage.
-        # (see above)
-        server.disconnect()
-        del client
-        del handle
-        del server
-
-        return ok
+        current_project = flapi.get_current_project()
+        return flscripts.WireTapCom.set_project_metadata(
+            current_project,
+            updated,
+        )
 
     def _load_instance_data(self):
         """ Returns the data stored in AyonData project tag if any.
