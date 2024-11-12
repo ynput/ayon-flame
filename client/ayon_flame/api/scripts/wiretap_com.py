@@ -511,7 +511,7 @@ class WireTapCom(object):
         )
 
         with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-            tempfile.write(xml_metadata)
+            tmp_file.write(xml_metadata.encode())
 
         cmd = [
             set_metadata_cmd,
