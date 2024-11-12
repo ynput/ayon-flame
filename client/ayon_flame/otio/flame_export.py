@@ -218,8 +218,8 @@ def create_otio_reference(clip_data, media_info, fps=None):
     duration = int(clip_data["source_duration"])
 
     # get file info for path and start frame
-    frame_start = 0
-    fps = fps or CTX.get_fps()
+    media_start = media_info.start_frame or 0
+    fps = fps or media_info.fps or CTX.get_fps()
 
     path = clip_data["fpath"]
 
@@ -234,7 +234,7 @@ def create_otio_reference(clip_data, media_info, fps=None):
     is_sequence = frame_number = utils.get_frame_from_filename(file_name)
     if is_sequence:
         file_head = file_name.split(frame_number)[0]
-        frame_start = int(frame_number)
+        start_frame = int(frame_number)
         padding = len(frame_number)
 
         metadata.update({
@@ -250,11 +250,11 @@ def create_otio_reference(clip_data, media_info, fps=None):
                 target_url_base=dirname + os.sep,
                 name_prefix=file_head,
                 name_suffix=extension,
-                start_frame=frame_start,
+                start_frame=start_frame,
                 frame_zero_padding=padding,
                 rate=fps,
                 available_range=create_otio_time_range(
-                    frame_start,
+                    media_start,
                     duration,
                     fps
                 )
@@ -270,7 +270,7 @@ def create_otio_reference(clip_data, media_info, fps=None):
         otio_ex_ref_item = otio.schema.ExternalReference(
             target_url=reformated_path,
             available_range=create_otio_time_range(
-                frame_start,
+                media_start,
                 duration,
                 fps
             )
@@ -356,9 +356,11 @@ def create_otio_clip(clip_data):
     # create media reference
     media_reference = create_otio_reference(clip_data, media_info, media_fps)
 
-    # creatae source range
+    # create source range
+    available_media_start = media_reference.available_range.start_time
+    conformed_media_start = available_media_start.value_rescaled_to(CTX.get_fps())
     source_range = create_otio_time_range(
-        source_in,
+        conformed_media_start + source_in,
         _clip_record_duration,
         CTX.get_fps()
     )
