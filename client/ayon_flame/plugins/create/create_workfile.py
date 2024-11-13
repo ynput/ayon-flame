@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Creator plugin for creating workfiles."""
 import json
-from xml.etree import ElementTree as ET
+import os
 
 from ayon_core.pipeline import (
     AutoCreator,
@@ -22,53 +22,47 @@ class CreateWorkfile(AutoCreator):
     icon = "fa5.file"
     default_variant = "Main"
 
-    # https://forums.autodesk.com/t5/flame-forum/store-persistent-variable-with-flame-project/td-p/9437717
-    _METADATA_KEY = "Nickname"
-
-    def _get_project_metadata(self):
-        """ Returns the metadata stored at current project.
+    @staticmethod
+    def _get_project_workfile_filepath():
+        """
+        Args:
+            project_name (str): The project name.
 
         Returns:
-            xml.etree.ElementTree. The project metadata data.
+            str. The path to the expected Json workfile.
         """
-        current_project = flapi.get_current_project()
-        metadata = flscripts.WireTapCom.get_project_metadata(
-            current_project.name
+        project_name = flapi.get_current_project().name
+        return os.path.join(
+            workfile_dir = os.environ["AYON_WORKDIR"],
+            f"{project_name}.workfile"
         )
-        return ET.fromstring(metadata)
 
     def _dump_instance_data(self, data):
-        """ Dump instance data into AyonData project tag.
+        """ Dump instance data into a side-car json file.
 
         Args:
-            data (dict): The data to push to the project tag.
+            data (dict): The data to push to the project metadata.
 
         Returns:
             bool. Has the metadata been updated.
         """
-        metadata = self._get_project_metadata()
-        nickname_entry, = metadata.findall(self._METADATA_KEY)
-        nickname_entry.text = json.dumps(data)
-        updated = ET.tostring(metadata, encoding='unicode')
-
-        current_project = flapi.get_current_project()
-        return flscripts.WireTapCom.set_project_metadata(
-            current_project.name,
-            updated,
-        )
+        out_path = self._get_project_metadata()
+        with open(out_path, "w", encoding="utf-8") as out_file:
+            json.dump(data, out_file)
 
     def _load_instance_data(self):
-        """ Returns the data stored in AyonData project tag if any.
+        """ Returns the data stored in side-car json file if exists.
 
         Returns:
-            dict. The metadata instance data.
+            dict. The workfile metadata data.
         """
-        metadata = self._get_project_metadata()
-        nickname_entry, = metadata.findall(self._METADATA_KEY)
+        in_path = self._get_project_metadata()
+
         try:
-                return json.loads(nickname_entry.text)
-        except json.JSONDecodeError:
-                return {}
+            with open(in_path) as in_file:
+                return json.load(in_file)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return {}
 
     def _create_new_instance(self):
         """Create a new workfile instance.
