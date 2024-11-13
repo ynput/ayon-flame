@@ -423,7 +423,7 @@ def _create_otio_timeline(sequence):
     metadata.update({
         "ayon.timeline.width": int(sequence.width),
         "ayon.timeline.height": int(sequence.height),
-        "ayon.timeline.pixelAspect": 1
+        "ayon.timeline.pixelAspect": float(1)
     })
 
     rt_start_time = create_otio_rational_time(

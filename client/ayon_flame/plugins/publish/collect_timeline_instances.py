@@ -234,6 +234,18 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
         return attributes
 
     def _get_xml_preset_attrs(self, attributes, split):
+        """Helper function to get xml preset attributes from comments
+
+        Example of comment:
+        `resolution:1920x1080;pixelRatio:1.5`
+
+        Args:
+            attributes (dict): attributes dict to update
+            split (str): string to split
+
+        Returns:
+            None
+        """
 
         # split to key and value
         key, value = split.split(":")
@@ -273,7 +285,7 @@ class CollectTimelineInstances(pyblish.api.ContextPlugin):
             res_group = NUM_PATTERN.findall(value)
             # check if aspect was also defined
             # 1920x1080x1.5
-            aspect = res_group[2] if len(res_group) > 2 else 1
+            aspect = res_group[2] if len(res_group) > 2 else float(1)
 
             width = int(res_group[0])
             height = int(res_group[1])
