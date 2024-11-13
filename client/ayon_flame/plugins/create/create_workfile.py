@@ -33,7 +33,7 @@ class CreateWorkfile(AutoCreator):
         """
         project_name = flapi.get_current_project().name
         return os.path.join(
-            workfile_dir = os.environ["AYON_WORKDIR"],
+            os.environ["AYON_WORKDIR"],
             f"{project_name}.workfile"
         )
 
@@ -46,7 +46,7 @@ class CreateWorkfile(AutoCreator):
         Returns:
             bool. Has the metadata been updated.
         """
-        out_path = self._get_project_metadata()
+        out_path = self._get_project_workfile_filepath()
         with open(out_path, "w", encoding="utf-8") as out_file:
             json.dump(data, out_file)
 
@@ -56,7 +56,7 @@ class CreateWorkfile(AutoCreator):
         Returns:
             dict. The workfile metadata data.
         """
-        in_path = self._get_project_metadata()
+        in_path = self._get_project_workfile_filepath()
 
         try:
             with open(in_path) as in_file:
