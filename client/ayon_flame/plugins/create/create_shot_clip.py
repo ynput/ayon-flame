@@ -198,7 +198,36 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
     """ Base clip product creator.
     """
 
-    def get_instance_attr_defs(self):
+    def register_callbacks(self):
+        self.create_context.add_value_changed_callback(self._on_value_change)
+
+    def _on_value_change(self, event):
+        for item in event["changes"]:
+            instance = item["instance"]
+            if (
+                instance is None
+                or instance.creator_identifier != self.identifier
+            ):
+                continue
+
+            changes = item["changes"].get("creator_attributes", {})
+
+            attr_defs = instance.creator_attributes.attr_defs
+
+            if "review" not in changes:
+                continue
+
+            review_value = changes["review"]
+            reviewable_source = next(
+                attr_def
+                for attr_def in attr_defs
+                if attr_def.key == "reviewableSource"
+            )
+            reviewable_source.disabled = not review_value
+
+            instance.set_create_attr_defs(attr_defs)
+
+    def get_attr_defs_for_instance(self, instance):
 
         current_sequence = lib.get_current_sequence(lib.CTX.selection)
         if current_sequence is not None:
@@ -206,31 +235,25 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
         else:
             gui_tracks = []
 
-        instance_attributes = [
-            TextDef(
-                "parentInstance",
-                label="Linked to",
-                disabled=True,
-            )
-        ]
-        if self.product_type == "plate":
-            instance_attributes.extend([
+        # Review track visibility
+        current_review = instance.creator_attributes.get("review", False)
+        instance_attributes.extend(
+            [
                 BoolDef(
-                    "vSyncOn",
-                    label="Enable Vertical Sync",
-                    tooltip="Switch on if you want clips above "
-                            "each other to share its attributes",
-                    default=True,
+                    "review",
+                    label="Review",
+                    tooltip="Switch to reviewable instance",
+                    default=False,
                 ),
                 EnumDef(
-                    "vSyncTrack",
-                    label="Hero Track",
-                    tooltip="Select driving track name which should "
-                            "be mastering all others",
-                    items=gui_tracks or ["<nothing to select>"],
+                    "reviewTrack",
+                    label="Review Track",
+                    tooltip=("Selecting source from review tracks."),
+                    items=gui_tracks,
+                    disabled=not current_review,
                 ),
-            ])
-
+            ]
+        )
         return instance_attributes
 
 
@@ -451,7 +474,7 @@ OTIO file.
             BoolDef(
                 "sourceResolution",
                 label="Source resolution",
-                tooltip="Is resloution taken from timeline or source?",
+                tooltip="Is resolution taken from timeline or source?",
                 default=False,
             ),
 
@@ -639,6 +662,13 @@ OTIO file.
                             "parentInstance": parenting_data["label"],
                         }
                     })
+                    # add reviewable source to plate if shot has it
+                    if sub_instance_data.get("reviewTrack"):
+                        sub_instance_data["creator_attributes"].update({
+                            "reviewTrack": sub_instance_data[
+                                "reviewTrack"],
+                            "review": True,
+                        })
 
                 instance = creator.create(sub_instance_data, None)
                 instance.transient_data["segment_item"] = segment
@@ -752,6 +782,14 @@ OTIO file.
                     "parentInstance": parenting_data["label"],
                 }
             })
+
+            # add reviewable source to plate if shot has it
+            if sub_instance_data.get("reviewTrack"):
+                sub_instance_data["creator_attributes"].update({
+                    "reviewTrack": sub_instance_data[
+                        "reviewTrack"],
+                    "review": True,
+                })
 
             instance = creator.create(sub_instance_data, None)
             instance.transient_data["segment_item"] = segment
