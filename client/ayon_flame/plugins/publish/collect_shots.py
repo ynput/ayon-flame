@@ -11,8 +11,8 @@ from ayon_core.pipeline.editorial import (
 
 
 # constatns
-NUM_PATERN = re.compile(r"([0-9\.]+)")
-TXT_PATERN = re.compile(r"([a-zA-Z]+)")
+NUM_PATTERN = re.compile(r"([0-9\.]+)")
+TXT_PATTERN = re.compile(r"([a-zA-Z]+)")
 
 
 class CollectShot(pyblish.api.InstancePlugin):
@@ -99,6 +99,9 @@ class CollectShot(pyblish.api.InstancePlugin):
             data = ayfapi.get_segment_data_marker(segment_item) or {}
             if data.get("clip_index") == instance.data["clip_index"]:
                 break
+
+        else:
+            raise ValueError("Could not retrieve source from selected segments.")
 
         comment_attributes = self._get_comment_attributes(segment_item)
         instance.data.update(comment_attributes)
@@ -211,9 +214,9 @@ class CollectShot(pyblish.api.InstancePlugin):
                 continue
 
             # get pattern defined by type
-            pattern = TXT_PATERN
+            pattern = TXT_PATTERN
             if a_type in ("number", "float"):
-                pattern = NUM_PATERN
+                pattern = NUM_PATTERN
 
             res_goup = pattern.findall(value)
 
@@ -234,7 +237,7 @@ class CollectShot(pyblish.api.InstancePlugin):
 
         # condition for resolution in key
         if "resolution" in key.lower():
-            res_goup = NUM_PATERN.findall(value)
+            res_goup = NUM_PATTERN.findall(value)
             # check if axpect was also defined
             # 1920x1080x1.5
             aspect = res_goup[2] if len(res_goup) > 2 else 1

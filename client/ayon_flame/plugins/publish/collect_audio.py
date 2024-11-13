@@ -1,4 +1,4 @@
-import pyblish
+import pyblish.api
 
 
 class CollectAudio(pyblish.api.InstancePlugin):

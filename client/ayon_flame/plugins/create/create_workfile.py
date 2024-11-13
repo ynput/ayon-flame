@@ -110,7 +110,7 @@ class CreateWorkfile(AutoCreator):
         """Auto-create an instance by default."""
         instance_data = self._load_instance_data()        
         if instance_data:
-                return
+            return
 
         self.log.info("Auto-creating workfile instance...")
         self._create_new_instance()
