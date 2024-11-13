@@ -6,7 +6,6 @@ import os
 import sys
 import subprocess
 import json
-import tempfile
 import xml.dom.minidom as minidom
 from copy import deepcopy
 import datetime
