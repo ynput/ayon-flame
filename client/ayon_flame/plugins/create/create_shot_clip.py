@@ -235,25 +235,34 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
         else:
             gui_tracks = []
 
-        # Review track visibility
-        current_review = instance.creator_attributes.get("review", False)
-        instance_attributes.extend(
-            [
-                BoolDef(
-                    "review",
-                    label="Review",
-                    tooltip="Switch to reviewable instance",
-                    default=False,
-                ),
-                EnumDef(
-                    "reviewTrack",
-                    label="Review Track",
-                    tooltip=("Selecting source from review tracks."),
-                    items=gui_tracks,
-                    disabled=not current_review,
-                ),
-            ]
-        )
+        instance_attributes = [
+            TextDef(
+                "parentInstance",
+                label="Linked to",
+                disabled=True,
+            )
+        ]
+
+        if self.product_type == "plate":
+            current_review = instance.creator_attributes.get("review", False)
+            instance_attributes.extend(
+                [
+                    BoolDef(
+                        "review",
+                        label="Review",
+                        tooltip="Switch to reviewable instance",
+                        default=False,
+                    ),
+                    EnumDef(
+                        "reviewTrack",
+                        label="Review Track",
+                        tooltip=("Selecting source from review tracks."),
+                        items=gui_tracks,
+                        disabled=not current_review,
+                    ),
+                ]
+            )
+
         return instance_attributes
 
 
