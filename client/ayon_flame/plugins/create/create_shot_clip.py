@@ -221,7 +221,7 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
             reviewable_source = next(
                 attr_def
                 for attr_def in attr_defs
-                if attr_def.key == "reviewableSource"
+                if attr_def.key == "reviewTrack"
             )
             reviewable_source.disabled = not review_value
 
