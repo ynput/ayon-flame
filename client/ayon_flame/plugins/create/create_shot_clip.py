@@ -793,7 +793,7 @@ OTIO file.
             })
 
             # add reviewable source to plate if shot has it
-            if sub_instance_data.get("reviewTrack"):
+            if sub_instance_data.get("reviewTrack") != "< none >":
                 sub_instance_data["creator_attributes"].update({
                     "reviewTrack": sub_instance_data[
                         "reviewTrack"],
