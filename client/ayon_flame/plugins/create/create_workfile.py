@@ -9,7 +9,6 @@ from ayon_core.pipeline import (
 )
 
 import ayon_flame.api as flapi
-import ayon_flame.api.scripts as flscripts
 
 
 class CreateWorkfile(AutoCreator):
