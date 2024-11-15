@@ -30,7 +30,7 @@ class InstallOpenTimelineIOToFlame(PreLaunchHook):
     def inner_execute(self):
         self.log.debug("Check for OpenTimelineIO installation.")
 
-        flame_py_exe = self.data.get("fusion_python_executable")
+        flame_py_exe = self.data.get("flame_python_executable")
         if not flame_py_exe:
             self.log.warning("Flame python executable not found.")
             return

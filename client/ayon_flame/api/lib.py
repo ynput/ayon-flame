@@ -541,7 +541,7 @@ def get_segment_attributes(segment):
         "tape_name": segment.tape_name,
         "source_name": segment.source_name,
         "fpath": segment.file_path,
-        "PySegment": segment
+        "PySegment": segment,
     }
 
     # head and tail with forward compatibility
@@ -1154,17 +1154,17 @@ class MediaInfoFile(object):
                 for out_feed in out_track.iter("feed"):
                     # width
                     out_feed_width_obj = out_feed.find("storageFormat/width")
-                    self.width = self._get_typed_value(out_feed_width_obj)
+                    self.width = int(self._get_typed_value(out_feed_width_obj))
 
                     # height
                     out_feed_height_obj = out_feed.find("storageFormat/height")
-                    self.height = self._get_typed_value(out_feed_height_obj)
+                    self.height = int(self._get_typed_value(out_feed_height_obj))
 
                     # pixel aspect ratio
                     out_feed_pixel_aspect_obj = out_feed.find(
                         "storageFormat/pixelRatio")
-                    self.pixel_aspect = self._get_typed_value(
-                        out_feed_pixel_aspect_obj)
+                    self.pixel_aspect = float(
+                        self._get_typed_value(out_feed_pixel_aspect_obj))
                     break
         except Exception as msg:
             self.log.warning(msg)

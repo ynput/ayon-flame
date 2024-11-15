@@ -62,7 +62,7 @@ class CreateShotClip(ayfapi.Creator):
             "log": self.log,
             "ui_inputs": results_back,
             "basicProductData": self.data,
-            "productType": self.data["productType"]
+            "productType": self.data["productType"],
         }
 
         for i, segment in enumerate(sorted_selected_segments):
