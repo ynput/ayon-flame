@@ -23,6 +23,8 @@ class CollectAudio(pyblish.api.InstancePlugin):
 
         if instance.data.get("reviewTrack") is not None:
             instance.data["reviewAudio"] = True
+            # Remove review track to avoid creation of reviewable
+            #     for the instance
             instance.data.pop("reviewTrack")
 
         clip_src = instance.data["otioClip"].source_range

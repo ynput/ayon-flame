@@ -18,7 +18,7 @@ TXT_PATTERN = re.compile(r"([a-zA-Z]+)")
 class CollectShot(pyblish.api.InstancePlugin):
     """Collect new shots."""
 
-    order = order = pyblish.api.CollectorOrder - 0.095
+    order = pyblish.api.CollectorOrder - 0.095
     label = "Collect Shots"
     hosts = ["flame"]
     families = ["shot"]
