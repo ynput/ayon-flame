@@ -5,6 +5,7 @@ from pprint import pformat
 import ayon_flame.api as ayfapi
 from ayon_flame.otio import flame_export
 
+from ayon_core.pipeline import PublishError
 from ayon_core.pipeline.editorial import (
     get_media_range_with_retimes
 )
@@ -95,13 +96,15 @@ class CollectShot(pyblish.api.InstancePlugin):
         instance.data["otioClip"] = otio_clip
 
         # Compute additional data
-        for segment_item in instance.context.data["flameSelectedSegments"]:
-            data = ayfapi.get_segment_data_marker(segment_item) or {}
-            if data.get("clip_index") == instance.data["clip_index"]:
-                break
+        segment_item = None
+        for item in instance.context.data["flameSelectedSegments"]:
+            item_data = ayfapi.get_segment_data_marker(item) or {}
+            if item_data.get("clip_index") == instance.data["clip_index"]:
+                 segment_item = item
+                 break
 
-        else:
-            raise ValueError("Could not retrieve source from selected segments.")
+        if segment_item is None:
+            raise PublishError("Could not retrieve source from selected segments.")
 
         comment_attributes = self._get_comment_attributes(segment_item)
         instance.data.update(comment_attributes)
