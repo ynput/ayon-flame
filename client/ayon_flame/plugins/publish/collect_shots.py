@@ -122,17 +122,9 @@ class CollectShot(pyblish.api.InstancePlugin):
             creator_attrs["handleEnd"]
         )
 
-        # make sure there is not NoneType rather 0
-        if head is None:
-            head = 0
-        if tail is None:
-            tail = 0
-
-        # make sure value is absolute
-        if head != 0:
-            head = abs(head)
-        if tail != 0:
-            tail = abs(tail)
+        # Make sure there is not None and negative number
+        head = abs(head or 0)
+        tail = abs(tail or 0)
 
         # solve handles length
         creator_attrs["handleStart"] = min(
@@ -253,15 +245,8 @@ class CollectShot(pyblish.api.InstancePlugin):
 
     def _split_comments(self, comment_string):
         # first split comment by comma
-        split_comments = []
-        if "," in comment_string:
-            split_comments.extend(comment_string.split(","))
-        elif ";" in comment_string:
-            split_comments.extend(comment_string.split(";"))
-        else:
-            split_comments.append(comment_string)
-
-        return split_comments
+        pattern = "|".join([",", ";"])
+        return re.split(pattern, comment_string)
 
     def _get_resolution_to_data(self, data, context):
         assert data.get("otioClip"), "Missing `otioClip` data"
