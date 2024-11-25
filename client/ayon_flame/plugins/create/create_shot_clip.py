@@ -211,19 +211,17 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
                 continue
 
             changes = item["changes"].get("creator_attributes", {})
-
-            attr_defs = instance.creator_attributes.attr_defs
-
             if "review" not in changes:
                 continue
 
+            attr_defs = instance.creator_attributes.attr_defs
             review_value = changes["review"]
             reviewable_source = next(
                 attr_def
                 for attr_def in attr_defs
                 if attr_def.key == "reviewTrack"
             )
-            reviewable_source.disabled = not review_value
+            reviewable_source.enabled = review_value
 
             instance.set_create_attr_defs(attr_defs)
 
@@ -258,7 +256,7 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
                         label="Review Track",
                         tooltip=("Selecting source from review tracks."),
                         items=gui_tracks,
-                        disabled=not current_review,
+                        enabled=current_review,
                     ),
                 ]
             )
@@ -530,10 +528,11 @@ OTIO file.
         ]
 
 
-    def create(self, subset_name, instance_data, pre_create_data):
-        super(CreateShotClip, self).create(subset_name,
-                                           instance_data,
-                                           pre_create_data)
+    def create(self, product_name, instance_data, pre_create_data):
+        super().create(
+            product_name,
+            instance_data,
+            pre_create_data)
 
         if len(self.selected) < 1:
             return
@@ -541,9 +540,10 @@ OTIO file.
         self.log.info(self.selected)
         self.log.debug(f"Selected: {self.selected}")
 
-        audio_clips = []
-        for audio_track in self.sequence.audio_tracks:
-            audio_clips.append(audio_track.segments)
+        audio_clips = [
+            audio_track.segments
+            for audio_track in self.sequence.audio_tracks
+        ]
 
         if not any(audio_clips) and pre_create_data.get("export_audio"):
             raise CreatorError(
@@ -555,8 +555,6 @@ OTIO file.
         instance_data["task"] = None
 
         # sort selected trackItems by
-        sorted_selected_segments = list()
-        unsorted_selected_segments = list()
         v_sync_track = pre_create_data.get("vSyncTrack", "")
 
         # sort selected trackItems by
@@ -583,7 +581,7 @@ OTIO file.
         for idx, segment in enumerate(sorted_selected_segments):
 
             clip_index = str(uuid.uuid4())
-            segment_instance_data = instance_data.copy()
+            segment_instance_data = copy.deepcopy(instance_data)
             segment_instance_data["clip_index"] = clip_index
 
             # convert track item to timeline media pool item
@@ -612,12 +610,11 @@ OTIO file.
             if prev_tag_data:
                 for creator_id, inst_data in prev_tag_data.get(_CONTENT_ID, {}).items():
                     creator = self.create_context.creators[creator_id]
-                    prev_instances = [
-                        inst for inst_id, inst
-                        in self.create_context.instances_by_id.items()
-                        if inst_id == inst_data["instance_id"]
-                    ]
-                    creator.remove_instances(prev_instances)
+                    prev_instance = self.create_context.instances_by_id.get(
+                        inst_data["instance_id"]
+                    )
+                    if prev_instance is not None:
+                        creator.remove_instances([prev_instance])
 
             # Create new product(s) instances.
             clip_instances = {}
@@ -651,9 +648,7 @@ OTIO file.
                             "retimedHandles": pre_create_data["retimedHandles"],
                             "retimedFramerange": pre_create_data["retimedFramerange"],                         
                         },
-                        "label": (
-                            f"{shot_folder_path} shot"
-                        ),
+                        "label": f"{shot_folder_path} shot",
                     })
 
                 # Plate, Audio
@@ -769,16 +764,14 @@ OTIO file.
         parenting_data = instance
 
         # Create plate/audio instance
+        sub_creators = ["io.ayon.creators.flame.plate"]
         if instance_data["audio"]:
-            sub_creators = (
-                "io.ayon.creators.flame.plate",
+            sub_creators.append(
                 "io.ayon.creators.flame.audio"
-            )
-        else:
-            sub_creators = ("io.ayon.creators.flame.plate",)
+            )            
 
         for sub_creator_id in sub_creators:
-            sub_instance_data = instance_data.copy()
+            sub_instance_data = copy.deepcopy(instance_data)
             creator = self.create_context.creators[sub_creator_id]
             sub_instance_data.update({
                 "clip_variant": sub_instance_data["variant"],
@@ -827,13 +820,16 @@ OTIO file.
             if not marker_data:
                 continue
 
-            if _CONTENT_ID in marker_data:
-                for creator_id, data in marker_data[_CONTENT_ID].items():
-                    self._create_and_add_instance(
-                        data, creator_id, segment, instances)
+            # Legacy instances handling
+            if _CONTENT_ID not in marker_data:
+                instances.extend(
+                    self._collect_legacy_instance(segment, marker_data)
+                )
+                continue
 
-            else:
-                instances.extend(self._collect_legacy_instance(segment, marker_data))
+            for creator_id, data in marker_data[_CONTENT_ID].items():
+                self._create_and_add_instance(
+                    data, creator_id, segment, instances)                
 
         return instances
 
