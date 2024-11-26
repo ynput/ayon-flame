@@ -56,10 +56,11 @@ from .menu import (
     FlameMenuUniversal
 )
 from .plugin import (
-    Creator,
     PublishableClip,
     ClipLoader,
-    OpenClipSolver
+    OpenClipSolver,
+    FlameCreator,
+    HiddenFlameCreator,
 )
 from .workio import (
     open_file,
@@ -141,6 +142,8 @@ __all__ = [
     "PublishableClip",
     "ClipLoader",
     "OpenClipSolver",
+    "FlameCreator",
+    "HiddenFlameCreator",
 
     # workio
     "open_file",
