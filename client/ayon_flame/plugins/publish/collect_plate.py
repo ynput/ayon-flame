@@ -1,12 +1,13 @@
 import pyblish
 
 import ayon_flame.api as ayfapi
+from ayon_flame.otio import utils
 
 
 class CollectPlate(pyblish.api.InstancePlugin):
     """Collect new plates."""
 
-    order = order = pyblish.api.CollectorOrder - 0.094
+    order = order = pyblish.api.CollectorOrder - 0.48
     label = "Collect Plate"
     hosts = ["flame"]
     families = ["plate"]
@@ -17,6 +18,16 @@ class CollectPlate(pyblish.api.InstancePlugin):
             instance (pyblish.Instance): The shot instance to update.
         """
         instance.data["families"].append("clip")
+
+        # Adjust instance data from parent otio timeline.
+        otio_timeline = instance.context.data["otioTimeline"]
+        otio_clip, marker = utils.get_marker_from_clip_index(
+            otio_timeline, instance.data["clip_index"]
+        )
+        if not otio_clip:
+            raise RuntimeError("Could not retrieve otioClip for shot %r", instance)
+
+        instance.data["otioClip"] = otio_clip
 
         review_switch = instance.data["creator_attributes"].get(
             "review")

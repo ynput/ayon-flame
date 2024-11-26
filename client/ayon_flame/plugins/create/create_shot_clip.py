@@ -541,7 +541,7 @@ OTIO file.
         self.log.debug(f"Selected: {self.selected}")
 
         audio_clips = [
-            audio_track.segments
+            audio_track.selected_segments
             for audio_track in self.sequence.audio_tracks
         ]
 

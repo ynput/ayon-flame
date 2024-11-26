@@ -3,7 +3,7 @@ import re
 from pprint import pformat
 
 import ayon_flame.api as ayfapi
-from ayon_flame.otio import flame_export
+from ayon_flame.otio import flame_export, utils
 
 from ayon_core.pipeline import PublishError
 from ayon_core.pipeline.editorial import (
@@ -19,7 +19,7 @@ TXT_PATTERN = re.compile(r"([a-zA-Z]+)")
 class CollectShot(pyblish.api.InstancePlugin):
     """Collect new shots."""
 
-    order = pyblish.api.CollectorOrder - 0.095
+    order = pyblish.api.CollectorOrder - 0.49
     label = "Collect Shots"
     hosts = ["flame"]
     families = ["shot"]
@@ -30,7 +30,6 @@ class CollectShot(pyblish.api.InstancePlugin):
         "handleStart",
         "handleEnd",
         "item",
-        "otioClip",
         "resolutionWidth",
         "resolutionHeight",
         "retimedHandles",
@@ -81,7 +80,7 @@ class CollectShot(pyblish.api.InstancePlugin):
 
         # Adjust instance data from parent otio timeline.
         otio_timeline = instance.context.data["otioTimeline"]
-        otio_clip, marker = self.get_marker_from_clip_index(
+        otio_clip, marker = utils.get_marker_from_clip_index(
             otio_timeline, instance.data["clip_index"]
         )
         if not otio_clip:
@@ -275,32 +274,6 @@ class CollectShot(pyblish.api.InstancePlugin):
                 "pixelAspect": otio_tl_metadata[
                     "ayon.timeline.pixelAspect"]
             })
-
-    def get_marker_from_clip_index(self, otio_timeline, clip_index):
-        """
-        Return the clip and marker data from clip index.
-
-        Args:
-            otio_timeline (dict): otio timeline
-            clip_index (str): The clip index.
-
-        Returns:
-            dict: otio clip object
-
-        """
-        for otio_clip in otio_timeline.find_clips():
-
-            # Retrieve otioClip from parent context otioTimeline
-            # See collect_current_project
-            for marker in otio_clip.markers:
-
-                if ayfapi.MARKER_NAME not in marker.name:
-                    continue
-
-                if marker.metadata.get("clip_index") == clip_index:
-                    return otio_clip, marker
-
-        return None, None
 
     def _get_head_tail(self, clip_data, otio_clip, handle_start, handle_end):
         # calculate head and tail with forward compatibility

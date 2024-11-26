@@ -1,5 +1,7 @@
 import pyblish.api
 
+from ayon_flame.otio import utils
+
 
 class CollectAudio(pyblish.api.InstancePlugin):
     """Collect new audio."""
@@ -20,6 +22,16 @@ class CollectAudio(pyblish.api.InstancePlugin):
         instance.data.update(
             edit_shared_data[parent_instance_id]
         )
+
+        # Adjust instance data from parent otio timeline.
+        otio_timeline = instance.context.data["otioTimeline"]
+        otio_clip, marker = utils.get_marker_from_clip_index(
+            otio_timeline, instance.data["clip_index"]
+        )
+        if not otio_clip:
+            raise RuntimeError("Could not retrieve otioClip for shot %r", instance)
+
+        instance.data["otioClip"] = otio_clip
 
         if instance.data.get("reviewTrack") is not None:
             instance.data["reviewAudio"] = True
