@@ -97,14 +97,14 @@ class CollectShot(pyblish.api.InstancePlugin):
 
         # Compute additional data
         segment_item = None
-        for item in instance.context.data["flameSelectedSegments"]:
+        for item in instance.context.data["flameSegments"]:
             item_data = ayfapi.get_segment_data_marker(item) or {}
             if item_data.get("clip_index") == instance.data["clip_index"]:
                  segment_item = item
                  break
 
         if segment_item is None:
-            raise PublishError("Could not retrieve source from selected segments.")
+            raise PublishError("Could not retrieve source from sequence segments.")
 
         comment_attributes = self._get_comment_attributes(segment_item)
         instance.data.update(comment_attributes)
