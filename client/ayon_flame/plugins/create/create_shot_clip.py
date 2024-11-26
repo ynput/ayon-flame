@@ -581,7 +581,7 @@ OTIO file.
         for idx, segment in enumerate(sorted_selected_segments):
 
             clip_index = str(uuid.uuid4())
-            segment_instance_data = copy.deepcopy(instance_data)
+            segment_instance_data = deepcopy(instance_data)
             segment_instance_data["clip_index"] = clip_index
 
             # convert track item to timeline media pool item
@@ -771,7 +771,7 @@ OTIO file.
             )            
 
         for sub_creator_id in sub_creators:
-            sub_instance_data = copy.deepcopy(instance_data)
+            sub_instance_data = deepcopy(instance_data)
             creator = self.create_context.creators[sub_creator_id]
             sub_instance_data.update({
                 "clip_variant": sub_instance_data["variant"],
