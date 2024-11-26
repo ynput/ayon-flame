@@ -5,18 +5,15 @@ from copy import deepcopy
 from xml.etree import ElementTree as ET
 
 import qargparse
-from qtpy import QtCore, QtWidgets
 
-from ayon_core import style
 from ayon_core.lib import Logger, StringTemplate
 from ayon_core.pipeline import LoaderPlugin, HiddenCreator
 from ayon_core.pipeline import Creator
 from ayon_core.pipeline.colorspace import get_remapped_colorspace_to_native
 from ayon_core.settings import get_current_project_settings
 
-from . import constants
 from . import lib as flib
-from . import pipeline as fpipeline
+
 
 log = Logger.get_logger(__name__)
 
@@ -206,7 +203,7 @@ class PublishableClip:
         if self.marker_data["heroTrack"] and self.review_layer:
             self.marker_data["reviewTrack"] = self.review_layer
         else:
-            self.marker_data["reviewTrack"] = None
+            self.marker_data["reviewTrack"] = "< none >"
 
         return self.current_segment
 
