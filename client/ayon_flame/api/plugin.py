@@ -3,7 +3,6 @@ import re
 import shutil
 from copy import deepcopy
 from xml.etree import ElementTree as ET
-from pprint import pformat
 
 import qargparse
 from qtpy import QtCore, QtWidgets
@@ -96,9 +95,8 @@ class PublishableClip:
     rename_default = False
     hierarchy_default = "{_folder_}/{_sequence_}/{_track_}"
     clip_name_default = "shot_{_trackIndex_:0>3}_{_clipIndex_:0>4}"
-    review_track_default = "[ none ]"
-    base_product_variant_default = "[ track name ]"
-    base_product_type_default = "plate"
+    review_track_default = "< none >"
+    base_product_variant_default = "<track_name>"
     count_from_default = 10
     count_steps_default = 10
     vertical_sync_default = False
@@ -109,18 +107,24 @@ class PublishableClip:
     retimed_handles_default = True
     retimed_framerange_default = True
 
-    def __init__(self, segment, **kwargs):
-        self.rename_index = kwargs["rename_index"]
-        self.product_type = kwargs["productType"]
-        self.log = kwargs["log"]
+    def __init__(self, 
+            segment,
+            pre_create_data=None,
+            data=None,
+            product_type=None,
+            rename_index=None,
+            log=None,
+        ):
+        self.rename_index = rename_index
+        self.product_type = product_type
+        self.log = log
+        self.pre_create_data = pre_create_data or {}
 
         # get main parent objects
         self.current_segment = segment
         sequence_name = flib.get_current_sequence([segment]).name.get_value()
         self.sequence_name = str(sequence_name).replace(" ", "_")
-
         self.clip_data = flib.get_segment_attributes(segment)
-        self.log.debug(f"clip_data: {pformat(self.clip_data)}")
 
         # segment (clip) main attributes
         self.cs_name = self.clip_data["segment_name"]
@@ -138,16 +142,13 @@ class PublishableClip:
             .replace("*", f"noname{self.track_index}")
         )
 
-        if kwargs.get("basicProductData"):
-            self.marker_data.update(kwargs["basicProductData"])
-
         # add publish attribute to marker data
         self.marker_data.update({"publish": True})
 
-        # adding ui inputs if any
-        self.ui_inputs = kwargs.get("ui_inputs", {})
+        # adding input data if any
+        if data:
+            self.marker_data.update(data)
 
-        self.log.info(f"Inside of plugin: {self.marker_data}")
         # populate default data before we get other attributes
         self._populate_segment_default_data()
 
@@ -231,58 +232,59 @@ class PublishableClip:
         self.shot_num = self.cs_index
         self.log.debug(f"____ self.shot_num: {self.shot_num}")
 
-        # ui_inputs data or default values if gui was not used
-        self.rename = self.ui_inputs.get(
+        # Use pre-create data or default values if gui was not used
+        self.rename = self.pre_create_data.get(
             "clipRename") or self.rename_default
-        self.use_shot_name = self.ui_inputs.get(
+        self.use_shot_name = self.pre_create_data.get(
             "useShotName") or self.use_shot_name_default
-        self.clip_name = self.ui_inputs.get(
+        self.clip_name = self.pre_create_data.get(
             "clipName") or self.clip_name_default
-        self.hierarchy = self.ui_inputs.get(
+        self.hierarchy = self.pre_create_data.get(
             "hierarchy") or self.hierarchy_default
-        self.hierarchy_data = self.ui_inputs.get(
+        self.hierarchy_data = self.pre_create_data.get(
             "hierarchyData") or self.current_segment_default_data.copy()
-        self.index_from_segment = self.ui_inputs.get(
+        self.index_from_segment = self.pre_create_data.get(
             "segmentIndex") or self.index_from_segment_default
-        self.count_from = self.ui_inputs.get(
+        self.count_from = self.pre_create_data.get(
             "countFrom") or self.count_from_default
-        self.count_steps = self.ui_inputs.get(
+        self.count_steps = self.pre_create_data.get(
             "countSteps") or self.count_steps_default
-        self.base_product_variant = self.ui_inputs.get(
+        self.base_product_variant = self.pre_create_data.get(
             "clipVariant") or self.base_product_variant_default
         self.base_product_type = self.product_type
-        self.vertical_sync = self.ui_inputs.get(
+        self.vertical_sync = self.pre_create_data.get(
             "vSyncOn") or self.vertical_sync_default
-        self.driving_layer = self.ui_inputs.get(
+        self.driving_layer = self.pre_create_data.get(
             "vSyncTrack") or self.driving_layer_default
-        self.review_track = self.ui_inputs.get(
+        self.review_track = self.pre_create_data.get(
             "reviewTrack") or self.review_track_default
-        self.audio = self.ui_inputs.get("audio") or False
-        self.include_handles = self.ui_inputs.get(
+        self.audio = self.pre_create_data.get("audio") or False
+        self.include_handles = self.pre_create_data.get(
             "includeHandles") or self.include_handles_default
         self.retimed_handles = (
-            self.ui_inputs.get("retimedHandles")
+            self.pre_create_data.get("retimedHandles")
             or self.retimed_handles_default
         )
         self.retimed_framerange = (
-            self.ui_inputs.get("retimedFramerange")
+            self.pre_create_data.get("retimedFramerange")
             or self.retimed_framerange_default
         )
 
         # build product name from layer name
-        if self.base_product_variant == "[ track name ]":
-            self.base_product_variant = self.track_name
+        if self.base_product_variant == "<track_name>":
+            self.variant = self.track_name
+        else:
+            self.variant = self.base_product_variant
 
         # create product for publishing
         self.product_name = (
-            self.base_product_type + self.base_product_variant.capitalize()
+            self.base_product_type + self.variant.capitalize()
         )
 
         self.hierarchy_data = {
-            key: self.ui_inputs.get(key)
+            key: self.pre_create_data.get(key)
             for key in ["folder", "episode", "sequence", "track", "shot"]
         }
-
 
     def _replace_hash_to_expression(self, name, text):
         """ Replace hash with number in correct padding. """
@@ -299,7 +301,11 @@ class PublishableClip:
         # define vertical sync attributes
         hero_track = True
         self.review_layer = ""
-        if self.vertical_sync and self.track_name not in self.driving_layer:
+
+        if (
+            self.vertical_sync and
+            self.track_name not in self.driving_layer
+        ):
             # if it is not then define vertical sync as None
             hero_track = False
 
@@ -310,8 +316,9 @@ class PublishableClip:
         hierarchy_formatting_data = {}
         hierarchy_data = deepcopy(self.hierarchy_data)
         _data = self.current_segment_default_data.copy()
-        if self.ui_inputs:
-            self.marker_data.update(self.ui_inputs)
+
+
+        if self.pre_create_data:
 
             # driving layer is set as positive match
             if hero_track or self.vertical_sync:
@@ -372,6 +379,7 @@ class PublishableClip:
 
                 _distrib_data = deepcopy(hero_data)
                 _distrib_data["heroTrack"] = False
+
                 # form used clip unique key
                 data_product_name = hero_data["productName"]
                 new_clip_name = hero_data["newClipName"]
@@ -384,19 +392,21 @@ class PublishableClip:
                     f">> used_names_list: {used_names_list}"
                 )
                 clip_product_name = self.product_name
+                variant = self.variant
                 self.log.debug(
                     f">> clip_product_name: {clip_product_name}")
 
                 # in case track name and product name is the same then add
-                if self.base_product_variant == self.track_name:
+                if self.variant == self.track_name:
                     clip_product_name = self.product_name
 
                 # add track index in case duplicity of names in hero data
                 # INFO: this is for case where hero clip product name
                 #    is the same as current clip product name
-                if clip_product_name == data_product_name:
+                if clip_product_name in data_product_name:
                     clip_product_name = (
                         f"{clip_product_name}{self.track_index}")
+                    variant = f"{variant}{self.track_index}"
 
                 # in case track clip product name had been already used
                 # then add product name with clip index
@@ -412,11 +422,12 @@ class PublishableClip:
                             f"{self.track_index}{self.cs_index}"
                         )
                     clip_product_name = _clip_product_name
+                    variant = f"{variant}{self.cs_index}"
 
                 self.log.debug(
                     f">> clip_product_name: {clip_product_name}")
                 _distrib_data["productName"] = clip_product_name
-                _distrib_data["variant"] = self.base_product_variant
+                _distrib_data["variant"] = variant
                 # assign data to return hierarchy data to tag
                 tag_hierarchy_data = _distrib_data
 

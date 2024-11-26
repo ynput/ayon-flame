@@ -583,8 +583,9 @@ OTIO file.
             publish_clip = ayfapi.PublishableClip(
                 segment,
                 log=self.log,
-                ui_inputs=segment_instance_data,
-                productType=self.product_type,
+                pre_create_data=pre_create_data,
+                data=segment_instance_data,
+                product_type=self.product_type,
                 rename_index=idx,
             )
 
@@ -614,7 +615,7 @@ OTIO file.
             # Create new product(s) instances.
             clip_instances = {}
             # desable shot creator if heroTrack is not enabled
-            all_creators[shot_creator_id] = _instance_data.get(
+            all_creators[shot_creator_id] = segment_instance_data.get(
                 "heroTrack", False)
             # desable audio creator if audio is not enabled
             all_creators[audio_creator_id] = (
@@ -624,7 +625,7 @@ OTIO file.
 
             enabled_creators = tuple(cre for cre, enabled in all_creators.items() if enabled)
             clip_instances = {}
-            shot_folder_path = _instance_data["folderPath"]
+            shot_folder_path = segment_instance_data["folderPath"]
             shot_instances = self.shot_instances.setdefault(
                 shot_folder_path, {})
 
