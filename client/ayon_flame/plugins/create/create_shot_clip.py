@@ -117,8 +117,6 @@ class _FlameInstanceCreator(plugin.HiddenFlameCreator):
             CreatedInstance: The created instance object for the new shot.
         """
         instance_data.update({
-            "productName": f"{self.product_type}{instance_data['variant']}",
-            "productType": self.product_type,
             "newHierarchyIntegration": True,
             # Backwards compatible (Deprecated since 24/06/06)
             "newAssetPublishing": True,
@@ -279,12 +277,6 @@ class EditorialPlateInstanceCreator(_FlameInstanceClipCreatorBase):
         Return:
             CreatedInstance: The created instance object for the new shot.
         """
-        if instance_data.get("clip_variant") == "<track_name>":
-            instance_data["variant"] = instance_data["hierarchyData"]["track"]
-
-        else:
-            instance_data["variant"] = instance_data["clip_variant"]
-
         return super().create(instance_data, None)
 
 
@@ -311,6 +303,8 @@ OTIO file.
 """
 
     create_allow_thumbnail = False
+
+    shot_instances = {}
 
     def get_pre_create_attr_defs(self):
 
@@ -452,7 +446,7 @@ OTIO file.
                 label=header_label("Publish Settings")
             ),
             EnumDef(
-                "clip_variant",
+                "clipVariant",
                 label="Product Variant",
                 tooltip="Chose variant which will be then used for "
                         "product name, if <track_name> "
@@ -569,13 +563,14 @@ OTIO file.
         sorted_selected_segments.extend(unsorted_selected_segments)
 
         # detect enabled creators for review, plate and audio
+        shot_creator_id = "io.ayon.creators.flame.shot"
+        plate_creator_id = "io.ayon.creators.flame.plate"
+        audio_creator_id = "io.ayon.creators.flame.audio"
         all_creators = {
-            "io.ayon.creators.flame.shot": True,
-            "io.ayon.creators.flame.plate": True,
-            "io.ayon.creators.flame.audio": pre_create_data.get("export_audio", False),
+            shot_creator_id: True,
+            plate_creator_id: True,
+            audio_creator_id: True,
         }
-        enabled_creators = tuple(cre for cre, enabled in all_creators.items() if enabled)
-
         instances = []
 
         for idx, segment in enumerate(sorted_selected_segments):
@@ -618,7 +613,21 @@ OTIO file.
 
             # Create new product(s) instances.
             clip_instances = {}
-            shot_creator_id = "io.ayon.creators.flame.shot"
+            # desable shot creator if heroTrack is not enabled
+            all_creators[shot_creator_id] = _instance_data.get(
+                "heroTrack", False)
+            # desable audio creator if audio is not enabled
+            all_creators[audio_creator_id] = (
+                segment_instance_data.get("heroTrack", False) and
+                pre_create_data.get("export_audio", False)
+            )
+
+            enabled_creators = tuple(cre for cre, enabled in all_creators.items() if enabled)
+            clip_instances = {}
+            shot_folder_path = _instance_data["folderPath"]
+            shot_instances = self.shot_instances.setdefault(
+                shot_folder_path, {})
+
             for creator_id in enabled_creators:
                 creator = self.create_context.creators[creator_id]
                 sub_instance_data = deepcopy(segment_instance_data)
@@ -631,6 +640,9 @@ OTIO file.
                     workfileFrameStart = \
                         sub_instance_data["workfileFrameStart"]
                     sub_instance_data.update({
+                        "variant": "main",
+                        "productType": "shot",
+                        "productName": "shotMain",                        
                         "creator_attributes": {
                             "workfileFrameStart": \
                                 sub_instance_data["workfileFrameStart"],
@@ -655,12 +667,12 @@ OTIO file.
                 # insert parent instance data to allow
                 # metadata recollection as publish time.
                 else:
-                    parenting_data = clip_instances[shot_creator_id]
+                    parenting_data = shot_instances[shot_creator_id]
                     sub_instance_data.update({
                         "parent_instance_id": parenting_data["instance_id"],
                         "label": (
-                            f"{shot_folder_path} "
-                            f"{creator.product_type}"
+                            f"{sub_instance_data['folderPath']} "
+                            f"{sub_instance_data['productName']}"
                         ),
                         "creator_attributes": {
                             "parentInstance": parenting_data["label"],
@@ -677,7 +689,10 @@ OTIO file.
                 instance = creator.create(sub_instance_data, None)
                 instance.transient_data["segment_item"] = segment
                 self._add_instance_to_context(instance)
-                clip_instances[creator_id] = instance.data_to_store()
+
+                instance_data_to_store = instance.data_to_store()
+                shot_instances[creator_id] = instance_data_to_store
+                clip_instances[creator_id] = instance_data_to_store
 
             pipeline.imprint(
                 segment,
@@ -687,6 +702,9 @@ OTIO file.
                 }
             )
             instances.append(instance)
+
+        self.shot_instances = {}
+        ayfapi.PublishableClip.restore_all_caches()
 
         return instances
 
@@ -774,7 +792,6 @@ OTIO file.
             sub_instance_data = deepcopy(instance_data)
             creator = self.create_context.creators[sub_creator_id]
             sub_instance_data.update({
-                "clip_variant": sub_instance_data["variant"],
                 "parent_instance_id": parenting_data["instance_id"],
                 "label": (
                     f"{sub_instance_data['folderPath']} "
