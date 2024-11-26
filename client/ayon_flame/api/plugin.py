@@ -3,16 +3,21 @@ import re
 import shutil
 from copy import deepcopy
 from xml.etree import ElementTree as ET
+from pprint import pformat
 
 import qargparse
+from qtpy import QtCore, QtWidgets
 
+from ayon_core import style
 from ayon_core.lib import Logger, StringTemplate
 from ayon_core.pipeline import LoaderPlugin, HiddenCreator
 from ayon_core.pipeline import Creator
 from ayon_core.pipeline.colorspace import get_remapped_colorspace_to_native
 from ayon_core.settings import get_current_project_settings
 
+from . import constants
 from . import lib as flib
+from . import pipeline as fpipeline
 
 log = Logger.get_logger(__name__)
 
@@ -74,6 +79,7 @@ class PublishableClip:
         flame.PySegment: flame api object
     """
     vertical_clip_match = {}
+    vertical_clip_used = {}
     marker_data = {}
     types = {
         "shot": "shot",
@@ -114,6 +120,8 @@ class PublishableClip:
         self.sequence_name = str(sequence_name).replace(" ", "_")
 
         self.clip_data = flib.get_segment_attributes(segment)
+        self.log.debug(f"clip_data: {pformat(self.clip_data)}")
+
         # segment (clip) main attributes
         self.cs_name = self.clip_data["segment_name"]
         self.cs_index = int(self.clip_data["segment"])
@@ -122,8 +130,13 @@ class PublishableClip:
         # get track name and index
         self.track_index = int(self.clip_data["track"])
         track_name = self.clip_data["track_name"]
-        self.track_name = str(track_name).replace(" ", "_").replace(
-            "*", "noname{}".format(self.track_index))
+        self.track_name = (
+            # make sure no space and other special characters are in track name
+            # default track name is `*`
+            str(track_name)
+            .replace(" ", "_")
+            .replace("*", f"noname{self.track_index}")
+        )
 
         if kwargs.get("basicProductData"):
             self.marker_data.update(kwargs["basicProductData"])
@@ -134,9 +147,7 @@ class PublishableClip:
         # adding ui inputs if any
         self.ui_inputs = kwargs.get("ui_inputs", {})
 
-        self.log.info("Inside of plugin: {}".format(
-            self.marker_data
-        ))
+        self.log.info(f"Inside of plugin: {self.marker_data}")
         # populate default data before we get other attributes
         self._populate_segment_default_data()
 
@@ -213,8 +224,7 @@ class PublishableClip:
 
         # define ui inputs if non gui mode was used
         self.shot_num = self.cs_index
-        self.log.debug(
-            "____ self.shot_num: {}".format(self.shot_num))
+        self.log.debug(f"____ self.shot_num: {self.shot_num}")
 
         # ui_inputs data or default values if gui was not used
         self.rename = self.ui_inputs.get(
@@ -344,29 +354,69 @@ class PublishableClip:
 
         if not hero_track and self.vertical_sync:
             # driving layer is set as negative match
-            for (_in, _out), hero_data in self.vertical_clip_match.items():
-                """
-                Since only one instance of hero clip is expected in
-                `self.vertical_clip_match`, this will loop only once
-                until none hero clip will be matched with hero clip.
+            for (hero_in, hero_out), hero_data in self.vertical_clip_match.items():  # noqa
+                """ Iterate over all clips in vertical sync match
 
-                `tag_hierarchy_data` will be set only once for every
-                clip which is not hero clip.
+                If clip frame range is outside of hero clip frame range
+                then skip this clip and do not add to hierarchical shared
+                metadata to them.
                 """
-                _hero_data = deepcopy(hero_data)
-                _hero_data.update({"heroTrack": False})
-                if _in <= self.clip_in and _out >= self.clip_out:
-                    data_product_name = hero_data["productName"]
-                    # add track index in case duplicity of names in hero data
-                    if self.product_name in data_product_name:
-                        _hero_data["productName"] = self.product_name + str(
-                            self.track_index)
-                    # in case track name and product name is the same then add
-                    if self.base_product_name == self.track_name:
-                        _hero_data["productName"] = self.product_name
-                    # assign data to return hierarchy data to tag
-                    tag_hierarchy_data = _hero_data
-                    break
+
+                if self.clip_in < hero_in or self.clip_out > hero_out:
+                    continue
+
+                _distrib_data = deepcopy(hero_data)
+                _distrib_data["heroTrack"] = False
+                # form used clip unique key
+                data_product_name = hero_data["productName"]
+                new_clip_name = hero_data["newClipName"]
+
+                # get used names list for duplicity check
+                used_names_list = self.vertical_clip_used.setdefault(
+                    f"{new_clip_name}{data_product_name}", []
+                )
+                self.log.debug(
+                    f">> used_names_list: {used_names_list}"
+                )
+                clip_product_name = self.product_name
+                self.log.debug(
+                    f">> clip_product_name: {clip_product_name}")
+
+                # in case track name and product name is the same then add
+                if self.base_product_name == self.track_name:
+                    clip_product_name = self.product_name
+
+                # add track index in case duplicity of names in hero data
+                # INFO: this is for case where hero clip product name
+                #    is the same as current clip product name
+                if clip_product_name == data_product_name:
+                    clip_product_name = (
+                        f"{clip_product_name}{self.track_index}")
+
+                # in case track clip product name had been already used
+                # then add product name with clip index
+                if clip_product_name in used_names_list:
+                    _clip_product_name = (
+                        f"{clip_product_name}{self.cs_index}"
+                    )
+                    # just in case lets validate if new name is not used
+                    # in case the track_index is the same as clip_index
+                    if _clip_product_name in used_names_list:
+                        _clip_product_name = (
+                            f"{clip_product_name}"
+                            f"{self.track_index}{self.cs_index}"
+                        )
+                    clip_product_name = _clip_product_name
+
+                self.log.debug(
+                    f">> clip_product_name: {clip_product_name}")
+                _distrib_data["productName"] = clip_product_name
+                # assign data to return hierarchy data to tag
+                tag_hierarchy_data = _distrib_data
+
+                # add used product name to used list to avoid duplicity
+                used_names_list.append(clip_product_name)
+                break
 
         # add data to return data dict
         self.marker_data.update(tag_hierarchy_data)
