@@ -626,6 +626,26 @@ def create_otio_timeline(sequence):
             # add track to otio timeline
             otio_timeline.tracks.append(otio_track)
 
+    for audio_track in sequence.audio_track:
+
+        if (
+            not audio_track.stereo or
+            audio_track.stereo and len(audio_track.channels) <= 2
+        ):
+            audio_channel = audio_track.channels[0] # TODO verify
+
+            all_segments = []
+            for segment in track.segments:
+                clip_data = _get_segment_attributes(segment)
+                if not clip_data:
+                    continue
+                all_segments.append(clip_data)                
+
+        else:
+            # Unsupported audio_track
+            break
+
+
     return otio_timeline
 
 
