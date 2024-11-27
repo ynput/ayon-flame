@@ -661,7 +661,7 @@ def create_otio_timeline(sequence):
                 continue
 
             otio_track = create_otio_track(
-                "audio", str(audio_track.name)[1:-1])
+                "audio", audio_track.name or "unnamed")
 
             segments = _get_segments_from_track(audio_channel)
             log.debug("_ segments: %s", pformat(segments))
