@@ -551,7 +551,7 @@ def _get_segments_from_track(flame_track):
         List[flame.PySegment]. The gathered segments.
     """
     all_segments = []
-    for segment in track.segments:
+    for segment in flame_track.segments:
         clip_data = _get_segment_attributes(segment)
         if clip_data:
             all_segments.append(clip_data)
@@ -637,20 +637,28 @@ def create_otio_timeline(sequence):
 
             # Add segments onto track.
             segments = _get_segments_from_track(track)
-            log.debug("_ segments: %s", pformat(all_segments))
+            log.debug("_ segments: %s", pformat(segments))
             _distribute_segments_on_track(segments, otio_track)
 
             # add track to otio timeline
             otio_timeline.tracks.append(otio_track)
 
     # create otio audio tracks with clips
-    for audio_track in sequence.audio_track:
+    for audio_track in sequence.audio_tracks:
 
         if (
             not audio_track.stereo or
             audio_track.stereo and len(audio_track.channels) <= 2
         ):
             audio_channel = audio_track.channels[0]
+
+            # avoid all empty tracks
+            # or hidden tracks
+            if (
+                len(audio_channel.segments) == 0
+                or audio_channel.hidden.get_value()
+            ):
+                continue
 
             otio_track = create_otio_track(
                 "audio", str(audio_track.name)[1:-1])
