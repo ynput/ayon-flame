@@ -200,11 +200,6 @@ class PublishableClip:
                 }
             })
 
-        if self.marker_data["heroTrack"] and self.review_layer:
-            self.marker_data["reviewTrack"] = self.review_layer
-        else:
-            self.marker_data["reviewTrack"] = "< none >"
-
         return self.current_segment
 
     def _populate_segment_default_data(self):
@@ -325,10 +320,10 @@ class PublishableClip:
             # driving layer is set as positive match
             if hero_track or self.vertical_sync:
                 # mark review layer
-                if self.review_track and (
-                        self.review_track not in self.review_track_default):
+                if self.review_source and (
+                        self.review_source not in self.review_source_default):
                     # if review layer is defined and not the same as default
-                    self.review_layer = self.review_track
+                    self.reviewable_source  = self.review_source
 
                 # shot num calculate
                 if self.index_from_segment:
