@@ -256,8 +256,16 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
                         "reviewableSource",
                         label="Reviewable Source",
                         tooltip=("Selecting source for reviewable files."),
-                        items=gui_tracks,
-                        enabled=current_review,
+                        items=(
+                            [
+                                {
+                                    "value": "clip_media",
+                                    "label": "[ Clip's media ]",
+                                },
+                            ]
+                            + gui_tracks
+                        ),
+                        disabled=not current_review,
                     ),
                 ]
             )
@@ -468,8 +476,7 @@ OTIO file.
             EnumDef(
                 "reviewableSource",
                 label="Reviewable Source",
-                tooltip="Generate preview videos on fly, if "
-                        "'< none >' is defined nothing will be generated.",
+                tooltip="Select source for reviewable files.",
                 items=[
                     {"value": None, "label": "< none >"},
                     {"value": "clip_media", "label": "[ Clip's media ]"},
