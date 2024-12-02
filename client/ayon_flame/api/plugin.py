@@ -321,7 +321,7 @@ class PublishableClip:
             if hero_track or self.vertical_sync:
                 # mark review layer
                 if self.review_source and (
-                        self.review_source not in self.review_source_default):
+                        self.review_source != self.review_source_default):
                     # if review layer is defined and not the same as default
                     self.reviewable_source  = self.review_source
 
