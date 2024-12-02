@@ -647,31 +647,31 @@ def create_otio_timeline(sequence):
     for audio_track in sequence.audio_tracks:
 
         if (
-            not audio_track.stereo or
-            audio_track.stereo and len(audio_track.channels) <= 2
+            len(audio_track.channels) == 0
+            and audio_track.stereo and len(audio_track.channels) < 2
         ):
-            audio_channel = audio_track.channels[0]
-
-            # avoid all empty tracks
-            # or hidden tracks
-            if (
-                len(audio_channel.segments) == 0
-                or audio_channel.hidden.get_value()
-            ):
-                continue
-
-            otio_track = create_otio_track(
-                "audio", audio_track.name or "unnamed")
-
-            segments = _get_segments_from_track(audio_channel)
-            log.debug("_ segments: %s", pformat(segments))
-            _distribute_segments_on_track(segments, otio_track)
-            otio_timeline.tracks.append(otio_track)
-
-        else:
             # Unsupported audio_track do not export.
-            log.debug("Unsupported audio track: %r", audio_track)            
+            log.debug("Unsupported audio track: %r", audio_track)
+            continue        
+
+        audio_channel = audio_track.channels[0]
+
+        # avoid all empty tracks
+        # or hidden tracks
+        if (
+            len(audio_channel.segments) == 0
+            or audio_channel.hidden.get_value()
+        ):
+            log.debug("Hidden or empty channel: %r", audio_channel)        
             continue
+
+        otio_track = create_otio_track(
+            "audio", audio_track.name or "unnamed")
+
+        segments = _get_segments_from_track(audio_channel)
+        log.debug("_ segments: %s", pformat(segments))
+        _distribute_segments_on_track(segments, otio_track)
+        otio_timeline.tracks.append(otio_track)
 
     return otio_timeline
 
