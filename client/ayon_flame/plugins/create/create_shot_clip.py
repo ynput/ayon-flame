@@ -217,7 +217,7 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
             reviewable_source = next(
                 attr_def
                 for attr_def in attr_defs
-                if attr_def.key == "reviewTrack"
+                if attr_def.key == "reviewableSource"
             )
             reviewable_source.enabled = review_value
 
@@ -227,7 +227,10 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
 
         current_sequence = lib.get_current_sequence(lib.CTX.selection)
         if current_sequence is not None:
-            gui_tracks = get_video_track_names(current_sequence)
+            gui_tracks = [
+                {"value": tr_name, "label": f"Track: {tr_name}"}
+                for tr_name in get_video_track_names(current_sequence)
+            ]
         else:
             gui_tracks = []
 
@@ -250,9 +253,9 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
                         default=False,
                     ),
                     EnumDef(
-                        "reviewTrack",
-                        label="Review Track",
-                        tooltip=("Selecting source from review tracks."),
+                        "reviewableSource",
+                        label="Reviewable Source",
+                        tooltip=("Selecting source for reviewable files."),
                         items=gui_tracks,
                         enabled=current_review,
                     ),
@@ -318,7 +321,10 @@ OTIO file.
 
         current_sequence = lib.get_current_sequence(lib.CTX.selection)
         if current_sequence is not None:
-            gui_tracks = get_video_track_names(current_sequence)
+            gui_tracks = [
+                {"value": tr_name, "label": f"Track: {tr_name}"}
+                for tr_name in get_video_track_names(current_sequence)
+            ]
         else:
             gui_tracks = []
 
@@ -460,11 +466,15 @@ OTIO file.
                 items=['plate', 'take'],
             ),
             EnumDef(
-                "reviewTrack",
-                label="Use Review Track",
+                "reviewableSource",
+                label="Reviewable Source",
                 tooltip="Generate preview videos on fly, if "
                         "'< none >' is defined nothing will be generated.",
-                items=['< none >'] + gui_tracks,
+                items=[
+                    {"value": None, "label": "< none >"},
+                    {"value": "clip_media", "label": "[ Clip's media ]"},
+                ]
+                + gui_tracks,
             ),
             BoolDef(
                 "export_audio",
@@ -680,10 +690,10 @@ OTIO file.
                         }
                     })
                     # add reviewable source to plate if shot has it
-                    if sub_instance_data.get("reviewTrack"):
+                    if sub_instance_data.get("reviewableSource"):
                         sub_instance_data["creator_attributes"].update({
-                            "reviewTrack": sub_instance_data[
-                                "reviewTrack"],
+                            "reviewableSource": sub_instance_data[
+                                "reviewableSource"],
                             "review": True,
                         })
 
@@ -804,9 +814,9 @@ OTIO file.
             })
 
             # add reviewable source to plate if shot has it
-            if sub_instance_data.get("reviewTrack") != "< none >":
+            if sub_instance_data.get("reviewableSource") != "< none >":
                 sub_instance_data["creator_attributes"].update({
-                    "reviewTrack": sub_instance_data[
+                    "reviewableSource": sub_instance_data[
                         "reviewTrack"],
                     "review": True,
                 })

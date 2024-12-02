@@ -92,7 +92,7 @@ class PublishableClip:
     rename_default = False
     hierarchy_default = "{_folder_}/{_sequence_}/{_track_}"
     clip_name_default = "shot_{_trackIndex_:0>3}_{_clipIndex_:0>4}"
-    review_track_default = "< none >"
+    review_source_default = None
     base_product_variant_default = "<track_name>"
     count_from_default = 10
     count_steps_default = 10
@@ -167,8 +167,8 @@ class PublishableClip:
 
         # if track name is in review track name and also if driving track name
         # is not in review track name: skip tag creation
-        if (self.track_name in self.review_layer) and (
-                self.driving_layer not in self.review_layer):
+        if (self.track_name in self.reviewable_source) and (
+                self.driving_layer not in self.reviewable_source):
             return
 
         # deal with clip name
@@ -253,8 +253,8 @@ class PublishableClip:
             "vSyncOn") or self.vertical_sync_default
         self.driving_layer = self.pre_create_data.get(
             "vSyncTrack") or self.driving_layer_default
-        self.review_track = self.pre_create_data.get(
-            "reviewTrack") or self.review_track_default
+        self.review_source = self.pre_create_data.get(
+            "reviewableSource") or self.review_source_default
         self.audio = self.pre_create_data.get("audio") or False
         self.include_handles = self.pre_create_data.get(
             "includeHandles") or self.include_handles_default
@@ -297,7 +297,7 @@ class PublishableClip:
         """
         # define vertical sync attributes
         hero_track = True
-        self.review_layer = ""
+        self.reviewable_source = ""
 
         if (
             self.vertical_sync and
@@ -316,6 +316,11 @@ class PublishableClip:
 
 
         if self.pre_create_data:
+
+            # backward compatibility for reviewableSource (2024.12.02)
+            if "reviewTrack" in self.pre_create_data:
+                _value = self.marker_data.pop("reviewTrack")
+                self.marker_data["reviewableSource"] = _value
 
             # driving layer is set as positive match
             if hero_track or self.vertical_sync:
@@ -434,6 +439,32 @@ class PublishableClip:
 
         # add data to return data dict
         self.marker_data.update(tag_hierarchy_data)
+
+        # add review track only to hero track
+        if hero_track and self.reviewable_source:
+            self.marker_data["reviewTrack"] = self.reviewable_source
+        else:
+            self.marker_data["reviewTrack"] = None
+
+        # add only review related data if reviewable source is set
+        if self.reviewable_source:
+            review_switch = True
+            reviewable_source = self.reviewable_source
+
+            if self.vertical_sync and not hero_track:
+                review_switch = False
+                reviewable_source = False
+
+            if review_switch:
+                self.marker_data["review"] = True
+            else:
+                self.marker_data.pop("review", None)
+
+            if reviewable_source:
+                self.marker_data["reviewableSource"] = reviewable_source
+            else:
+                self.marker_data.pop("reviewableSource", None)
+
 
     def _solve_tag_hierarchy_data(self, hierarchy_formatting_data):
         """ Solve marker data from hierarchy data and templates. """
