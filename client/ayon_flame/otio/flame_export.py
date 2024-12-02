@@ -568,19 +568,13 @@ def _distribute_segments_on_track(segments, otio_track):
     """
     if not segments:
         return
-
+    prev_item_record_out = segments[0]["record_out"]
     for itemindex, segment_data in enumerate(segments):
         log.debug("_ itemindex: %d", itemindex)
         log.debug("_ segment_data: %r", segment_data)
 
-        prev_item = (
-            segment_data
-            if itemindex == 0
-            else segments[itemindex - 1]
-        )
-
         # calculate clip frame range difference from each other
-        clip_diff = segment_data["record_in"] - prev_item["record_out"]
+        clip_diff = segment_data["record_in"] - prev_item_record_out
 
         # initial track gap
         # add gap if first track item is not starting
@@ -593,12 +587,13 @@ def _distribute_segments_on_track(segments, otio_track):
         # frame range differences from each other
         elif itemindex and clip_diff != 1:
             add_otio_gap(
-                segment_data, otio_track, prev_item["record_out"])
+                segment_data, otio_track, prev_item_record_out)
 
         # create otio clip and add it to track
         otio_clip = create_otio_clip(segment_data)
         log.debug("_ otio_clip: %r", otio_clip)
         otio_track.append(otio_clip)
+        prev_item_record_out = segment_data["record_out"]
 
 
 def create_otio_timeline(sequence):
