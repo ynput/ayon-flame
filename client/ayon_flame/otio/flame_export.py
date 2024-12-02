@@ -568,6 +568,7 @@ def _distribute_segments_on_track(segments, otio_track):
     """
     if not segments:
         return
+
     prev_item_record_out = segments[0]["record_out"]
     for itemindex, segment_data in enumerate(segments):
         log.debug("_ itemindex: %d", itemindex)
