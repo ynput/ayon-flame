@@ -455,10 +455,7 @@ class PublishableClip:
             else:
                 self.marker_data.pop("review", None)
 
-            if reviewable_source:
-                self.marker_data["reviewableSource"] = reviewable_source
-            else:
-                self.marker_data.pop("reviewableSource", None)
+            self.marker_data["reviewableSource"] = reviewable_source
 
 
     def _solve_tag_hierarchy_data(self, hierarchy_formatting_data):

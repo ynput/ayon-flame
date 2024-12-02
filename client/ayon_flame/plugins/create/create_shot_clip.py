@@ -624,10 +624,10 @@ OTIO file.
 
             # Create new product(s) instances.
             clip_instances = {}
-            # desable shot creator if heroTrack is not enabled
+            # disable shot creator if heroTrack is not enabled
             all_creators[shot_creator_id] = segment_instance_data.get(
                 "heroTrack", False)
-            # desable audio creator if audio is not enabled
+            # disable audio creator if audio is not enabled
             all_creators[audio_creator_id] = (
                 segment_instance_data.get("heroTrack", False) and
                 pre_create_data.get("export_audio", False)

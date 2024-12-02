@@ -31,7 +31,7 @@ class CollectPlate(pyblish.api.InstancePlugin):
 
         review_switch = instance.data["creator_attributes"].get(
             "review")
-        reviewableSource = instance.data["creator_attributes"].get(
+        reviewable_source = instance.data["creator_attributes"].get(
             "reviewableSource")
 
         if review_switch:
