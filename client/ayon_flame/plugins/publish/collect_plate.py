@@ -1,3 +1,4 @@
+import os
 import pyblish
 
 import ayon_flame.api as ayfapi
