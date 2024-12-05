@@ -105,7 +105,8 @@ class LoadClip(ayfapi.ClipLoader):
             openclip_path
         )
 
-        # add additional metadata from the version to imprint basic folder attributes
+        # add additional metadata from the version to imprint basic
+        # folder attributes
         add_keys = [
             "frameStart", "frameEnd", "source", "author",
             "fps", "handleStart", "handleEnd"
@@ -209,7 +210,8 @@ class LoadClip(ayfapi.ClipLoader):
     #     if colorspace:
     #         clip.setSourceMediaColourTransform(colorspace)
 
-    #     # add additional metadata from the version to imprint basic folder attributes
+    #     # add additional metadata from the version to imprint basic
+    #     # folder attributes
     #     add_keys = [
     #         "frameStart", "frameEnd", "source", "author",
     #         "fps", "handleStart", "handleEnd"

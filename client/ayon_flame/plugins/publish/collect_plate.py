@@ -25,7 +25,8 @@ class CollectPlate(pyblish.api.InstancePlugin):
             otio_timeline, instance.data["clip_index"]
         )
         if not otio_clip:
-            raise RuntimeError("Could not retrieve otioClip for shot %r", instance)
+            raise RuntimeError(
+                f"Could not retrieve otioClip for shot {instance}")
 
         instance.data["otioClip"] = otio_clip
 
@@ -60,4 +61,5 @@ class CollectPlate(pyblish.api.InstancePlugin):
         version_data["colorSpace"] = clip_data["colour_space"]
         instance.data["colorspace"] = clip_data["colour_space"]
 
-        instance.data["shotDurationFromSource"] = instance.data.get("retimedFramerange")
+        instance.data["shotDurationFromSource"] = instance.data.get(
+            "retimedFramerange")

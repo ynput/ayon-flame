@@ -123,7 +123,10 @@ class _FlameInstanceCreator(plugin.HiddenFlameCreator):
         })
 
         new_instance = CreatedInstance(
-            self.product_type, instance_data["productName"], instance_data, self
+            self.product_type,
+            instance_data["productName"],
+            instance_data,
+            self
         )
         self._add_instance_to_context(new_instance)
         new_instance.transient_data["has_promised_context"] = True
@@ -620,7 +623,8 @@ OTIO file.
             # Delete any existing instances previously generated for the clip.
             prev_tag_data = lib.get_segment_data_marker(segment)
             if prev_tag_data:
-                for creator_id, inst_data in prev_tag_data.get(_CONTENT_ID, {}).items():
+                for creator_id, inst_data in prev_tag_data.get(
+                        _CONTENT_ID, {}).items():
                     creator = self.create_context.creators[creator_id]
                     prev_instance = self.create_context.instances_by_id.get(
                         inst_data["instance_id"]
@@ -639,7 +643,8 @@ OTIO file.
                 pre_create_data.get("export_audio", False)
             )
 
-            enabled_creators = tuple(cre for cre, enabled in all_creators.items() if enabled)
+            enabled_creators = tuple(
+                cre for cre, enabled in all_creators.items() if enabled)
             clip_instances = {}
             shot_folder_path = segment_instance_data["folderPath"]
             shot_instances = self.shot_instances.setdefault(
@@ -659,32 +664,35 @@ OTIO file.
                     segment_duration = int(segment_data["record_duration"])
                     workfileFrameStart = sub_instance_data[
                         "workfileFrameStart"]
-                    sub_instance_data.update({
-                        "variant": "main",
-                        "productType": "shot",
-                        "productName": "shotMain",
-                        "creator_attributes": {
-                            "workfileFrameStart": sub_instance_data[
-                                "workfileFrameStart"],
-                            "handleStart": sub_instance_data["handleStart"],
-                            "handleEnd": sub_instance_data["handleEnd"],
-                            "frameStart": workfileFrameStart,
-                            "frameEnd": (
-                                workfileFrameStart + segment_duration),
-                            "clipIn": int(segment_data["record_in"]),
-                            "clipOut": int(segment_data["record_out"]),
-                            "clipDuration": segment_duration,
-                            "sourceIn": int(segment_data["source_in"]),
-                            "sourceOut": int(segment_data["source_out"]),
-                            "includeHandles": pre_create_data[
-                                "includeHandles"],
-                            "retimedHandles": pre_create_data[
-                                "retimedHandles"],
-                            "retimedFramerange": pre_create_data[
-                                "retimedFramerange"],
-                        },
-                        "label": f"{shot_folder_path} shot",
-                    })
+                    sub_instance_data.update(
+                        {
+                            "variant": "main",
+                            "productType": "shot",
+                            "productName": "shotMain",
+                            "creator_attributes": {
+                                "workfileFrameStart": workfileFrameStart,
+                                "handleStart": sub_instance_data[
+                                    "handleStart"],
+                                "handleEnd": sub_instance_data["handleEnd"],
+                                "frameStart": workfileFrameStart,
+                                "frameEnd": (
+                                    workfileFrameStart + segment_duration),
+                                "clipIn": int(segment_data["record_in"]),
+                                "clipOut": int(segment_data["record_out"]),
+                                "clipDuration": segment_duration,
+                                "sourceIn": int(segment_data["source_in"]),
+                                "sourceOut": int(segment_data["source_out"]),
+                                "includeHandles": pre_create_data[
+                                    "includeHandles"],
+                                "retimedHandles": pre_create_data[
+                                    "retimedHandles"],
+                                "retimedFramerange": pre_create_data[
+                                    "retimedFramerange"
+                                ],
+                            },
+                            "label": f"{shot_folder_path} shot",
+                        }
+                    )
 
                 # Plate,
                 # insert parent instance data to allow
@@ -693,7 +701,8 @@ OTIO file.
                     parenting_data = shot_instances[shot_creator_id]
                     sub_instance_data.update(
                         {
-                            "parent_instance_id": parenting_data["instance_id"],
+                            "parent_instance_id": parenting_data[
+                                "instance_id"],
                             "label": (
                                 f"{sub_instance_data['folderPath']} "
                                 f"{sub_instance_data['productName']}"
@@ -722,7 +731,8 @@ OTIO file.
                     parenting_data = shot_instances[shot_creator_id]
                     sub_instance_data.update(
                         {
-                            "parent_instance_id": parenting_data["instance_id"],
+                            "parent_instance_id": parenting_data[
+                                "instance_id"],
                             "label": (
                                 f"{sub_instance_data['folderPath']} "
                                 f"{sub_instance_data['productName']}"
@@ -757,8 +767,8 @@ OTIO file.
 
         return instances
 
-    def _create_and_add_instance(self, data, creator_id,
-            segment, instances):
+    def _create_and_add_instance(
+            self, data, creator_id, segment, instances):
         """
         Args:
             data (dict): The data to re-recreate the instance from.
@@ -797,17 +807,15 @@ OTIO file.
         sub_instance_data = instance_data.copy()
         segment_data = flame_export.get_segment_attributes(segment)
         segment_duration = int(segment_data["record_duration"])
-        workfileFrameStart = \
-            sub_instance_data["workfileFrameStart"]
+        workfileFrameStart = sub_instance_data["workfileFrameStart"]
         sub_instance_data.update({
             "creator_attributes": {
-                "workfileFrameStart": \
-                    sub_instance_data["workfileFrameStart"],
+                "workfileFrameStart": workfileFrameStart,
                 "handleStart": sub_instance_data["handleStart"],
                 "handleEnd": sub_instance_data["handleEnd"],
                 "frameStart": workfileFrameStart,
-                "frameEnd": (workfileFrameStart +
-                    segment_duration),
+                "frameEnd": (
+                    workfileFrameStart + segment_duration),
                 "clipIn": int(segment_data["record_in"]),
                 "clipOut": int(segment_data["record_out"]),
                 "clipDuration": segment_duration,

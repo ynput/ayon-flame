@@ -29,7 +29,8 @@ class CollectAudio(pyblish.api.InstancePlugin):
             otio_timeline, instance.data["clip_index"]
         )
         if not otio_clip:
-            raise RuntimeError("Could not retrieve otioClip for shot %r", instance)
+            raise RuntimeError(
+                f"Could not retrieve otioClip for shot {instance}")
 
         instance.data["otioClip"] = otio_clip
 
