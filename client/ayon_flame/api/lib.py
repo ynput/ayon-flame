@@ -1161,7 +1161,8 @@ class MediaInfoFile(object):
 
                     # height
                     out_feed_height_obj = out_feed.find("storageFormat/height")
-                    self.height = int(self._get_typed_value(out_feed_height_obj))
+                    self.height = int(
+                        self._get_typed_value(out_feed_height_obj))
 
                     # pixel aspect ratio
                     out_feed_pixel_aspect_obj = out_feed.find(

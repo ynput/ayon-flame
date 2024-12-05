@@ -53,7 +53,7 @@ def _get_main_window():
             None
         )
     return _MAIN_WINDOW
-        
+
 
 class _FlameMenuApp(object):
     def __init__(self, framework):
@@ -83,7 +83,11 @@ class _FlameMenuApp(object):
         project_name = get_current_project_name()
         self.menu = {
             "actions": [
-                {"name": f"0 - {project_name or 'project'}", "isEnabled": False}],
+                {
+                    "name": f"0 - {project_name or 'project'}",
+                    "isEnabled": False
+                }
+            ],
             "name": self.menu_group_name,
         }
         self.tools_helper = host_tools.HostToolsHelper(

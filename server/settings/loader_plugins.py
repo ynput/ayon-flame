@@ -93,7 +93,8 @@ DEFAULT_LOADER_SETTINGS = {
             "review"
         ],
         "reel_name": "AYON_LoadedReel",
-        "clip_name_template": "{batch}_{folder[name]}_{product[name]}<_{output}>",
+        "clip_name_template": (
+            "{batch}_{folder[name]}_{product[name]}<_{output}>"),
         "layer_rename_template": "{folder[name]}_{product[name]}<_{output}>",
         "layer_rename_patterns": [
             "rgb",

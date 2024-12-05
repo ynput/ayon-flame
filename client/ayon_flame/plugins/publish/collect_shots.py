@@ -44,7 +44,7 @@ class CollectShot(pyblish.api.InstancePlugin):
 
     # TODO: add to own plugin for Flame
     # TODO: toggle for marking task which should be used for product parent
-    add_tasks = []    
+    add_tasks = []
 
     @classmethod
     def _inject_editorial_shared_data(cls, instance):
@@ -84,7 +84,8 @@ class CollectShot(pyblish.api.InstancePlugin):
             otio_timeline, instance.data["clip_index"]
         )
         if not otio_clip:
-            raise RuntimeError("Could not retrieve otioClip for shot %r", instance)
+            raise RuntimeError(
+                f"Could not retrieve otioClip for shot {instance}")
 
         # Compute fps from creator attribute.
         creator_attrs = instance.data['creator_attributes']
@@ -99,18 +100,19 @@ class CollectShot(pyblish.api.InstancePlugin):
         for item in instance.context.data["flameSegments"]:
             item_data = ayfapi.get_segment_data_marker(item) or {}
             if item_data.get("clip_index") == instance.data["clip_index"]:
-                 segment_item = item
-                 break
+                segment_item = item
+                break
 
         if segment_item is None:
-            raise PublishError("Could not retrieve source from sequence segments.")
+            raise PublishError(
+                "Could not retrieve source from sequence segments.")
 
         comment_attributes = self._get_comment_attributes(segment_item)
         instance.data.update(comment_attributes)
 
         clip_data = ayfapi.get_segment_attributes(segment_item)
         clip_name = clip_data["segment_name"]
-        self.log.debug("clip_name: {}".format(clip_name))
+        self.log.debug(f"clip_name: {clip_name}")
 
         # get file path
         file_path = clip_data["fpath"]
@@ -142,8 +144,6 @@ class CollectShot(pyblish.api.InstancePlugin):
             "path": file_path,
             "sourceFirstFrame": int(first_frame),
             "workfileFrameStart": workfile_start,
-
-            #TODO
             "flameAddTasks": self.add_tasks,
             "tasks": {
                 task["name"]: {"type": task["type"]}
@@ -153,7 +153,7 @@ class CollectShot(pyblish.api.InstancePlugin):
 
         self._get_resolution_to_data(instance.data, instance.context)
         self._inject_editorial_shared_data(instance)
-        self.log.debug("__ inst_data: {}".format(pformat(instance.data)))
+        self.log.debug(f"__ inst_data: {pformat(instance.data)}")
 
     @staticmethod
     def _set_workfile_start(data):
@@ -279,15 +279,14 @@ class CollectShot(pyblish.api.InstancePlugin):
         # calculate head and tail with forward compatibility
         head = clip_data.get("segment_head")
         tail = clip_data.get("segment_tail")
-        self.log.debug("__ head: `{}`".format(head))
-        self.log.debug("__ tail: `{}`".format(tail))
+        self.log.debug(f"__ head: `{head}`")
+        self.log.debug(f"__ tail: `{tail}`")
 
         # HACK: it is here to serve for versions below 2021.1
         if not any([head, tail]):
             retimed_attributes = get_media_range_with_retimes(
                 otio_clip, handle_start, handle_end)
-            self.log.debug(
-                ">> retimed_attributes: {}".format(retimed_attributes))
+            self.log.debug(f">> retimed_attributes: {retimed_attributes}")
 
             # retimed head and tail
             head = int(retimed_attributes["handleStart"])
