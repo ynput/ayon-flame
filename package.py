@@ -1,6 +1,6 @@
 name = "flame"
 title = "Flame"
-version = "0.2.5+dev"
+version = "1.0.0"
 app_host_name = "flame"
 client_dir = "ayon_flame"
 

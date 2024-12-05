@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 """Package declaring AYON addon 'flame' version."""
-__version__ = "0.2.5+dev"
+__version__ = "1.0.0"
