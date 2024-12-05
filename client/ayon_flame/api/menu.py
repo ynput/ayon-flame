@@ -183,11 +183,16 @@ class FlameMenuTimeline(_FlameMenuApp):
 
         menu = deepcopy(self.menu)
 
-        menu['actions'].append({
-            "name": "1 - Create...",
-            "execute": lambda x: callback_selection(
-                x, self.tools_helper.show_creator)
-        })
+        menu['actions'].append(
+            {
+                "name": "1 - Create...",
+                "execute": lambda x: callback_selection(
+                    x, host_tools.show_publisher(
+                        tab="create", parent=_get_main_window()
+                    )
+                ),
+            }
+        )
         menu["actions"].append(
             {
                 "name": "2 - Publish...",

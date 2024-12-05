@@ -490,7 +490,7 @@ def _get_shot_tokens_values(clip, tokens):
     return output
 
 
-def _get_segment_attributes(segment):
+def get_segment_attributes(segment):
 
     log.debug("Segment name|hidden: {}|{}".format(
         segment.name.get_value(), segment.hidden
@@ -577,7 +577,7 @@ def create_otio_timeline(sequence):
 
             all_segments = []
             for segment in track.segments:
-                clip_data = _get_segment_attributes(segment)
+                clip_data = get_segment_attributes(segment)
                 if not clip_data:
                     continue
                 all_segments.append(clip_data)
