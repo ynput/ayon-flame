@@ -263,6 +263,9 @@ def get_current_sequence(selection):
 
     process_timeline = None
 
+    if not selection:
+        selection = [flame.timeline.current_segment]
+
     if len(selection) == 1:
         if isinstance(selection[0], flame.PySequence):
             process_timeline = selection[0]

@@ -99,7 +99,7 @@ CLIP_ATTR_DEFS = [
         "retimedFramerange",
         label="Retimed framerange",
         default=True,
-    ),    
+    ),
 ]
 
 
@@ -366,7 +366,7 @@ OTIO file.
                 label="Use shot name",
                 tooltip="Use name form Shot name clip attribute.",
                 default=presets.get("useShotName", True),
-            ),            
+            ),
             BoolDef(
                 "clipRename",
                 label="Rename clips",
@@ -385,7 +385,7 @@ OTIO file.
                 label="Segment Index",
                 tooltip="Take number from segment index",
                 default=True,
-            ),            
+            ),
             NumberDef(
                 "countFrom",
                 label="Count sequence from",
@@ -538,7 +538,6 @@ OTIO file.
             ),
         ]
 
-
     def create(self, product_name, instance_data, pre_create_data):
         super().create(
             product_name,
@@ -649,60 +648,92 @@ OTIO file.
             for creator_id in enabled_creators:
                 creator = self.create_context.creators[creator_id]
                 sub_instance_data = deepcopy(segment_instance_data)
+                creator_attributes = sub_instance_data.setdefault(
+                    "creator_attributes", {}
+                )
                 shot_folder_path = sub_instance_data["folderPath"]
 
                 # Shot creation
                 if creator_id == shot_creator_id:
                     segment_data = flame_export.get_segment_attributes(segment)
                     segment_duration = int(segment_data["record_duration"])
-                    workfileFrameStart = \
-                        sub_instance_data["workfileFrameStart"]
+                    workfileFrameStart = sub_instance_data[
+                        "workfileFrameStart"]
                     sub_instance_data.update({
                         "variant": "main",
                         "productType": "shot",
-                        "productName": "shotMain",                        
+                        "productName": "shotMain",
                         "creator_attributes": {
-                            "workfileFrameStart": \
-                                sub_instance_data["workfileFrameStart"],
+                            "workfileFrameStart": sub_instance_data[
+                                "workfileFrameStart"],
                             "handleStart": sub_instance_data["handleStart"],
                             "handleEnd": sub_instance_data["handleEnd"],
                             "frameStart": workfileFrameStart,
-                            "frameEnd": (workfileFrameStart +
-                                segment_duration),
+                            "frameEnd": (
+                                workfileFrameStart + segment_duration),
                             "clipIn": int(segment_data["record_in"]),
                             "clipOut": int(segment_data["record_out"]),
                             "clipDuration": segment_duration,
                             "sourceIn": int(segment_data["source_in"]),
                             "sourceOut": int(segment_data["source_out"]),
-                            "includeHandles": pre_create_data["includeHandles"],
-                            "retimedHandles": pre_create_data["retimedHandles"],
-                            "retimedFramerange": pre_create_data["retimedFramerange"],                         
+                            "includeHandles": pre_create_data[
+                                "includeHandles"],
+                            "retimedHandles": pre_create_data[
+                                "retimedHandles"],
+                            "retimedFramerange": pre_create_data[
+                                "retimedFramerange"],
                         },
                         "label": f"{shot_folder_path} shot",
                     })
 
-                # Plate, Audio
+                # Plate,
                 # insert parent instance data to allow
                 # metadata recollection as publish time.
-                else:
+                elif creator_id == plate_creator_id:
                     parenting_data = shot_instances[shot_creator_id]
-                    sub_instance_data.update({
-                        "parent_instance_id": parenting_data["instance_id"],
-                        "label": (
-                            f"{sub_instance_data['folderPath']} "
-                            f"{sub_instance_data['productName']}"
-                        ),
-                        "creator_attributes": {
-                            "parentInstance": parenting_data["label"],
+                    sub_instance_data.update(
+                        {
+                            "parent_instance_id": parenting_data["instance_id"],
+                            "label": (
+                                f"{sub_instance_data['folderPath']} "
+                                f"{sub_instance_data['productName']}"
+                            ),
                         }
-                    })
-                    # add reviewable source to plate if shot has it
+                    )
+                    creator_attributes["parentInstance"] = parenting_data[
+                        "label"]
                     if sub_instance_data.get("reviewableSource"):
-                        sub_instance_data["creator_attributes"].update({
-                            "reviewableSource": sub_instance_data[
-                                "reviewableSource"],
-                            "review": True,
-                        })
+                        creator_attributes.update(
+                            {
+                                "review": True,
+                                "reviewableSource": sub_instance_data[
+                                    "reviewableSource"
+                                ],
+                            }
+                        )
+
+                # Audio
+                # insert parent instance data
+                elif creator_id == audio_creator_id:
+                    sub_instance_data["variant"] = "main"
+                    sub_instance_data["productType"] = "audio"
+                    sub_instance_data["productName"] = "audioMain"
+
+                    parenting_data = shot_instances[shot_creator_id]
+                    sub_instance_data.update(
+                        {
+                            "parent_instance_id": parenting_data["instance_id"],
+                            "label": (
+                                f"{sub_instance_data['folderPath']} "
+                                f"{sub_instance_data['productName']}"
+                            )
+                        }
+                    )
+                    creator_attributes["parentInstance"] = parenting_data[
+                        "label"]
+
+                    if sub_instance_data.get("reviewableSource"):
+                        creator_attributes["review"] = True
 
                 instance = creator.create(sub_instance_data, None)
                 instance.transient_data["segment_item"] = segment
@@ -784,7 +815,7 @@ OTIO file.
                 "sourceOut": int(segment_data["source_out"]),
                 "includeHandles": sub_instance_data["includeHandles"],
                 "retimedHandles": sub_instance_data["retimedHandles"],
-                "retimedFramerange": sub_instance_data["retimedFramerange"],                         
+                "retimedFramerange": sub_instance_data["retimedFramerange"],
             },
             "label": (
                 f"{sub_instance_data['folderPath']} shot"
@@ -804,7 +835,7 @@ OTIO file.
         if instance_data["audio"]:
             sub_creators.append(
                 "io.ayon.creators.flame.audio"
-            )            
+            )
 
         for sub_creator_id in sub_creators:
             sub_instance_data = deepcopy(instance_data)
@@ -844,7 +875,7 @@ OTIO file.
         return clip_instances.values()
 
     def collect_instances(self):
-        """Collect all created instances from current timeline."""        
+        """Collect all created instances from current timeline."""
         current_sequence = lib.get_current_sequence(lib.CTX.selection)
 
         for segment in lib.get_sequence_segments(current_sequence):
@@ -864,7 +895,7 @@ OTIO file.
 
             for creator_id, data in marker_data[_CONTENT_ID].items():
                 self._create_and_add_instance(
-                    data, creator_id, segment, instances)                
+                    data, creator_id, segment, instances)
 
         return instances
 

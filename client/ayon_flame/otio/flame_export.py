@@ -541,6 +541,62 @@ def get_segment_attributes(segment):
     return clip_data
 
 
+def _get_segments_from_track(flame_track):
+    """ Gather segment(s) from a flame track.
+
+    Args:
+        flame_track flame.PyTrack: The Flame track.
+
+    Returns:
+        List[flame.PySegment]. The gathered segments.
+    """
+    all_segments = []
+    for segment in flame_track.segments:
+        clip_data = get_segment_attributes(segment)
+        if clip_data:
+            all_segments.append(clip_data)
+
+    return all_segments
+
+
+def _distribute_segments_on_track(segments, otio_track):
+    """ Distribute some Flame segments on an OTIO track.
+
+    Args:
+        segments List[flame.PySegments]: The segments to put on the track.
+        otio_track opentimelineio.schema.Track: OTIO track.
+    """
+    if not segments:
+        return
+
+    prev_item_record_out = segments[0]["record_out"]
+    for itemindex, segment_data in enumerate(segments):
+        log.debug("_ itemindex: %d", itemindex)
+        log.debug("_ segment_data: %r", segment_data)
+
+        # calculate clip frame range difference from each other
+        clip_diff = segment_data["record_in"] - prev_item_record_out
+
+        # initial track gap
+        # add gap if first track item is not starting
+        # at first timeline frame
+        if itemindex == 0 and segment_data["record_in"] > 0:
+            add_otio_gap(segment_data, otio_track, 0)
+
+        # inbetween clip gap
+        # or add gap if following track items are having
+        # frame range differences from each other
+        elif itemindex and clip_diff != 1:
+            add_otio_gap(
+                segment_data, otio_track, prev_item_record_out)
+
+        # create otio clip and add it to track
+        otio_clip = create_otio_clip(segment_data)
+        log.debug("_ otio_clip: %r", otio_clip)
+        otio_track.append(otio_clip)
+        prev_item_record_out = segment_data["record_out"]
+
+
 def create_otio_timeline(sequence):
     log.info(dir(sequence))
     log.info(sequence.attributes)
@@ -560,7 +616,7 @@ def create_otio_timeline(sequence):
     # convert timeline to otio
     otio_timeline = _create_otio_timeline(sequence)
 
-    # create otio tracks and clips
+    # create otio video tracks with clips
     for ver in sequence.versions:
         for track in ver.tracks:
             # avoid all empty tracks
@@ -575,56 +631,43 @@ def create_otio_timeline(sequence):
             otio_track = create_otio_track(
                 "video", str(track.name)[1:-1])
 
-            all_segments = []
-            for segment in track.segments:
-                clip_data = get_segment_attributes(segment)
-                if not clip_data:
-                    continue
-                all_segments.append(clip_data)
-
-            segments_ordered = dict(enumerate(all_segments))
-            log.debug("_ segments_ordered: {}".format(
-                pformat(segments_ordered)
-            ))
-            if not segments_ordered:
-                continue
-
-            for itemindex, segment_data in segments_ordered.items():
-                log.debug("_ itemindex: {}".format(itemindex))
-
-                # Add Gap if needed
-                prev_item = (
-                    segment_data
-                    if itemindex == 0
-                    else segments_ordered[itemindex - 1]
-                )
-                log.debug("_ segment_data: {}".format(segment_data))
-
-                # calculate clip frame range difference from each other
-                clip_diff = segment_data["record_in"] - prev_item["record_out"]
-
-                # add gap if first track item is not starting
-                # at first timeline frame
-                if itemindex == 0 and segment_data["record_in"] > 0:
-                    add_otio_gap(segment_data, otio_track, 0)
-
-                # or add gap if following track items are having
-                # frame range differences from each other
-                elif itemindex and clip_diff != 1:
-                    add_otio_gap(
-                        segment_data, otio_track, prev_item["record_out"])
-
-                # create otio clip and add it to track
-                otio_clip = create_otio_clip(segment_data)
-                otio_track.append(otio_clip)
-
-                log.debug("_ otio_clip: {}".format(otio_clip))
-
-                # create otio marker
-                # create otio metadata
+            # Add segments onto track.
+            segments = _get_segments_from_track(track)
+            log.debug("_ segments: %s", pformat(segments))
+            _distribute_segments_on_track(segments, otio_track)
 
             # add track to otio timeline
             otio_timeline.tracks.append(otio_track)
+
+    # create otio audio tracks with clips
+    for audio_track in sequence.audio_tracks:
+
+        if (
+            len(audio_track.channels) == 0
+            and audio_track.stereo and len(audio_track.channels) < 2
+        ):
+            # Unsupported audio_track do not export.
+            log.debug("Unsupported audio track: %r", audio_track)
+            continue
+
+        audio_channel = audio_track.channels[0]
+
+        # avoid all empty tracks
+        # or hidden tracks
+        if (
+            len(audio_channel.segments) == 0
+            or audio_channel.hidden.get_value()
+        ):
+            log.debug("Hidden or empty channel: %r", audio_channel)
+            continue
+
+        otio_track = create_otio_track(
+            "audio", audio_track.name or "unnamed")
+
+        segments = _get_segments_from_track(audio_channel)
+        log.debug("_ segments: %s", pformat(segments))
+        _distribute_segments_on_track(segments, otio_track)
+        otio_timeline.tracks.append(otio_track)
 
     return otio_timeline
 
