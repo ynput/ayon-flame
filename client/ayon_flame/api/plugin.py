@@ -94,6 +94,7 @@ class PublishableClip:
     clip_name_default = "shot_{_trackIndex_:0>3}_{_clipIndex_:0>4}"
     review_source_default = None
     base_product_variant_default = "<track_name>"
+    product_type_default = "plate"
     count_from_default = 10
     count_steps_default = 10
     vertical_sync_default = False
@@ -243,7 +244,10 @@ class PublishableClip:
             "countSteps") or self.count_steps_default
         self.base_product_variant = self.pre_create_data.get(
             "clipVariant") or self.base_product_variant_default
-        self.base_product_type = self.product_type
+        self.product_type = (
+            self.pre_create_data.get("productType")
+            or self.product_type_default
+        )
         self.vertical_sync = self.pre_create_data.get(
             "vSyncOn") or self.vertical_sync_default
         self.driving_layer = self.pre_create_data.get(
@@ -309,7 +313,6 @@ class PublishableClip:
         hierarchy_data = deepcopy(self.hierarchy_data)
         _data = self.current_segment_default_data.copy()
 
-
         if self.pre_create_data:
 
             # backward compatibility for reviewableSource (2024.12.02)
@@ -351,14 +354,13 @@ class PublishableClip:
             # if no gui mode then just pass default data
             hierarchy_formatting_data = hierarchy_data
 
-        tag_hierarchy_data = self._solve_tag_hierarchy_data(
-            hierarchy_formatting_data
-        )
+        tag_instance_data = self._solve_tag_instance_data(
+            hierarchy_formatting_data)
 
-        tag_hierarchy_data.update({"heroTrack": True})
+        tag_instance_data.update({"heroTrack": True})
         if hero_track and self.vertical_sync:
             self.vertical_clip_match.update({
-                (self.clip_in, self.clip_out): tag_hierarchy_data
+                (self.clip_in, self.clip_out): tag_instance_data
             })
 
         if not hero_track and self.vertical_sync:
@@ -426,14 +428,14 @@ class PublishableClip:
                 _distrib_data["productName"] = clip_product_name
                 _distrib_data["variant"] = variant
                 # assign data to return hierarchy data to tag
-                tag_hierarchy_data = _distrib_data
+                tag_instance_data = _distrib_data
 
                 # add used product name to used list to avoid duplicity
                 used_names_list.append(clip_product_name)
                 break
 
         # add data to return data dict
-        self.marker_data.update(tag_hierarchy_data)
+        self.marker_data.update(tag_instance_data)
 
         # add review track only to hero track
         if hero_track and self.reviewable_source:
@@ -457,8 +459,7 @@ class PublishableClip:
 
             self.marker_data["reviewableSource"] = reviewable_source
 
-
-    def _solve_tag_hierarchy_data(self, hierarchy_formatting_data):
+    def _solve_tag_instance_data(self, hierarchy_formatting_data):
         """ Solve marker data from hierarchy data and templates. """
         # fill up clip name and hierarchy keys
         hierarchy_filled = self.hierarchy.format(**hierarchy_formatting_data)
@@ -473,7 +474,7 @@ class PublishableClip:
             "parents": self.parents,
             "hierarchyData": hierarchy_formatting_data,
             "productName": self.product_name,
-            "productType": self.base_product_type,
+            "productType": self.product_type_default,
             "variant": self.variant,
         }
 
