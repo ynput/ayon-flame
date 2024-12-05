@@ -552,7 +552,7 @@ def _get_segments_from_track(flame_track):
     """
     all_segments = []
     for segment in flame_track.segments:
-        clip_data = _get_segment_attributes(segment)
+        clip_data = get_segment_attributes(segment)
         if clip_data:
             all_segments.append(clip_data)
 
@@ -648,7 +648,7 @@ def create_otio_timeline(sequence):
         ):
             # Unsupported audio_track do not export.
             log.debug("Unsupported audio track: %r", audio_track)
-            continue        
+            continue
 
         audio_channel = audio_track.channels[0]
 
@@ -658,7 +658,7 @@ def create_otio_timeline(sequence):
             len(audio_channel.segments) == 0
             or audio_channel.hidden.get_value()
         ):
-            log.debug("Hidden or empty channel: %r", audio_channel)        
+            log.debug("Hidden or empty channel: %r", audio_channel)
             continue
 
         otio_track = create_otio_track(
