@@ -104,7 +104,7 @@ class PublishableClip:
     retimed_handles_default = True
     retimed_framerange_default = True
 
-    def __init__(self, 
+    def __init__(self,
             segment,
             pre_create_data=None,
             data=None,
@@ -270,7 +270,7 @@ class PublishableClip:
 
         # create product for publishing
         self.product_name = (
-            self.base_product_type + self.variant.capitalize()
+            self.product_type + self.variant.capitalize()
         )
 
         self.hierarchy_data = {
