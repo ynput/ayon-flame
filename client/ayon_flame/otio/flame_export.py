@@ -490,7 +490,7 @@ def _get_shot_tokens_values(clip, tokens):
     return output
 
 
-def _get_segment_attributes(segment):
+def get_segment_attributes(segment):
 
     log.debug("Segment name|hidden: {}|{}".format(
         segment.name.get_value(), segment.hidden
