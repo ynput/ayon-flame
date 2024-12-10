@@ -24,7 +24,7 @@ default_flame_export_presets = {
         'PresetType': 0,
         'PresetFile': 'Generate Thumbnail.xml'
     }
-}
+}    
 
 
 def callback_selection(selection, function):
