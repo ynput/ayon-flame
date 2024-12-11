@@ -143,6 +143,11 @@ class _FlameInstanceCreator(plugin.HiddenFlameCreator):
             segment_item = created_inst.transient_data["segment_item"]
             marker_data = ayfapi.get_segment_data_marker(segment_item)
 
+            # Backwards compatible (Deprecated since 24/09/05)
+            # ignore instance if no existing marker data
+            if marker_data is None:
+                continue
+
             try:
                 instances_data = marker_data[_CONTENT_ID]
 
