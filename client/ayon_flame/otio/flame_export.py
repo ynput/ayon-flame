@@ -208,13 +208,16 @@ def create_otio_markers(otio_item, item):
 def create_otio_reference(clip_data, media_info, fps=None):
     metadata = _get_metadata(clip_data)
 
-    metadata.update(
-        {
-            "ayon.source.width": media_info.width,
-            "ayon.source.height": media_info.height,
-            "ayon.source.pixelAspect": media_info.pixel_aspect,
-        }
-    )
+    # Add image-based metadata if not a pure audio media
+    if hasattr("width", self):
+        metadata.update(
+            {
+                "ayon.source.width": media_info.width,
+                "ayon.source.height": media_info.height,
+                "ayon.source.pixelAspect": media_info.pixel_aspect,
+            }
+        )
+
     duration = int(clip_data["source_duration"])
 
     # get file info for path and start frame
