@@ -825,11 +825,13 @@ class MediaInfoFile(object):
             # get all resolution related data and assign them
             self._get_resolution_info_from_origin(xml_data)
 
-            # log image-based info if not a pure audio media
-            if hasattr(self, "width"):
+            try:
                 self.log.debug("width: {}".format(self.width))
                 self.log.debug("height: {}".format(self.height))
                 self.log.debug("pixel aspect: {}".format(self.pixel_aspect))
+
+            except AttributeError:
+                self.log.debug("audio: true")
 
             self.clip_data = xml_data
 
