@@ -143,6 +143,11 @@ class _FlameInstanceCreator(plugin.HiddenFlameCreator):
             segment_item = created_inst.transient_data["segment_item"]
             marker_data = ayfapi.get_segment_data_marker(segment_item)
 
+            # Backwards compatible (Deprecated since 24/09/05)
+            # ignore instance if no existing marker data
+            if marker_data is None:
+                continue
+
             try:
                 instances_data = marker_data[_CONTENT_ID]
 
@@ -387,7 +392,7 @@ OTIO file.
                 "segmentIndex",
                 label="Segment Index",
                 tooltip="Take number from segment index",
-                default=True,
+                default=presets.get("segmentIndex", True),
             ),
             NumberDef(
                 "countFrom",
@@ -490,13 +495,13 @@ OTIO file.
                 "export_audio",
                 label="Include audio",
                 tooltip="Process subsets with corresponding audio",
-                default=False,
+                default=presets.get("export_audio", False),
             ),
             BoolDef(
                 "sourceResolution",
                 label="Source resolution",
                 tooltip="Is resolution taken from timeline or source?",
-                default=False,
+                default=presets.get("sourceResolution", False),
             ),
 
             # shotAttr
@@ -525,19 +530,19 @@ OTIO file.
                 "includeHandles",
                 label="Include handles",
                 tooltip="Should the handles be included?",
-                default=False,
+                default=presets.get("includeHandles", True),
             ),
             BoolDef(
                 "retimedHandles",
                 label="Retimed handles",
                 tooltip="Should the handles be retimed?",
-                default=True,
+                default=presets.get("retimedHandles", True),
             ),
             BoolDef(
                 "retimedFramerange",
                 label="Retimed framerange",
                 tooltip="Should the framerange be retimed?",
-                default=True,
+                default=presets.get("retimedFramerange", True),
             ),
         ]
 

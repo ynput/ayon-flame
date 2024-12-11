@@ -824,9 +824,14 @@ class MediaInfoFile(object):
             self.log.debug("drop frame: {}".format(self.drop_mode))
             # get all resolution related data and assign them
             self._get_resolution_info_from_origin(xml_data)
-            self.log.debug("width: {}".format(self.width))
-            self.log.debug("height: {}".format(self.height))
-            self.log.debug("pixel aspect: {}".format(self.pixel_aspect))
+
+            try:
+                self.log.debug("width: {}".format(self.width))
+                self.log.debug("height: {}".format(self.height))
+                self.log.debug("pixel aspect: {}".format(self.pixel_aspect))
+
+            except AttributeError:
+                self.log.debug("audio: true")
 
             self.clip_data = xml_data
 
