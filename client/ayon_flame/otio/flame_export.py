@@ -209,7 +209,7 @@ def create_otio_reference(clip_data, media_info, fps=None):
     metadata = _get_metadata(clip_data)
 
     # Add image-based metadata if not a pure audio media
-    if hasattr("width", media_info):
+    if hasattr(media_info, "width"):
         metadata.update(
             {
                 "ayon.source.width": media_info.width,
