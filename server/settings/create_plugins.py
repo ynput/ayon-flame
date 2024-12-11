@@ -63,13 +63,11 @@ class CreateShotClipModel(BaseSettingsModel):
     export_audio: bool = SettingsField(
         False,
         title="Include audio",
-        section="Process subsets with corresponding audio"
     )
 
     sourceResolution: bool = SettingsField(
         False,
         title="Source resolution",
-        section="Get shot resolution from clip source resolution"
     )
 
     workfileFrameStart: int = SettingsField(
