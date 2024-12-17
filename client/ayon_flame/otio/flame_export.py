@@ -231,8 +231,15 @@ def create_otio_reference(clip_data, media_info, fps=None):
 
     otio_ex_ref_item = None
 
-    is_sequence = frame_number = utils.get_frame_from_filename(file_name)
+    # match range pattern e.g. "foo_[1001-1010].ext"
+    regex_sequence = r"\D*\[(\d)*\-(\d)*\]\D*"
+    is_sequence = re.match(
+        regex_sequence,
+        media_info.file_pattern
+    )
+
     if is_sequence:
+        frame_number = utils.get_frame_from_filename(file_name)
         file_head = file_name.split(frame_number)[0]
         start_frame = int(frame_number)
         padding = len(frame_number)
@@ -259,16 +266,25 @@ def create_otio_reference(clip_data, media_info, fps=None):
                     fps
                 )
             )
-        except AttributeError:
-            pass
 
-    if not otio_ex_ref_item:
-        dirname, file_name = os.path.split(path)
-        file_name = utils.get_reformatted_filename(file_name, padded=False)
-        reformated_path = os.path.join(dirname, file_name)
-        # in case old OTIO or video file create `ExternalReference`
+        # in case old OTIO create sequence as `ExternalReference`
+        except AttributeError:
+            dirname, file_name = os.path.split(path)
+            file_name = utils.get_reformatted_filename(file_name, padded=False)
+            reformated_path = os.path.join(dirname, file_name)
+            otio_ex_ref_item = otio.schema.ExternalReference(
+                target_url=reformated_path,
+                available_range=create_otio_time_range(
+                    media_start,
+                    duration,
+                    fps
+                )
+            )
+
+    # video/audio file create `ExternalReference`
+    else:
         otio_ex_ref_item = otio.schema.ExternalReference(
-            target_url=reformated_path,
+            target_url=path,
             available_range=create_otio_time_range(
                 media_start,
                 duration,
