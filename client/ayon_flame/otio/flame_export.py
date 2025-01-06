@@ -231,15 +231,14 @@ def create_otio_reference(clip_data, media_info, fps=None):
 
     otio_ex_ref_item = None
 
-    # match range pattern e.g. "foo_[1001-1010].ext"
-    regex_sequence = r".*\[(?P<start_frame>\d*)-(?P<end_frame>\d*)\].?"
-    is_sequence = re.match(
-        regex_sequence,
+    sequence_match = re.match(
+        # match range pattern e.g. "foo_[1001-1010].ext"
+        r".*\[(?P<start_frame>\d*)-(?P<end_frame>\d*)\].?",
         media_info.file_pattern
     )
 
-    if is_sequence:
-        frame_number = is_sequence.group("start_frame")
+    if sequence_match:
+        frame_number = sequence_match.group("start_frame")
         file_head = file_name.split(frame_number)[0]
         start_frame = int(frame_number)
         padding = len(frame_number)
