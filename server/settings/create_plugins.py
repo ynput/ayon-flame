@@ -60,6 +60,16 @@ class CreateShotClipModel(BaseSettingsModel):
         section="Vertical Synchronization Of Attributes"
     )
 
+    export_audio: bool = SettingsField(
+        False,
+        title="Include audio",
+    )
+
+    sourceResolution: bool = SettingsField(
+        False,
+        title="Source resolution",
+    )
+
     workfileFrameStart: int = SettingsField(
         1001,
         title="Workfiles Start Frame",
