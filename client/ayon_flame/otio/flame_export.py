@@ -209,6 +209,9 @@ def create_otio_reference(clip_data, media_info, fps=None):
     metadata = _get_metadata(clip_data)
 
     # Add image-based metadata if not a pure audio media
+    # TODO: what happens if media is image-based but not width
+    # can be reached ?
+    # (could use ayon_core.lib.transcoding.get_otio_info_for_input)
     if hasattr(media_info, "width"):
         metadata.update(
             {
