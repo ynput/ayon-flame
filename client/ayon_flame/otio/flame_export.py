@@ -379,10 +379,12 @@ def create_otio_clip(clip_data):
 
     # create source range
     available_media_start = media_reference.available_range.start_time
-    conformed_media_start = available_media_start.value_rescaled_to(
-        CTX.get_fps())
+    source_in_offset = otio.opentime.RationalTime(source_in, available_media_start.rate)
+    src_in = available_media_start + source_in_offset
+    conformed_src_in = src_in.rescaled_to(CTX.get_fps())
+
     source_range = create_otio_time_range(
-        conformed_media_start + source_in,
+        conformed_src_in.value,  # no rounding to preserve accuracy
         _clip_record_duration,
         CTX.get_fps()
     )
