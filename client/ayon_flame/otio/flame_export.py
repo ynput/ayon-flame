@@ -366,7 +366,7 @@ def create_otio_clip(clip_data):
         speed *= retime_speed
 
     # get speed from metadata if available
-    if tw_data.get("speed"):
+    if tw_data and tw_data.get("speed"):
         speed = tw_data["speed"]
         log.debug("_ metadata speed: {}".format(speed))
 
