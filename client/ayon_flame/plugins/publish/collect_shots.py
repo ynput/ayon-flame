@@ -197,7 +197,7 @@ class CollectShot(pyblish.api.InstancePlugin):
     def _get_xml_preset_attrs(self, attributes, split):
 
         # split to key and value
-        key, value = split.split(":")
+        key, value = split.split(":", 1)
 
         for attr_data in self.xml_preset_attrs_from_comments:
             a_name = attr_data["name"]
