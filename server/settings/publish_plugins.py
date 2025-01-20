@@ -29,7 +29,7 @@ class AddTasksModel(BaseSettingsModel):
     )
 
 
-class CollectTimelineInstancesModel(BaseSettingsModel):
+class CollectShotsModel(BaseSettingsModel):
     _isGroup = True
 
     xml_preset_attrs_from_comments: list[XMLPresetAttrsFromCommentsModel] = (
@@ -180,9 +180,9 @@ class IntegrateBatchGroupModel(BaseSettingsModel):
 
 
 class PublishPluginsModel(BaseSettingsModel):
-    CollectTimelineInstances: CollectTimelineInstancesModel = SettingsField(
-        default_factory=CollectTimelineInstancesModel,
-        title="Collect Timeline Instances"
+    CollectShot: CollectShotsModel = SettingsField(
+        default_factory=CollectShotsModel,
+        title="Collect Shot instances"
     )
 
     ExtractProductResources: ExtractProductResourcesModel = SettingsField(
@@ -197,7 +197,7 @@ class PublishPluginsModel(BaseSettingsModel):
 
 
 DEFAULT_PUBLISH_SETTINGS = {
-    "CollectTimelineInstances": {
+    "CollectShot": {
         "xml_preset_attrs_from_comments": [
             {
                 "name": "width",
