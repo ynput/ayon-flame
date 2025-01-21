@@ -1214,7 +1214,16 @@ class TimeEffectMetadata(object):
         if logger:
             self.log = logger
 
-        self._data = self._get_metadata(segment)
+        self.setup_data, self._data = self._get_metadata(segment)
+
+    @property
+    def is_empty(self):
+        """ Returns either the current object is empty or not.
+
+        Returns:
+            bool. Is the TimeEffectMetadata object empty?
+        """
+        return self._setup_data is None
 
     @property
     def data(self):
@@ -1225,6 +1234,15 @@ class TimeEffectMetadata(object):
         """
         return self._data
 
+    @property
+    def setup_data(self)
+        """ Returns timewarp effect setup data
+
+        Returns:
+            str. The XML formatted setup data.
+        """
+        return self._setup_data
+
     def _get_metadata(self, segment):
         effects = segment.effects or []
         for effect in effects:
@@ -1234,7 +1252,7 @@ class TimeEffectMetadata(object):
                     effect.save_setup(tmp_path)
                     return self._get_attributes_from_xml(tmp_path)
 
-        return {}
+        return None, {}
 
     def _get_attributes_from_xml(self, tmp_path):
         with open(tmp_path, "r") as tw_setup_file:
@@ -1262,8 +1280,11 @@ class TimeEffectMetadata(object):
                     tw_setup_state["TW_Speed"]
                     [0]["Channel"][0]["Value"][0]["_text"]
                 ) / 100
+                r_data["numKeys"] = int(
+                    tw_setup_state["TW_Speed"]
+                    [0]["Channel"][0]["Size"][0]["_text"]
+                )
             elif mode == 1:  # timewarp
-                print("timing")
                 r_data[self._retime_modes[mode]] = self._get_anim_keys(
                     tw_setup_state["TW_Timing"]
                 )
@@ -1295,7 +1316,7 @@ class TimeEffectMetadata(object):
             self.log.error("\n".join(lines))
             return
 
-        return r_data
+        return tw_setup_string, r_data
 
     def _get_anim_keys(self, setup_cat, index=None):
         return_data = {

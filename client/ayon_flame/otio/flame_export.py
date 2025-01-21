@@ -98,22 +98,45 @@ def _get_metadata(item):
     return {}
 
 
-def create_time_effects(otio_clip, speed):
+def create_time_effects(otio_clip, speed, time_effect=None):
     otio_effect = None
 
-    # retime on track item
-    if speed != 1.:
-        # make effect
-        otio_effect = otio.schema.LinearTimeWarp(
-            name="Speed",
-            time_scalar=speed
-        )
+    # Clip has a TimeWarp effect.
+    if not time_effect.is_empty():
+        data = time_effect.data
 
-    # freeze frame effect
-    if speed == 0.:
-        otio_effect = otio.schema.FreezeFrame(
-            name="FreezeFrame"
+        # Check if constant speed retiming
+       if data["mode"] == "speed" and data.get("numKeys") == 1:
+            speed = data["speed"]
+
+        # Interpolate curves.
+        # And retrieve value per frames.
+        from . import tw_bake
+        tw_obj = tw_bake.Timewarp()
+        interpolated_frames = tw_obj.bake_flame_tw_setup(
+            time_effect.setup_data
         )
+        metadata["lookup"] = [
+            value - key
+            for key, value in interpolated_frames.items()
+        ]
+        otio_effect = otio.schema.TimeEffect()
+        otio_effect.effect_name = "TimeWarp"
+        otio_effect.metadata.update(metadata)
+
+    # Potential constant retimes.
+    if otio_effect is None:
+        if speed not in (1, 0).:
+            otio_effect = otio.schema.LinearTimeWarp(
+                name="Speed",
+                time_scalar=speed
+            )
+
+        # freeze frame effect
+        elif speed == 0.:
+            otio_effect = otio.schema.FreezeFrame(
+                name="FreezeFrame"
+            )
 
     if otio_effect:
         # add otio effect to clip effects
@@ -314,8 +337,8 @@ def create_otio_clip(clip_data):
     media_fps = media_info.fps
 
     # Timewarp metadata
-    tw_data = TimeEffectMetadata(segment, logger=log).data
-    log.debug("__ tw_data: {}".format(tw_data))
+    tw_data = TimeEffectMetadata(segment, logger=log)
+    log.debug("__ tw_data: {}".format(tw_data.data))
 
     # define first frame
     file_first_frame = utils.get_frame_from_filename(
@@ -365,11 +388,6 @@ def create_otio_clip(clip_data):
         log.debug("_ calculated speed: {}".format(retime_speed))
         speed *= retime_speed
 
-    # get speed from metadata if available
-    if tw_data and tw_data.get("speed"):
-        speed = tw_data["speed"]
-        log.debug("_ metadata speed: {}".format(speed))
-
     log.debug("_ speed: {}".format(speed))
     log.debug("_ source_duration: {}".format(source_duration))
     log.debug("_ _clip_record_duration: {}".format(_clip_record_duration))
@@ -402,8 +420,7 @@ def create_otio_clip(clip_data):
     if MARKERS_INCLUDE:
         create_otio_markers(otio_clip, segment)
 
-    if speed != 1:
-        create_time_effects(otio_clip, speed)
+    create_time_effects(otio_clip, speed, time_effect=tw_data)
 
     return otio_clip
 

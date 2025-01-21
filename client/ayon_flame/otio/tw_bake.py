@@ -2,6 +2,9 @@
     https://github.com/talosh/flameTimewarpML/blob/main/pytorch/flameTimewarpML_inference.py
 
     It allows to "bake" or "plot" the curve values from a Timewarp saved setup.
+
+    Speed animated timewarp are known to be less accurate, worth suggesting to the clients
+    to avoid them.
 """
 from copy import copy
 import xml.etree.ElementTree as ET
