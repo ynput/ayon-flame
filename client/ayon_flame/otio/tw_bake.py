@@ -1,7 +1,10 @@
-from copy import copy
-import numpy as np
-import xml.etree.ElementTree as ET
+""" The following code is based on
+    https://github.com/talosh/flameTimewarpML/blob/main/pytorch/flameTimewarpML_inference.py
 
+    It allows to "bake" or "plot" the curve values from a Timewarp saved setup.
+"""
+from copy import copy
+import xml.etree.ElementTree as ET
 
 APPROXIMATION_EPSILON = 1.0e-09
 VERYSMALL = 1.0e-20
@@ -9,8 +12,6 @@ MAXIMUM_ITERATIONS = 100
 
 
 class Timewarp():
-    def __init__(self, json_info):
-        self.json_info = json_info
 
     def bake_flame_tw_setup(self, tw_setup_string):
         # parses tw setup from flame and returns dictionary
@@ -29,7 +30,6 @@ class Timewarp():
                     return False
                 else:
                     return s
-
 
             if root:
                 return {r.tag: dictify(r, False)}
@@ -87,18 +87,33 @@ class Timewarp():
                     frame_interval = self.end_frame - self.start_frame
                     self._mode = 'hermite'
 
-                    self.HERMATRIX = np.array([
-                        [2, -3,  0,  1],
-                        [-2, 3,  0,  0],
-                        [1, -2,  1,  0],
-                        [1, -1,  0,  0]
-                    ])
+                    # self.HERMATRIX = [
+                    #     [2, -3,  0,  1],
+                    #     [-2, 3,  0,  0],
+                    #     [1, -2,  1,  0],
+                    #     [1, -1,  0,  0]
+                    #  ].T
+
+                    self.HERMATRIX = [
+                        [2, -2,  1,  1],
+                        [-3, 3,  -2,  -1],
+                        [0, 0,  1,  0],
+                        [1, 0,  0,  0]
+                    ]
 
                     # Default tangents in flame are 0, so when we do None.to_f this is what we will get
                     # CC = {P1, P2, T1, T2}
                     p1, p2, t1, t2 = value1, value2, tangent1 * frame_interval, tangent2 * frame_interval
-                    self.hermite = np.array([p1, p2, t1, t2])
-                    self.basis = np.dot(self.HERMATRIX, self.hermite)
+                    self.hermite = [p1, p2, t1, t2]
+                    self.basis = self.dot_product_vector_matrix(self.HERMATRIX, self.hermite)
+
+                @staticmethod
+                def dot_product_vector_matrix(matrix, vector):
+                        return [sum(a*b for a,b in zip(row, vector)) for row in matrix]
+
+                @staticmethod
+                def dot_product_vector_vector(vector1, vector2):
+                        return sum(x*y for x, y in zip(vector1, vector2))
 
                 def value_at(self, frame):
                     if frame == self.start_frame:
@@ -109,10 +124,12 @@ class Timewarp():
                     t = (frame - self.start_frame) / (self.end_frame - self.start_frame)
 
                     # S[s_] = {s^3, s^2, s^1, s^0}
-                    multipliers_vec = np.array([t ** 3, t ** 2, t ** 1, t ** 0])
+                    multipliers_vec = [t ** 3, t ** 2, t ** 1, t ** 0]
 
                     # P[s_] = S[s].h.CC
-                    interpolated_scalar = np.dot(self.basis, multipliers_vec)
+                    interpolated_scalar = self.dot_product_vector_vector(
+                        self.basis, multipliers_vec
+                    )
                     return interpolated_scalar
 
             class BezierSegment(LinearSegment):
