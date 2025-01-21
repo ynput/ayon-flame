@@ -556,6 +556,15 @@ def get_segment_attributes(segment):
         if not hasattr(segment, attr):
             continue
         _value = getattr(segment, attr)
+
+        # Not a "valid" segment, skip it.
+        if _value is None:
+            self.log.warning(
+                f"Could not retrieve {attr} for {segment.name}, "
+                "ensure this is a valid clip ?"
+            )
+            return {}
+
         segment_attrs_data[attr] = str(_value).replace("+", ":")
 
         if attr in ["record_in", "record_out"]:
