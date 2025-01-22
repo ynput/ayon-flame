@@ -112,11 +112,11 @@ class Timewarp():
 
                 @staticmethod
                 def dot_product_vector_matrix(matrix, vector):
-                        return [sum(a*b for a,b in zip(row, vector)) for row in matrix]
+                    return [sum(a*b for a,b in zip(row, vector)) for row in matrix]
 
                 @staticmethod
                 def dot_product_vector_vector(vector1, vector2):
-                        return sum(x*y for x, y in zip(vector1, vector2))
+                    return sum(x*y for x, y in zip(vector1, vector2))
 
                 def value_at(self, frame):
                     if frame == self.start_frame:

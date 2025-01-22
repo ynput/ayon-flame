@@ -6,7 +6,9 @@ import re
 import json
 import logging
 import opentimelineio as otio
+
 from . import utils
+from . import tw_bake
 
 import flame
 from pprint import pformat
@@ -112,7 +114,6 @@ def create_time_effects(otio_clip, clip_data, speed, time_effect=None):
         else:
             # Interpolate curves.
             # And retrieve interpolated value per frames.
-            from . import tw_bake
             tw_obj = tw_bake.Timewarp()
             iframes = tw_obj.bake_flame_tw_setup(
                 time_effect.setup_data
@@ -142,16 +143,17 @@ def create_time_effects(otio_clip, clip_data, speed, time_effect=None):
 
     # Potential constant retimes.
     if otio_effect is None:
-        if speed not in (1, 0):
+
+        # freeze frame effect
+        if speed == 0.:
+            otio_effect = otio.schema.FreezeFrame(
+                name="FreezeFrame"
+            )
+
+        elif speed != 1:
             otio_effect = otio.schema.LinearTimeWarp(
                 name="Speed",
                 time_scalar=speed
-            )
-
-        # freeze frame effect
-        elif speed == 0.:
-            otio_effect = otio.schema.FreezeFrame(
-                name="FreezeFrame"
             )
 
     if otio_effect:
