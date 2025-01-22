@@ -9,12 +9,9 @@ def _convert_collect_shots_plugins_1_1_0(
 
     1.0.0 is the latest version using the old way
     """
-    if "CollectTimelineInstances" not in overrides["publish"]:
+    publish_overrides = overrides.get("publish", {})
+    if "CollectTimelineInstances" not in publish_overrides:
         # Legacy settings not found
-        return
-
-    if "CollectShot" in overrides["publish"]:
-        # Already new settings
         return
 
     collect_shot_data = overrides["publish"].pop("CollectTimelineInstances")
