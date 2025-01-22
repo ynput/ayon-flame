@@ -1314,7 +1314,7 @@ class TimeEffectMetadata(object):
         except Exception:
             lines = traceback.format_exception(*sys.exc_info())
             self.log.error("\n".join(lines))
-            return
+            return None, {}
 
         return tw_setup_string, r_data
 
