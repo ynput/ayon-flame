@@ -1214,7 +1214,7 @@ class TimeEffectMetadata(object):
         if logger:
             self.log = logger
 
-        self.setup_data, self._data = self._get_metadata(segment)
+        self._setup_data, self._data = self._get_metadata(segment)
 
     @property
     def is_empty(self):
@@ -1235,7 +1235,7 @@ class TimeEffectMetadata(object):
         return self._data
 
     @property
-    def setup_data(self)
+    def setup_data(self):
         """ Returns timewarp effect setup data
 
         Returns:
@@ -1281,7 +1281,7 @@ class TimeEffectMetadata(object):
                     [0]["Channel"][0]["Value"][0]["_text"]
                 ) / 100
                 r_data["numKeys"] = int(
-                    tw_setup_state["TW_Speed"]
+                    tw_setup_state["TW_SpeedTiming"]
                     [0]["Channel"][0]["Size"][0]["_text"]
                 )
             elif mode == 1:  # timewarp

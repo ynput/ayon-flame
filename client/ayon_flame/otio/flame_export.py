@@ -98,35 +98,51 @@ def _get_metadata(item):
     return {}
 
 
-def create_time_effects(otio_clip, speed, time_effect=None):
+def create_time_effects(otio_clip, clip_data, speed, time_effect=None):
     otio_effect = None
 
     # Clip has a TimeWarp effect.
-    if not time_effect.is_empty():
+    if not time_effect.is_empty:
         data = time_effect.data
 
         # Check if constant speed retiming
-       if data["mode"] == "speed" and data.get("numKeys") == 1:
+        if data["type"] == "speed" and data.get("numKeys") == 1:
             speed = data["speed"]
 
-        # Interpolate curves.
-        # And retrieve value per frames.
-        from . import tw_bake
-        tw_obj = tw_bake.Timewarp()
-        interpolated_frames = tw_obj.bake_flame_tw_setup(
-            time_effect.setup_data
-        )
-        metadata["lookup"] = [
-            value - key
-            for key, value in interpolated_frames.items()
-        ]
-        otio_effect = otio.schema.TimeEffect()
-        otio_effect.effect_name = "TimeWarp"
-        otio_effect.metadata.update(metadata)
+        else:
+            # Interpolate curves.
+            # And retrieve interpolated value per frames.
+            from . import tw_bake
+            tw_obj = tw_bake.Timewarp()
+            iframes = tw_obj.bake_flame_tw_setup(
+                time_effect.setup_data
+            )
+
+            # Flame TWs defines its timing offsets from available range (relative).
+            # Map interpolated frames to available_range (absolute).
+            av_start = otio_clip.available_range().start_time.to_frames()
+            mapped_frames = [
+                (av_start + iframe - 1)
+                for iframe in iframes.values()
+            ]
+
+            # Set Timewarp lookup values as offsets from src_range (relative).
+            frame_src_offset = min(
+                int(clip_data["source_in"]),
+                int(clip_data["source_out"])
+            )
+
+            metadata = {"lookup": [
+                mapped_frame - (frame_src_offset + idx)
+                for idx, mapped_frame in enumerate(mapped_frames)
+            ]}
+            otio_effect = otio.schema.TimeEffect()
+            otio_effect.effect_name = "TimeWarp"
+            otio_effect.metadata.update(metadata)
 
     # Potential constant retimes.
     if otio_effect is None:
-        if speed not in (1, 0).:
+        if speed not in (1, 0):
             otio_effect = otio.schema.LinearTimeWarp(
                 name="Speed",
                 time_scalar=speed
@@ -420,7 +436,7 @@ def create_otio_clip(clip_data):
     if MARKERS_INCLUDE:
         create_otio_markers(otio_clip, segment)
 
-    create_time_effects(otio_clip, speed, time_effect=tw_data)
+    create_time_effects(otio_clip, clip_data, speed, time_effect=tw_data)
 
     return otio_clip
 
