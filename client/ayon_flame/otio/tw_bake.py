@@ -1,3 +1,4 @@
+# ruff: noqa
 """ The following code is based on
     https://github.com/talosh/flameTimewarpML/blob/main/pytorch/flameTimewarpML_inference.py
 
