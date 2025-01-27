@@ -119,8 +119,10 @@ def create_time_effects(otio_clip, clip_data, speed, time_effect=None):
                 time_effect.setup_data
             )
 
-            # Flame TWs defines its timing offsets from available range (relative).
-            # Map interpolated frames to available_range (absolute).
+            # Flame TWs defines its timing offsets
+            # from available range (relative).
+            # Map interpolated frames to
+            # available_range (absolute).
             av_start = otio_clip.available_range().start_time.to_frames()
             mapped_frames = [
                 (av_start + iframe - 1)
@@ -594,7 +596,7 @@ def get_segment_attributes(segment):
 
         # Not a "valid" segment, skip it.
         if _value is None:
-            self.log.warning(
+            log.warning(
                 f"Could not retrieve {attr} for {segment.name}, "
                 "ensure this is a valid clip ?"
             )
