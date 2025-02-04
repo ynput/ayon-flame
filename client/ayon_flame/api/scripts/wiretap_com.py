@@ -80,28 +80,50 @@ class WireTapCom(object):
             self._set_project_settings(project_name, project_data)
             self._set_project_colorspace(project_name, color_policy)
 
-        user_name = self._user_prep(user_name)
+        launch_args = [
+            "--start-project={}".format(project_name),
+            "--create-workspace",
+        ]
+
+        # user profiles have been removed in flame 2025
+        if self._get_flame_year() < 2025:
+            user_name = self._user_prep(user_name)
+            launch_args.append("--start-user={}".format(user_name))
 
         if workspace_name is None:
             # default workspace
             print("Using a default workspace")
-            return [
-                "--start-project={}".format(project_name),
-                "--start-user={}".format(user_name),
-                "--create-workspace"
-            ]
+            return launch_args
 
         else:
             print(
                 "Using a custom workspace '{}'".format(workspace_name))
 
             self._workspace_prep(project_name, workspace_name)
-            return [
-                "--start-project={}".format(project_name),
-                "--start-user={}".format(user_name),
-                "--create-workspace",
-                "--start-workspace={}".format(workspace_name)
-            ]
+            launch_args.append("--start-workspace={}".format(workspace_name))
+            return launch_args
+
+    def _get_flame_year(self):
+        """Get the flame release year.
+
+        Returns:
+            int: The flame year, e.g. 2025
+
+        Raises:
+            AttributeError: unable to retrieve the flame version number.
+        """
+        version_major = WireTapInt(0)
+        version_minor = WireTapInt(0)
+
+        version_exists = self._server.getVersion(version_major, version_minor)
+
+        if not version_exists:
+            raise AttributeError(
+                    "Cannot get flame version details: {}".format(
+                        self._server.lastError()
+                    )
+                )
+        return int(version_major)
 
     def _workspace_prep(self, project_name, workspace_name):
         """Preparing a workspace
