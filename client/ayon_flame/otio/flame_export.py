@@ -6,7 +6,9 @@ import re
 import json
 import logging
 import opentimelineio as otio
+
 from . import utils
+from . import tw_bake
 
 import flame
 from pprint import pformat
@@ -98,22 +100,63 @@ def _get_metadata(item):
     return {}
 
 
-def create_time_effects(otio_clip, speed):
+def create_time_effects(otio_clip, clip_data, speed, time_effect=None):
     otio_effect = None
 
-    # retime on track item
-    if speed != 1.:
-        # make effect
-        otio_effect = otio.schema.LinearTimeWarp(
-            name="Speed",
-            time_scalar=speed
-        )
+    # Clip has a TimeWarp effect.
+    if not time_effect.is_empty:
+        data = time_effect.data
 
-    # freeze frame effect
-    if speed == 0.:
-        otio_effect = otio.schema.FreezeFrame(
-            name="FreezeFrame"
-        )
+        # Check if constant speed retiming
+        if data["type"] == "speed" and data.get("numKeys") == 1:
+            speed = data["speed"]
+
+        else:
+            # Interpolate curves.
+            # And retrieve interpolated value per frames.
+            tw_obj = tw_bake.Timewarp()
+            iframes = tw_obj.bake_flame_tw_setup(
+                time_effect.setup_data
+            )
+
+            # Flame TWs defines its timing offsets
+            # from available range (relative).
+            # Map interpolated frames to
+            # available_range (absolute).
+            av_start = otio_clip.available_range().start_time.to_frames()
+            mapped_frames = [
+                (av_start + iframe - 1)
+                for iframe in iframes.values()
+            ]
+
+            # Set Timewarp lookup values as offsets from src_range (relative).
+            frame_src_offset = min(
+                int(clip_data["source_in"]),
+                int(clip_data["source_out"])
+            )
+
+            metadata = {"lookup": [
+                mapped_frame - (frame_src_offset + idx)
+                for idx, mapped_frame in enumerate(mapped_frames)
+            ]}
+            otio_effect = otio.schema.TimeEffect()
+            otio_effect.effect_name = "TimeWarp"
+            otio_effect.metadata.update(metadata)
+
+    # Potential constant retimes.
+    if otio_effect is None:
+
+        # freeze frame effect
+        if speed == 0.:
+            otio_effect = otio.schema.FreezeFrame(
+                name="FreezeFrame"
+            )
+
+        elif speed != 1:
+            otio_effect = otio.schema.LinearTimeWarp(
+                name="Speed",
+                time_scalar=speed
+            )
 
     if otio_effect:
         # add otio effect to clip effects
@@ -314,8 +357,8 @@ def create_otio_clip(clip_data):
     media_fps = media_info.fps
 
     # Timewarp metadata
-    tw_data = TimeEffectMetadata(segment, logger=log).data
-    log.debug("__ tw_data: {}".format(tw_data))
+    tw_data = TimeEffectMetadata(segment, logger=log)
+    log.debug("__ tw_data: {}".format(tw_data.data))
 
     # define first frame
     file_first_frame = utils.get_frame_from_filename(
@@ -365,11 +408,6 @@ def create_otio_clip(clip_data):
         log.debug("_ calculated speed: {}".format(retime_speed))
         speed *= retime_speed
 
-    # get speed from metadata if available
-    if tw_data.get("speed"):
-        speed = tw_data["speed"]
-        log.debug("_ metadata speed: {}".format(speed))
-
     log.debug("_ speed: {}".format(speed))
     log.debug("_ source_duration: {}".format(source_duration))
     log.debug("_ _clip_record_duration: {}".format(_clip_record_duration))
@@ -379,10 +417,15 @@ def create_otio_clip(clip_data):
 
     # create source range
     available_media_start = media_reference.available_range.start_time
-    conformed_media_start = available_media_start.value_rescaled_to(
-        CTX.get_fps())
+    source_in_offset = otio.opentime.RationalTime(
+        source_in,
+        available_media_start.rate
+    )
+    src_in = available_media_start + source_in_offset
+    conformed_src_in = src_in.rescaled_to(CTX.get_fps())
+
     source_range = create_otio_time_range(
-        conformed_media_start + source_in,
+        conformed_src_in.value,  # no rounding to preserve accuracy
         _clip_record_duration,
         CTX.get_fps()
     )
@@ -397,8 +440,7 @@ def create_otio_clip(clip_data):
     if MARKERS_INCLUDE:
         create_otio_markers(otio_clip, segment)
 
-    if speed != 1:
-        create_time_effects(otio_clip, speed)
+    create_time_effects(otio_clip, clip_data, speed, time_effect=tw_data)
 
     return otio_clip
 
@@ -551,6 +593,15 @@ def get_segment_attributes(segment):
         if not hasattr(segment, attr):
             continue
         _value = getattr(segment, attr)
+
+        # Not a "valid" segment, skip it.
+        if _value is None:
+            log.warning(
+                f"Could not retrieve {attr} for {segment.name}, "
+                "ensure this is a valid clip ?"
+            )
+            return {}
+
         segment_attrs_data[attr] = str(_value).replace("+", ":")
 
         if attr in ["record_in", "record_out"]:
