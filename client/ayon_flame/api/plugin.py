@@ -74,8 +74,6 @@ class PublishableClip:
     Returns:
         flame.PySegment: flame api object
     """
-    vertical_clip_match = {}
-    vertical_clip_used = {}
     marker_data = {}
     types = {
         "shot": "shot",
@@ -107,12 +105,17 @@ class PublishableClip:
 
     def __init__(self,
             segment,
+            vertical_clip_match,
+            vertical_clip_used,
             pre_create_data=None,
             data=None,
             product_type=None,
             rename_index=None,
             log=None,
         ):
+        self.vertical_clip_match = vertical_clip_match
+        self.vertical_clip_used = vertical_clip_used
+
         self.rename_index = rename_index
         self.product_type = product_type
         self.log = log
@@ -155,11 +158,6 @@ class PublishableClip:
 
         # create parents with correct types
         self._create_parents()
-
-    @classmethod
-    def restore_all_caches(cls):
-        cls.vertical_clip_match = {}
-        cls.vertical_clip_used = {}
 
     def convert(self):
 
