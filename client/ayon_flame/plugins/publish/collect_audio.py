@@ -1,5 +1,6 @@
 import pyblish.api
 
+from ayon_core.pipeline import PublishError
 from ayon_flame.otio import utils
 
 
@@ -38,7 +39,7 @@ class CollectAudio(pyblish.api.InstancePlugin):
             otio_timeline, instance.data["clip_index"]
         )
         if not otio_clip:
-            raise RuntimeError(
+            raise PublishError(
                 f"Could not retrieve otioClip for shot {instance}")
 
         instance.data["otioClip"] = otio_clip

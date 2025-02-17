@@ -1,5 +1,6 @@
 import pyblish
 
+from ayon_core.pipeline import PublishError
 import ayon_flame.api as ayfapi
 from ayon_flame.otio import utils
 
@@ -25,7 +26,7 @@ class CollectPlate(pyblish.api.InstancePlugin):
             otio_timeline, instance.data["clip_index"]
         )
         if not otio_clip:
-            raise RuntimeError(
+            raise PublishError(
                 f"Could not retrieve otioClip for shot {instance}")
 
         instance.data["otioClip"] = otio_clip
