@@ -1,5 +1,6 @@
 import pyblish.api
 
+from ayon_core.pipeline import PublishError
 from ayon_flame.otio import utils
 
 
@@ -18,10 +19,19 @@ class CollectAudio(pyblish.api.InstancePlugin):
         """
         # Retrieve instance data from parent instance shot instance.
         parent_instance_id = instance.data["parent_instance_id"]
-        edit_shared_data = instance.context.data["editorialSharedData"]
-        instance.data.update(
-            edit_shared_data[parent_instance_id]
-        )
+
+        try:
+            edit_shared_data = instance.context.data["editorialSharedData"]
+            instance.data.update(
+                edit_shared_data[parent_instance_id]
+            )
+
+        # Ensure shot instance related to the audio instance exists.
+        except KeyError:
+            raise PublishError(
+                f'Could not find shot instance for {instance.data["label"]}.'
+                " Please ensure it is set and enabled."
+            )
 
         # Adjust instance data from parent otio timeline.
         otio_timeline = instance.context.data["otioTimeline"]
@@ -29,7 +39,7 @@ class CollectAudio(pyblish.api.InstancePlugin):
             otio_timeline, instance.data["clip_index"]
         )
         if not otio_clip:
-            raise RuntimeError(
+            raise PublishError(
                 f"Could not retrieve otioClip for shot {instance}")
 
         instance.data["otioClip"] = otio_clip
