@@ -13,7 +13,19 @@ class FlameAddon(AYONAddon, IHostAddon):
 
     def add_implementation_envs(self, env, _app):
         # Add requirements to DL_PYTHON_HOOK_PATH
-        env["DL_PYTHON_HOOK_PATH"] = os.path.join(FLAME_ADDON_ROOT, "startup")
+        new_flame_paths = [
+            os.path.join(FLAME_ADDON_ROOT, "startup")
+        ]
+        old_flame_path = env.get("DL_PYTHON_HOOK_PATH") or ""
+        for path in old_flame_path.split(os.pathsep):
+            if not path:
+                continue
+
+            norm_path = os.path.normpath(path)
+            if norm_path not in new_flame_paths:
+                new_flame_paths.append(norm_path)
+
+        env["DL_PYTHON_HOOK_PATH"] = os.pathsep.join(new_flame_paths)
         env.pop("QT_AUTO_SCREEN_SCALE_FACTOR", None)
 
         # Set default values if are not already set via settings
