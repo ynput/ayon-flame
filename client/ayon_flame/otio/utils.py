@@ -83,7 +83,7 @@ def get_frame_from_filename(filename):
         filename (str): file name
 
     Returns:
-        str: sequence frame number if found or None
+        Optional[str]: sequence frame number if found or None
 
     Example:
         def get_frame_from_filename(path):
