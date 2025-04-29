@@ -16,7 +16,7 @@ class InstallOpenTimelineIOToFlame(PreLaunchHook):
     def execute(self):
         # Prelaunch hook is not crucial
         try:
-            settings = self.data["project_settings"][self.host_name]
+            settings = self.data["project_settings"]["flame"]
             hook_settings = settings["hooks"]["InstallOpenTimelineIOToFlame"]
             if not hook_settings["enabled"]:
                 return
