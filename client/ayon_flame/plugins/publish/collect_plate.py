@@ -1,5 +1,6 @@
 import pyblish
 
+from ayon_core.pipeline import PublishError
 import ayon_flame.api as ayfapi
 from ayon_flame.otio import utils
 
@@ -25,7 +26,7 @@ class CollectPlate(pyblish.api.InstancePlugin):
             otio_timeline, instance.data["clip_index"]
         )
         if not otio_clip:
-            raise RuntimeError(
+            raise PublishError(
                 f"Could not retrieve otioClip for shot {instance}")
 
         instance.data["otioClip"] = otio_clip
@@ -49,11 +50,19 @@ class CollectPlate(pyblish.api.InstancePlugin):
 
         # Retrieve instance data from parent instance shot instance.
         parent_instance_id = instance.data["parent_instance_id"]
-        edit_shared_data = instance.context.data["editorialSharedData"]
 
-        instance.data.update(
-            edit_shared_data[parent_instance_id]
-        )
+        try:
+            edit_shared_data = instance.context.data["editorialSharedData"]
+            instance.data.update(
+                edit_shared_data[parent_instance_id]
+            )
+
+        # Ensure shot instance related to the audio instance exists.
+        except KeyError:
+            raise PublishError(
+                f'Could not find shot instance for {instance.data["label"]}.'
+                " Please ensure it is set and enabled."
+            )
 
         segment_item = instance.data["item"]
         clip_data = ayfapi.get_segment_attributes(segment_item)

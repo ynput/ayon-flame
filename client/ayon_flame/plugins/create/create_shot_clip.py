@@ -323,8 +323,6 @@ OTIO file.
 
     create_allow_thumbnail = False
 
-    shot_instances = {}
-
     def get_pre_create_attr_defs(self):
 
         def header_label(text):
@@ -595,7 +593,11 @@ OTIO file.
             plate_creator_id: True,
             audio_creator_id: True,
         }
+
         instances = []
+        all_shot_instances = {}
+        vertical_clip_match = {}
+        vertical_clip_used = {}
 
         for idx, segment in enumerate(sorted_selected_segments):
 
@@ -606,6 +608,8 @@ OTIO file.
             # convert track item to timeline media pool item
             publish_clip = ayfapi.PublishableClip(
                 segment,
+                vertical_clip_match,
+                vertical_clip_used,
                 log=self.log,
                 pre_create_data=pre_create_data,
                 data=segment_instance_data,
@@ -652,7 +656,7 @@ OTIO file.
                 cre for cre, enabled in all_creators.items() if enabled)
             clip_instances = {}
             shot_folder_path = segment_instance_data["folderPath"]
-            shot_instances = self.shot_instances.setdefault(
+            shot_instances = all_shot_instances.setdefault(
                 shot_folder_path, {})
 
             for creator_id in enabled_creators:
@@ -674,28 +678,30 @@ OTIO file.
                             "variant": "main",
                             "productType": "shot",
                             "productName": "shotMain",
-                            "creator_attributes": {
-                                "workfileFrameStart": workfileFrameStart,
-                                "handleStart": sub_instance_data[
-                                    "handleStart"],
-                                "handleEnd": sub_instance_data["handleEnd"],
-                                "frameStart": workfileFrameStart,
-                                "frameEnd": (
-                                    workfileFrameStart + segment_duration),
-                                "clipIn": int(segment_data["record_in"]),
-                                "clipOut": int(segment_data["record_out"]),
-                                "clipDuration": segment_duration,
-                                "sourceIn": int(segment_data["source_in"]),
-                                "sourceOut": int(segment_data["source_out"]),
-                                "includeHandles": pre_create_data[
-                                    "includeHandles"],
-                                "retimedHandles": pre_create_data[
-                                    "retimedHandles"],
-                                "retimedFramerange": pre_create_data[
-                                    "retimedFramerange"
-                                ],
-                            },
-                            "label": f"{shot_folder_path} shot",
+                            "label": f"{shot_folder_path} shotMain",
+                        }
+                    )
+                    creator_attributes.update(
+                        {
+                            "workfileFrameStart": workfileFrameStart,
+                            "handleStart": sub_instance_data[
+                                "handleStart"],
+                            "handleEnd": sub_instance_data["handleEnd"],
+                            "frameStart": workfileFrameStart,
+                            "frameEnd": (
+                                workfileFrameStart + segment_duration),
+                            "clipIn": int(segment_data["record_in"]),
+                            "clipOut": int(segment_data["record_out"]),
+                            "clipDuration": segment_duration,
+                            "sourceIn": int(segment_data["source_in"]),
+                            "sourceOut": int(segment_data["source_out"]),
+                            "includeHandles": pre_create_data[
+                                "includeHandles"],
+                            "retimedHandles": pre_create_data[
+                                "retimedHandles"],
+                            "retimedFramerange": pre_create_data[
+                                "retimedFramerange"
+                            ],
                         }
                     )
 
@@ -766,9 +772,6 @@ OTIO file.
                 }
             )
             instances.append(instance)
-
-        self.shot_instances = {}
-        ayfapi.PublishableClip.restore_all_caches()
 
         return instances
 
