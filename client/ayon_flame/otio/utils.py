@@ -1,9 +1,14 @@
+import os
 import re
 import opentimelineio as otio
 import logging
+
+from ayon_core.lib.transcoding import IMAGE_EXTENSIONS
+
+
 log = logging.getLogger(__name__)
 
-FRAME_PATTERN = re.compile(r"[\._](\d+)[\.]")
+FRAME_PATTERN = r"[\._](\d+)"
 
 
 def timecode_to_frames(timecode, framerate):
@@ -78,15 +83,20 @@ def get_frame_from_filename(filename):
         filename (str): file name
 
     Returns:
-        int: sequence frame number
+        Optional[str]: sequence frame number if found or None
 
     Example:
         def get_frame_from_filename(path):
-            ("plate.0001.exr") > 0001
+            ("plate.0001.exr") > "0001"
 
     """
+    _, ext = os.path.splitext(filename)
 
-    found = re.findall(FRAME_PATTERN, filename)
+    if ext.lower() not in IMAGE_EXTENSIONS:
+        return None
+
+    pattern = re.compile(FRAME_PATTERN + re.escape(ext))
+    found = pattern.findall(filename)
 
     return found.pop() if found else None
 
