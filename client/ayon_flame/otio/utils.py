@@ -95,8 +95,8 @@ def get_frame_from_filename(filename):
     if ext.lower() not in IMAGE_EXTENSIONS:
         return None
 
-    pattern = re.compile(FRAME_PATTERN + ext)
-    found = re.findall(pattern, filename)
+    pattern = re.compile(FRAME_PATTERN + re.escape(ext))
+    found = pattern.findall(filename)
 
     return found.pop() if found else None
 
