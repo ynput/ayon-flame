@@ -197,6 +197,14 @@ class FlameShotInstanceCreator(_FlameInstanceCreator):
 
     def get_instance_attr_defs(self):
         instance_attributes = CLIP_ATTR_DEFS
+        instance_attributes.append(
+            BoolDef(
+                "sourceResolution",
+                label="Set shot resolution from plate",
+                tooltip="Is resolution taken from timeline or source?",
+                default=False,
+            )
+        )
         return instance_attributes
 
 
@@ -694,6 +702,7 @@ OTIO file.
                                 "retimedFramerange": pre_create_data[
                                     "retimedFramerange"
                                 ],
+                                "sourceResolution": sub_instance_data["sourceResolution"],
                             },
                             "label": f"{shot_folder_path} shot",
                         }
@@ -829,6 +838,7 @@ OTIO file.
                 "includeHandles": sub_instance_data["includeHandles"],
                 "retimedHandles": sub_instance_data["retimedHandles"],
                 "retimedFramerange": sub_instance_data["retimedFramerange"],
+                "sourceResolution": sub_instance_data["sourceResolution"],
             },
             "label": (
                 f"{sub_instance_data['folderPath']} shot"

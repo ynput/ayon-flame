@@ -254,7 +254,7 @@ class CollectShot(pyblish.api.InstancePlugin):
         assert data.get("otioClip"), "Missing `otioClip` data"
 
         # solve source resolution option
-        if data.get("sourceResolution", None):
+        if data["creator_attributes"].get("sourceResolution", None):
             otio_clip_metadata = data[
                 "otioClip"].media_reference.metadata
             data.update({
