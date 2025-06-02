@@ -702,7 +702,8 @@ OTIO file.
                                 "retimedFramerange": pre_create_data[
                                     "retimedFramerange"
                                 ],
-                                "sourceResolution": sub_instance_data["sourceResolution"],
+                                "sourceResolution": sub_instance_data[
+                                    "sourceResolution"],
                             },
                             "label": f"{shot_folder_path} shot",
                         }
