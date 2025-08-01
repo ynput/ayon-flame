@@ -1,15 +1,21 @@
+import logging
 import os
 import re
 import shutil
+from typing import Any, Dict, Optional
 from copy import deepcopy
 from xml.etree import ElementTree as ET
 
 import qargparse
 
+import flame
+
+import ayon_api
+
 from ayon_core.lib import Logger, StringTemplate
 from ayon_core.pipeline.create import CreatorError
 from ayon_core.pipeline import LoaderPlugin, HiddenCreator
-from ayon_core.pipeline import Creator
+from ayon_core.pipeline import Creator, get_representation_path
 from ayon_core.pipeline.colorspace import get_remapped_colorspace_to_native
 from ayon_core.settings import get_current_project_settings
 
@@ -631,46 +637,156 @@ class ClipLoader(LoaderPlugin):
 
         return native_name
 
+    def _get_formatting_data(self, context, options):
+        return deepcopy(context["representation"]["context"])
 
-class OpenClipSolver(flib.MediaInfoFile):
-    create_new_clip = False
+    def load(self, context, name, namespace, options):
+        # get flame objects
+        fproject = flame.project.current_project
+        self.fpd = fproject.current_workspace.desktop
+
+        # load clip to timeline and get main variables
+        version_entity = context["version"]
+        representation_name = context["representation"]["name"]
+        project_name = context["project"]["name"]
+
+        if not context["representation"]["context"].get("output"):
+            self.clip_name_template = self.clip_name_template.replace(
+                "output", "representation"
+            )
+        clip_name = StringTemplate(self.clip_name_template).format(
+            self._get_formatting_data(context, options)
+        )
+
+        # create workfile path
+        workfile_dir = os.environ["AYON_WORKDIR"]
+        openclip_dir = os.path.join(
+            workfile_dir, clip_name
+        )
+        openclip_path = os.path.join(
+            openclip_dir, clip_name + ".clip"
+        )
+        if not os.path.exists(openclip_dir):
+            os.makedirs(openclip_dir)
+
+        clip_solver = OpenClipSolver(
+            openclip_path, self.layer_rename_patterns
+        )
+        rename_clip = clip_solver.out_clip_data is None
+        message_args = None
+        if not version_entity["taskId"]:
+            message_args = (
+                "Import Warning",
+                "It looks like the task entity for this version has been "
+                "removed from the database.\n"
+                "Unable to import any other versions alongside the current "
+                "selection.\nThis may result in unordered versions within the"
+                " clip. Deleting the clip and reloading it will resolve this "
+                "issue.",
+                "warning",
+                ["OK"],
+            )
+            all_versions = [version_entity]
+        else:
+            all_versions = ayon_api.get_versions(
+                project_name,
+                product_ids=[version_entity["productId"]],
+                task_ids=[version_entity["taskId"]],
+            )
+
+        for version in all_versions:
+            representation = ayon_api.get_representation_by_name(
+                project_name,
+                representation_name,
+                version_id=version["id"],
+            )
+
+            version_context = deepcopy(context)
+            version_context["version"] = version
+            version_context["representation"] = representation
+
+            version_name = f"v{version['version']:03}"
+            colorspace = self.get_colorspace(version_context)
+
+            layer_rename_template = self.layer_rename_template
+
+            # in case output is not in context replace key to representation
+            if not representation["context"].get("output"):
+                layer_rename_template = self.layer_rename_template.replace(
+                    "output", "representation"
+                )
+
+            # convert colorspace with ocio to flame mapping
+            # in imageio flame section
+            colorspace = self.get_native_colorspace(colorspace)
+
+            # prepare clip data from context ad send it to openClipLoader
+            path = self.filepath_from_context(version_context)
+
+            clip_solver.add_feed(
+                path,
+                version_name,
+                colorspace,
+                representation["context"],
+                layer_rename_template,
+            )
+
+        clip_solver.set_current_version(
+            f"v{version_entity['version']:03}"
+        )
+
+        clip_solver.write()
+
+        # prepare Reel group in actual desktop
+        opc = self._get_clip(
+            clip_name,
+            openclip_path
+        )
+
+        if len(all_versions) == 1 and rename_clip:
+            opc.name = f"{clip_name} [v{version_entity['version']:03}]"
+        else:
+            opc.name = clip_name
+
+        if message_args:
+            flame.messages.show_in_dialog(*message_args)
+
+        return opc
+    
+    def _get_clip(self, name, clip_path):
+        reel = self._get_reel()
+        # with maintained openclip as opc
+        matching_clip = [cl for cl in reel.clips
+                         if cl.name.get_value().startswith(name)]
+        if matching_clip:
+            return matching_clip.pop()
+        else:
+            created_clips = flame.import_clips(str(clip_path), reel)
+            return created_clips.pop()
+
+    def _get_reel(self):
+        raise NotImplementedError()
+
+class OpenClipSolver:
 
     log = log
 
-    def __init__(self, openclip_file_path, feed_data, logger=None):
+    def __init__(
+        self,
+        openclip_file_path: str,
+        layer_rename_patterns: str,
+        logger: Optional[logging.Logger] = None,
+    ) -> None:
         self.out_file = openclip_file_path
+        # layer rename variables
+        self.layer_rename_patterns = layer_rename_patterns
 
         # replace log if any
         if logger:
             self.log = logger
-
-        # new feed variables:
-        feed_path = feed_data.pop("path")
-
-        # initialize parent class
-        super(OpenClipSolver, self).__init__(
-            feed_path,
-            logger=logger
-        )
-
-        # get other metadata
-        self.feed_version_name = feed_data["version"]
-        self.feed_colorspace = feed_data.get("colorspace")
-        self.log.debug("feed_version_name: {}".format(self.feed_version_name))
-
-        # layer rename variables
-        self.layer_rename_template = feed_data["layer_rename_template"]
-        self.layer_rename_patterns = feed_data["layer_rename_patterns"]
-        self.context_data = feed_data["context_data"]
-
-        # derivate other feed variables
-        self.feed_basename = os.path.basename(feed_path)
-        self.feed_dir = os.path.dirname(feed_path)
-        self.feed_ext = os.path.splitext(self.feed_basename)[1][1:].lower()
-        self.log.debug("feed_ext: {}".format(self.feed_ext))
-        self.log.debug("out_file: {}".format(self.out_file))
-        if not self._is_valid_tmp_file(self.out_file):
-            self.create_new_clip = True
+        self.out_clip_data = None
+        if self._is_valid_tmp_file(self.out_file):
+            self.out_clip_data = ET.parse(self.out_file).getroot()
 
     def _is_valid_tmp_file(self, file):
         # check if file exists
@@ -686,48 +802,81 @@ class OpenClipSolver(flib.MediaInfoFile):
             os.remove(file)
             return False
 
-    def make(self):
+    def add_feed(
+        self,
+        path: str,
+        version_name: str,
+        colorspace: Optional[str],
+        context_data: Dict[str, Any],
+        layer_rename_template: str,
+    ) -> None:
+        clip = flib.MediaInfoFile(path, self.log)
 
-        if self.create_new_clip:
-            # New openClip
-            self._create_new_open_clip()
+        if self.out_clip_data is None:
+            self.out_clip_data = clip.clip_data
+            self._create_new_open_clip(
+                clip.clip_data,
+                version_name,
+                colorspace,
+                context_data,
+                layer_rename_template,
+            )
+            self.out_clip_data.find("name").text = os.path.basename(
+                self.out_file
+            )
         else:
-            self._update_open_clip()
+            self._update_open_clip(
+                clip,
+                version_name,
+                colorspace,
+                context_data,
+                layer_rename_template,
+            )
 
     def _clear_handler(self, xml_object):
         for handler in xml_object.findall("./handler"):
             self.log.info("Handler found")
             xml_object.remove(handler)
 
-    def _create_new_open_clip(self):
+    def _create_new_open_clip(
+        self,
+        clip_data: ET.Element,
+        feed_version_name: str,
+        feed_colorspace: Optional[str],
+        context_data: Dict[str, Any],
+        layer_rename_template: str,
+    ) -> None:
         self.log.info("Building new openClip")
 
-        for tmp_xml_track in self.clip_data.iter("track"):
+        for tmp_xml_track in clip_data.iter("track"):
             # solve track (layer) name
-            self._rename_track_name(tmp_xml_track)
+            self._rename_track_name(
+                tmp_xml_track,
+                clip_data.find("name").text,
+                context_data,
+                layer_rename_template,
+            )
 
             tmp_xml_feeds = tmp_xml_track.find('feeds')
-            tmp_xml_feeds.set('currentVersion', self.feed_version_name)
+            tmp_xml_feeds.set('currentVersion', feed_version_name)
 
             for tmp_feed in tmp_xml_track.iter("feed"):
-                tmp_feed.set('vuid', self.feed_version_name)
+                tmp_feed.set('vuid', feed_version_name)
+                tmp_feed.set('uid', feed_version_name)
 
                 # add colorspace if any is set
-                if self.feed_colorspace:
-                    self._add_colorspace(tmp_feed, self.feed_colorspace)
+                if feed_colorspace:
+                    self._add_colorspace(tmp_feed, feed_colorspace)
 
                 self._clear_handler(tmp_feed)
 
-        tmp_xml_versions_obj = self.clip_data.find('versions')
-        tmp_xml_versions_obj.set('currentVersion', self.feed_version_name)
+        tmp_xml_versions_obj = clip_data.find('versions')
+        tmp_xml_versions_obj.set('currentVersion', feed_version_name)
         for xml_new_version in tmp_xml_versions_obj:
-            xml_new_version.set('uid', self.feed_version_name)
-            xml_new_version.set('type', 'version')
+            xml_new_version.set('uid', feed_version_name)
 
-        self._clear_handler(self.clip_data)
-        self.log.info("Adding feed version: {}".format(self.feed_basename))
-
-        self.write_clip_data_to_file(self.out_file, self.clip_data)
+        self._clear_handler(clip_data)
+        self.log.info("Adding feed version: {}".format(feed_version_name))
 
     def _get_xml_track_obj_by_uid(self, xml_data, uid):
         # loop all tracks of input xml data
@@ -740,7 +889,13 @@ class OpenClipSolver(flib.MediaInfoFile):
             if uid == track_uid:
                 return xml_track
 
-    def _rename_track_name(self, xml_track_data):
+    def _rename_track_name(
+        self,
+        xml_track_data: ET.Element,
+        basename: str,
+        context_data: Dict[str, Any],
+        layer_rename_template: str,
+    ) -> None:
         layer_uid = xml_track_data.get("uid")
         name_obj = xml_track_data.find("name")
         layer_name = name_obj.text
@@ -754,46 +909,38 @@ class OpenClipSolver(flib.MediaInfoFile):
         ):
             return
 
-        formatting_data = self._update_formatting_data(
+        formatting_data = dict(
             layerName=layer_name,
-            layerUID=layer_uid
+            layerUID=layer_uid,
+            originalBasename=basename,
         )
+        formatting_data.update(context_data)
         name_obj.text = StringTemplate(
-            self.layer_rename_template
+            layer_rename_template
         ).format(formatting_data)
 
-    def _update_formatting_data(self, **kwargs):
-        """ Updating formatting data for layer rename
-
-        Attributes:
-            key=value (optional): will be included to formatting data
-                                  as {key: value}
-        Returns:
-            dict: anatomy context data for formatting
-        """
-        self.log.debug(">> self.clip_data: {}".format(self.clip_data))
-        clip_name_obj = self.clip_data.find("name")
-        data = {
-            "originalBasename": clip_name_obj.text
-        }
-        # include version context data
-        data.update(self.context_data)
-        # include input kwargs data
-        data.update(kwargs)
-        return data
-
-    def _update_open_clip(self):
+    def _update_open_clip(
+        self,
+        clip: flib.MediaInfoFile,
+        feed_version_name: str,
+        feed_colorspace: Optional[str],
+        context_data: Dict[str, Any],
+        layer_rename_template: str,
+    ) -> None:
         self.log.info("Updating openClip ..")
+        clip_data = clip.clip_data
 
-        out_xml = ET.parse(self.out_file)
-        out_xml = out_xml.getroot()
+        out_xml_versions_obj = self.out_clip_data.find('versions')
 
-        self.log.debug(">> out_xml: {}".format(out_xml))
         # loop tmp tracks
-        updated_any = False
-        for tmp_xml_track in self.clip_data.iter("track"):
+        for tmp_xml_track in clip_data.iter("track"):
             # solve track (layer) name
-            self._rename_track_name(tmp_xml_track)
+            self._rename_track_name(
+                tmp_xml_track,
+                clip_data.find("name").text,
+                context_data,
+                layer_rename_template,
+            )
 
             # get tmp track uid
             tmp_track_uid = tmp_xml_track.get("uid")
@@ -801,16 +948,16 @@ class OpenClipSolver(flib.MediaInfoFile):
 
             # get out data track by uid
             out_track_element = self._get_xml_track_obj_by_uid(
-                out_xml, tmp_track_uid)
+                self.out_clip_data, tmp_track_uid)
             self.log.debug(
                 ">> out_track_element: {}".format(out_track_element))
 
+            feeds = []
             # loop tmp feeds
             for tmp_xml_feed in tmp_xml_track.iter("feed"):
                 new_path_obj = tmp_xml_feed.find(
                     "spans/span/path")
                 new_path = new_path_obj.text
-
                 # check if feed path already exists in track's feeds
                 if (
                     out_track_element is not None
@@ -819,73 +966,81 @@ class OpenClipSolver(flib.MediaInfoFile):
                     continue
 
                 # rename versions on feeds
-                tmp_xml_feed.set('vuid', self.feed_version_name)
+                tmp_xml_feed.set('vuid', feed_version_name)
+                tmp_xml_feed.set('uid', feed_version_name)
                 self._clear_handler(tmp_xml_feed)
 
                 # update fps from MediaInfoFile class
-                if self.fps is not None:
+                if clip.fps is not None:
                     tmp_feed_fps_obj = tmp_xml_feed.find(
                         "startTimecode/rate")
-                    tmp_feed_fps_obj.text = str(self.fps)
+                    tmp_feed_fps_obj.text = str(clip.fps)
 
                 # update start_frame from MediaInfoFile class
-                if self.start_frame is not None:
+                if clip.start_frame is not None:
                     tmp_feed_nb_ticks_obj = tmp_xml_feed.find(
                         "startTimecode/nbTicks")
-                    tmp_feed_nb_ticks_obj.text = str(self.start_frame)
+                    tmp_feed_nb_ticks_obj.text = str(clip.start_frame)
 
                 # update drop_mode from MediaInfoFile class
-                if self.drop_mode is not None:
+                if clip.drop_mode is not None:
                     tmp_feed_drop_mode_obj = tmp_xml_feed.find(
                         "startTimecode/dropMode")
-                    tmp_feed_drop_mode_obj.text = str(self.drop_mode)
+                    tmp_feed_drop_mode_obj.text = str(clip.drop_mode)
 
                 # add colorspace if any is set
-                if self.feed_colorspace is not None:
-                    self._add_colorspace(tmp_xml_feed, self.feed_colorspace)
+                if feed_colorspace is not None:
+                    self._add_colorspace(tmp_xml_feed, feed_colorspace)
 
-                # then append/update feed to correct track in output
-                if out_track_element:
-                    self.log.debug("updating track element ..")
-                    # update already present track
-                    out_feeds = out_track_element.find('feeds')
-                    out_feeds.set('currentVersion', self.feed_version_name)
-                    out_feeds.append(tmp_xml_feed)
+                feeds.append(tmp_xml_feed)
 
-                    self.log.info(
-                        "Appending new feed: {}".format(
-                            self.feed_version_name))
-                else:
-                    self.log.debug("adding new track element ..")
-                    # create new track as it doesn't exist yet
-                    # set current version to feeds on tmp
-                    tmp_xml_feeds = tmp_xml_track.find('feeds')
-                    tmp_xml_feeds.set('currentVersion', self.feed_version_name)
-                    out_tracks = out_xml.find("tracks")
-                    out_tracks.append(tmp_xml_track)
+                new_version_obj = ET.Element(
+                    "version", {"uid": feed_version_name}
+                )
+                out_xml_versions_obj.append(new_version_obj)
 
-                updated_any = True
+                self.log.info(
+                    f"Adding feed version: {feed_version_name}"
+                )
 
-        if updated_any:
-            # Append vUID to versions
-            out_xml_versions_obj = out_xml.find('versions')
-            out_xml_versions_obj.set(
-                'currentVersion', self.feed_version_name)
-            new_version_obj = ET.Element(
-                "version", {"type": "version", "uid": self.feed_version_name})
-            out_xml_versions_obj.insert(0, new_version_obj)
+            # then append/update feed to correct track in output
+            if out_track_element:
+                self.log.debug("updating track element ..")
+                # update already present track
+                out_feeds = out_track_element.find('feeds')
+                out_feeds.extend(feeds)
 
-            self._clear_handler(out_xml)
+            else:
+                self.log.debug("adding new track element ..")
+                # create new track as it doesn't exist yet
+                # set current version to feeds on tmp
+                out_tracks = self.out_clip_data.find("tracks")
+                out_tracks.append(tmp_xml_track)
 
-            # fist create backup
-            self._create_openclip_backup_file(self.out_file)
+        # sort versions
+        out_xml_versions_obj[:] = sorted(out_xml_versions_obj, key=lambda child: child.get("uid"))
 
-            self.log.info("Adding feed version: {}".format(
-                self.feed_version_name))
+    def set_current_version(self, version_name: str) -> None:
+        out_xml_versions_obj = self.out_clip_data.find('versions')
+        out_xml_versions_obj.set('currentVersion', version_name)
 
-            self.write_clip_data_to_file(self.out_file, out_xml)
+        for out_xml_track in self.out_clip_data.iter("track"):
+            out_feeds = out_xml_track.find('feeds')
+            for feed in out_feeds.iter("feed"):
+                if feed.get("vuid") == version_name:
+                    out_feeds.set('currentVersion', version_name)
+                    break
 
-            self.log.debug("OpenClip Updated: {}".format(self.out_file))
+    def write(self):
+        # first create backup
+        self._clear_handler(self.out_clip_data)
+        self._create_openclip_backup_file(self.out_file)
+
+        flib.MediaInfoFile.write_clip_data_to_file(
+            self.out_file, self.out_clip_data
+        )
+
+        self.log.debug("OpenClip Updated: {}".format(self.out_file))
 
     def _feed_exists(self, xml_data, path):
         # loop all available feed paths and check if
@@ -897,26 +1052,22 @@ class OpenClipSolver(flib.MediaInfoFile):
                 return True
 
     def _create_openclip_backup_file(self, file):
+        if not os.path.isfile(file):
+            return
         bck_file = "{}.bak".format(file)
         # if backup does not exist
         if not os.path.isfile(bck_file):
             shutil.copy2(file, bck_file)
         else:
             # in case it exists and is already multiplied
-            created = False
-            for _i in range(1, 99):
-                bck_file = "{name}.bak.{idx:0>2}".format(
-                    name=file,
-                    idx=_i)
+            idx = 1
+            while True:
+                bck_file = f"{file}.bak.{idx:0>2}"
                 # create numbered backup file
                 if not os.path.isfile(bck_file):
                     shutil.copy2(file, bck_file)
-                    created = True
                     break
-            # in case numbered does not exists
-            if not created:
-                bck_file = "{}.bak.last".format(file)
-                shutil.copy2(file, bck_file)
+                idx += 1
 
     def _add_colorspace(self, feed_obj, profile_name):
         feed_storage_obj = feed_obj.find("storageFormat")
