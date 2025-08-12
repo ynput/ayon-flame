@@ -173,10 +173,17 @@ class WireTapCom(object):
         project_exists = self._child_is_in_parent_path(
             "/projects", project_name, "PROJECT")
 
+        # volumes were removed in flame 2026
+        correct_flame_version = self._get_flame_year() < 2026
+
+        if not correct_flame_version:
+            # flame 2026 does not use /volumes anymore
+            return True
+
         if not project_exists:
             volumes = self._get_all_volumes()
 
-            if len(volumes) == 0:
+            if len(volumes) == 0 and correct_flame_version:
                 raise AttributeError(
                     "Not able to create new project. No Volumes existing"
                 )
