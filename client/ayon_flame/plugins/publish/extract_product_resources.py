@@ -5,6 +5,9 @@ from copy import deepcopy
 import pyblish.api
 
 from ayon_core.pipeline import publish
+from ayon_core.pipeline.colorspace import (
+    get_remapped_colorspace_from_native
+)
 from ayon_flame import api as ayfapi
 from ayon_flame.api import MediaInfoFile
 from ayon_core.pipeline.editorial import (
@@ -14,7 +17,10 @@ from ayon_core.pipeline.editorial import (
 import flame
 
 
-class ExtractProductResources(publish.Extractor):
+class ExtractProductResources(
+    publish.Extractor,
+    publish.ColormanagedPyblishPluginMixin
+):
     """
     Extractor for transcoding files from Flame clip
     """
@@ -253,6 +259,8 @@ class ExtractProductResources(publish.Extractor):
                 exporting_clip.name.set_value("{}_{}".format(
                     folder_path, segment_name))
 
+            color_out = exporting_clip.get_colour_space()
+            self.log.debug(color_out)
             # add xml tags modifications
             modify_xml_data.update({
                 # enum position low start from 0
@@ -344,9 +352,6 @@ class ExtractProductResources(publish.Extractor):
                 "ext": extension,
                 "stagingDir": export_dir_path,
                 "tags": repre_tags,
-                "data": {
-                    "colorspace": color_out
-                },
                 "load_to_batch_group": preset_config.get(
                     "load_to_batch_group"),
                 "batch_group_loader_name": preset_config.get(
@@ -389,6 +394,10 @@ class ExtractProductResources(publish.Extractor):
                     "fps": instance.data["fps"]
                 })
 
+            self.set_representation_colorspace(
+                representation_data, instance.context, colorspace=color_out
+            )
+
             instance.data["representations"].append(representation_data)
 
             # add review family if found in tags
@@ -399,6 +408,12 @@ class ExtractProductResources(publish.Extractor):
                 representation_data))
 
             if export_type == "Sequence Publish":
+                publish_clips = flame.find_by_name(
+                    f"{exporting_clip.name.get_value()}_publish",
+                    parent=exporting_clip.parent
+                )
+                for publish_clip in publish_clips:
+                    flame.delete(publish_clip)
                 # at the end remove the duplicated clip
                 flame.delete(exporting_clip)
 
