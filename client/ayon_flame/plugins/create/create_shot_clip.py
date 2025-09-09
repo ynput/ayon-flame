@@ -8,6 +8,11 @@ from ayon_flame.otio import flame_export
 from ayon_core.pipeline.create import CreatorError, CreatedInstance
 from ayon_core.lib import BoolDef, EnumDef, TextDef, UILabelDef, NumberDef
 
+try:
+    from ayon_core.pipeline.create import ParentFlags
+except ImportError:
+    # Parenting was added with 'https://github.com/ynput/ayon-core/pull/1395'
+    ParentFlags = None
 
 # Used as a key by the creators in order to
 # retrieve the instances data into clip markers.
