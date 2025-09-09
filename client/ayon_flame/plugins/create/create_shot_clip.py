@@ -217,6 +217,17 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
     """ Base clip product creator.
     """
 
+    def _add_instance_to_context(self, instance):
+        parent_id = instance.get("parent_instance_id")
+        if parent_id is not None and ParentFlags is not None:
+            instance.set_parent(
+                parent_id,
+                # Disable if a parent is disabled and delete if a parent
+                #   is deleted
+                ParentFlags.share_active | ParentFlags.parent_lifetime
+            )
+        super()._add_instance_to_context(instance)
+
     def register_callbacks(self):
         self.create_context.add_value_changed_callback(self._on_value_change)
 
