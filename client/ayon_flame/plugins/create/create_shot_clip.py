@@ -256,8 +256,9 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
             instance.set_create_attr_defs(attr_defs)
 
     def get_attr_defs_for_instance(self, instance):
-
+        parent_instance = instance.creator_attributes.get("parent_instance")
         current_sequence = lib.get_current_sequence(lib.CTX.selection)
+
         if current_sequence is not None:
             gui_tracks = [
                 {"value": tr_name, "label": f"Track: {tr_name}"}
@@ -271,7 +272,8 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
                 "parentInstance",
                 label="Linked to",
                 disabled=True,
-            )
+                default=parent_instance,
+            ),
         ]
 
         if self.product_type == "plate":
