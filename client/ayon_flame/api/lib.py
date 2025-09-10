@@ -571,9 +571,10 @@ def get_segment_attributes(segment):
     # populate shot source metadata
     segment_attrs = [
         "record_duration", "record_in", "record_out",
-        "source_duration", "source_in", "source_out"
+        "source_in", "source_out"
     ]
     segment_attrs_data = {}
+    log.warning(f"dir attrs `segment_attrs`: '{dir(segment)}'")
     for attr_name in segment_attrs:
         if not hasattr(segment, attr_name):
             continue
@@ -583,10 +584,13 @@ def get_segment_attributes(segment):
         if attr_name in ["record_in", "record_out"]:
             clip_data[attr_name] = attr.relative_frame
         else:
-            clip_data[attr_name] = attr.frame
+            log.warning(f"dir attr {attr_name}: '{dir(attr)}'")
+            if hasattr(attr, "frame"):
+                log.info(f"attr {attr_name}: '{attr.frame}'")
+                clip_data[attr_name] = attr.frame
 
     clip_data["segment_timecodes"] = segment_attrs_data
-
+    log.info(f"clip_data: '{clip_data}'")
     return clip_data
 
 

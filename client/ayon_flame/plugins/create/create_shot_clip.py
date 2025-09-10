@@ -673,8 +673,13 @@ OTIO file.
 
                 # Shot creation
                 if creator_id == shot_creator_id:
-                    segment_data = flame_export.get_segment_attributes(segment)
-                    segment_duration = int(segment_data["record_duration"])
+                    segment_data = lib.get_segment_attributes(segment)
+                    self.log.info(f"segment_data: '{segment_data}'")
+                    record_in = segment_data["record_in"]
+                    record_out = segment_data["record_out"]
+                    segment_duration = segment_data.get("record_duration")
+                    if segment_duration is None:
+                        segment_duration = record_out - record_in + 1
                     workfileFrameStart = sub_instance_data[
                         "workfileFrameStart"]
                     sub_instance_data.update(
@@ -690,8 +695,8 @@ OTIO file.
                                 "frameStart": workfileFrameStart,
                                 "frameEnd": (
                                     workfileFrameStart + segment_duration),
-                                "clipIn": int(segment_data["record_in"]),
-                                "clipOut": int(segment_data["record_out"]),
+                                "clipIn": int(record_in),
+                                "clipOut": int(record_out),
                                 "clipDuration": segment_duration,
                                 "sourceIn": int(segment_data["source_in"]),
                                 "sourceOut": int(segment_data["source_out"]),
@@ -820,7 +825,7 @@ OTIO file.
 
         # Create parent shot instance.
         sub_instance_data = instance_data.copy()
-        segment_data = flame_export.get_segment_attributes(segment)
+        segment_data = lib.get_segment_attributes(segment)
         segment_duration = int(segment_data["record_duration"])
         workfileFrameStart = sub_instance_data["workfileFrameStart"]
         sub_instance_data.update({
