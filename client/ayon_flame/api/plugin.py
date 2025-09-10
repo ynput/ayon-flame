@@ -23,15 +23,6 @@ class HiddenFlameCreator(HiddenCreator):
     """
     settings_category = "flame"
 
-    def collect_instances(self):
-        pass
-
-    def update_instances(self, update_list):
-        pass
-
-    def remove_instances(self, instances):
-        pass
-
 
 class FlameCreator(Creator):
     """Creator class wrapper

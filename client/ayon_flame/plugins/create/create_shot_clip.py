@@ -112,6 +112,18 @@ class _FlameInstanceCreator(plugin.HiddenFlameCreator):
     """Wrapper class for clip types products.
     """
 
+    def _add_instance_to_context(self, instance):
+        parent_id = instance.get("parent_instance_id")
+        self.log.info(f">>>> Adding parent: {parent_id}")
+        if parent_id is not None and ParentFlags is not None:
+            instance.set_parent(
+                parent_id,
+                # Disable if a parent is disabled and delete if a parent
+                #   is deleted
+                ParentFlags.share_active | ParentFlags.parent_lifetime
+            )
+        super()._add_instance_to_context(instance)
+
     def create(self, instance_data, _):
         """Return a new CreateInstance for new shot from Flame.
 
@@ -216,17 +228,6 @@ class FlameShotInstanceCreator(_FlameInstanceCreator):
 class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
     """ Base clip product creator.
     """
-
-    def _add_instance_to_context(self, instance):
-        parent_id = instance.get("parent_instance_id")
-        if parent_id is not None and ParentFlags is not None:
-            instance.set_parent(
-                parent_id,
-                # Disable if a parent is disabled and delete if a parent
-                #   is deleted
-                ParentFlags.share_active | ParentFlags.parent_lifetime
-            )
-        super()._add_instance_to_context(instance)
 
     def register_callbacks(self):
         self.create_context.add_value_changed_callback(self._on_value_change)
@@ -780,7 +781,6 @@ OTIO file.
 
                 instance = creator.create(sub_instance_data, None)
                 instance.transient_data["segment_item"] = segment
-                self._add_instance_to_context(instance)
 
                 instance_data_to_store = instance.data_to_store()
                 shot_instances[creator_id] = instance_data_to_store
@@ -815,7 +815,6 @@ OTIO file.
         creator = self.create_context.creators[creator_id]
         instance = creator.create(data, None)
         instance.transient_data["segment_item"] = segment
-        self._add_instance_to_context(instance)
         instances.append(instance)
         return instance
 
@@ -868,7 +867,6 @@ OTIO file.
         creator = self.create_context.creators[shot_creator_id]
         instance = creator.create(sub_instance_data, None)
         instance.transient_data["segment_item"] = segment
-        self._add_instance_to_context(instance)
         clip_instances[shot_creator_id] = instance.data_to_store()
         parenting_data = instance
 
@@ -903,7 +901,6 @@ OTIO file.
 
             instance = creator.create(sub_instance_data, None)
             instance.transient_data["segment_item"] = segment
-            self._add_instance_to_context(instance)
             clip_instances[sub_creator_id] = instance.data_to_store()
 
         # Adjust clip tag to match new publisher
