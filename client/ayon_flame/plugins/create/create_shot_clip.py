@@ -114,7 +114,6 @@ class _FlameInstanceCreator(plugin.HiddenFlameCreator):
 
     def _add_instance_to_context(self, instance):
         parent_id = instance.get("parent_instance_id")
-        self.log.info(f">>>> Adding parent: {parent_id}")
         if parent_id is not None and ParentFlags is not None:
             instance.set_parent(
                 parent_id,
@@ -213,7 +212,7 @@ class FlameShotInstanceCreator(_FlameInstanceCreator):
     label = "Editorial Shot"
 
     def get_instance_attr_defs(self):
-        instance_attributes = CLIP_ATTR_DEFS
+        instance_attributes = list(CLIP_ATTR_DEFS)
         instance_attributes.append(
             BoolDef(
                 "useSourceResolution",

@@ -24,7 +24,7 @@ class HiddenFlameCreator(HiddenCreator):
     settings_category = "flame"
 
     def collect_instances(self):
-            pass
+        pass
 
     def update_instances(self, update_list):
         pass
