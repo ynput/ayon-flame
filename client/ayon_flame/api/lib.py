@@ -574,7 +574,6 @@ def get_segment_attributes(segment):
         "source_in", "source_out"
     ]
     segment_attrs_data = {}
-    log.warning(f"dir attrs `segment_attrs`: '{dir(segment)}'")
     for attr_name in segment_attrs:
         if not hasattr(segment, attr_name):
             continue
@@ -584,13 +583,10 @@ def get_segment_attributes(segment):
         if attr_name in ["record_in", "record_out"]:
             clip_data[attr_name] = attr.relative_frame
         else:
-            log.warning(f"dir attr {attr_name}: '{dir(attr)}'")
             if hasattr(attr, "frame"):
-                log.info(f"attr {attr_name}: '{attr.frame}'")
                 clip_data[attr_name] = attr.frame
 
     clip_data["segment_timecodes"] = segment_attrs_data
-    log.info(f"clip_data: '{clip_data}'")
     return clip_data
 
 
@@ -873,7 +869,6 @@ class MediaInfoFile(object):
             str: collection basename with range of sequence
         """
         partialname = self._separate_file_head(feed_basename, feed_ext)
-        self.log.debug("__ partialname: {}".format(partialname))
 
         # make sure partial input basename is having correct extensoon
         if not partialname:
