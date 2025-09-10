@@ -3,7 +3,6 @@ import uuid
 
 import ayon_flame.api as ayfapi
 from ayon_flame.api import plugin, lib, pipeline
-from ayon_flame.otio import flame_export
 
 from ayon_core.pipeline.create import CreatorError, CreatedInstance
 from ayon_core.lib import BoolDef, EnumDef, TextDef, UILabelDef, NumberDef
