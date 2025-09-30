@@ -571,7 +571,7 @@ def get_segment_attributes(segment):
     # populate shot source metadata
     segment_attrs = [
         "record_duration", "record_in", "record_out",
-        "source_duration", "source_in", "source_out"
+        "source_in", "source_out"
     ]
     segment_attrs_data = {}
     for attr_name in segment_attrs:
@@ -583,10 +583,10 @@ def get_segment_attributes(segment):
         if attr_name in ["record_in", "record_out"]:
             clip_data[attr_name] = attr.relative_frame
         else:
-            clip_data[attr_name] = attr.frame
+            if hasattr(attr, "frame"):
+                clip_data[attr_name] = attr.frame
 
     clip_data["segment_timecodes"] = segment_attrs_data
-
     return clip_data
 
 
@@ -869,7 +869,6 @@ class MediaInfoFile(object):
             str: collection basename with range of sequence
         """
         partialname = self._separate_file_head(feed_basename, feed_ext)
-        self.log.debug("__ partialname: {}".format(partialname))
 
         # make sure partial input basename is having correct extensoon
         if not partialname:
