@@ -1,6 +1,6 @@
 name = "flame"
 title = "Flame"
-version = "1.2.0"
+version = "1.2.0+dev"
 app_host_name = "flame"
 client_dir = "ayon_flame"
 project_can_override_addon_version = True
