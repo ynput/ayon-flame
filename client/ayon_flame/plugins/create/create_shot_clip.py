@@ -691,7 +691,7 @@ OTIO file.
                 # Shot creation
                 if creator_id == shot_creator_id:
                     segment_data = lib.get_segment_attributes(segment)
-                    self.log.info(f"segment_data: '{segment_data}'")
+                    self.log.debug(f"segment_data: '{segment_data}'")
                     record_in = segment_data["record_in"]
                     record_out = segment_data["record_out"]
                     segment_duration = segment_data.get("record_duration")
