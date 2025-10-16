@@ -1,0 +1,1683 @@
+<!doctype html><html lang=en class=no-js> <head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><link rel=prev href=constants.html><link rel=next href=menu.html><link rel=icon href=../../../../img/favicon.ico><meta name=generator content="mkdocs-1.6.1, mkdocs-material-9.6.22"><title>lib - ayon-flame</title><link rel=stylesheet href=../../../../assets/stylesheets/main.84d31ad4.min.css><link rel=stylesheet href=../../../../assets/stylesheets/palette.06af60db.min.css><script src=https://unpkg.com/iframe-worker/shim></script><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback"><style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style><link rel=stylesheet href=../../../../assets/_mkdocstrings.css><link rel=stylesheet href=../../../../css/custom.css><script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script></head> <body dir=ltr data-md-color-scheme=slate data-md-color-primary=indigo data-md-color-accent=indigo> <input class=md-toggle data-md-toggle=drawer type=checkbox id=__drawer autocomplete=off> <input class=md-toggle data-md-toggle=search type=checkbox id=__search autocomplete=off> <label class=md-overlay for=__drawer></label> <div data-md-component=skip> <a href=#client.ayon_flame.api.lib class=md-skip> Skip to content </a> </div> <div data-md-component=announce> </div> <div data-md-color-scheme=default data-md-component=outdated hidden> </div> <header class="md-header md-header--shadow" data-md-component=header> <nav class="md-header__inner md-grid" aria-label=Header> <a href=../../../../index.html title=ayon-flame class="md-header__button md-logo" aria-label=ayon-flame data-md-component=logo> <img src=../../../../img/ay-symbol-blackw-full.png alt=logo> </a> <label class="md-header__button md-icon" for=__drawer> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg> </label> <div class=md-header__title data-md-component=header-title> <div class=md-header__ellipsis> <div class=md-header__topic> <span class=md-ellipsis> ayon-flame </span> </div> <div class=md-header__topic data-md-component=header-topic> <span class=md-ellipsis> lib </span> </div> </div> </div> <form class=md-header__option data-md-component=palette> <input class=md-option data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme=slate data-md-color-primary=indigo data-md-color-accent=indigo aria-label="Switch to light mode" type=radio name=__palette id=__palette_0> <label class="md-header__button md-icon" title="Switch to light mode" for=__palette_1 hidden> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg> </label> <input class=md-option data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme=default data-md-color-primary=indigo data-md-color-accent=indigo aria-label="Switch to dark mode" type=radio name=__palette id=__palette_1> <label class="md-header__button md-icon" title="Switch to dark mode" for=__palette_0 hidden> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg> </label> </form> <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script> <label class="md-header__button md-icon" for=__search> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg> </label> <div class=md-search data-md-component=search role=dialog> <label class=md-search__overlay for=__search></label> <div class=md-search__inner role=search> <form class=md-search__form name=search> <input type=text class=md-search__input name=query aria-label=Search placeholder=Search autocapitalize=off autocorrect=off autocomplete=off spellcheck=false data-md-component=search-query required> <label class="md-search__icon md-icon" for=__search> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg> </label> <nav class=md-search__options aria-label=Search> <button type=reset class="md-search__icon md-icon" title=Clear aria-label=Clear tabindex=-1> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg> </button> </nav> </form> <div class=md-search__output> <div class=md-search__scrollwrap tabindex=0 data-md-scrollfix> <div class=md-search-result data-md-component=search-result> <div class=md-search-result__meta> Initializing search </div> <ol class=md-search-result__list role=presentation></ol> </div> </div> </div> </div> </div> <div class=md-header__source> <a href=https://github.com/ynput/ayon-flame title="Go to repository" class=md-source data-md-component=source> <div class="md-source__icon md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 448 512"><!-- Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg> </div> <div class=md-source__repository> GitHub </div> </a> </div> </nav> </header> <div class=md-container data-md-component=container> <main class=md-main data-md-component=main> <div class="md-main__inner md-grid"> <div class="md-sidebar md-sidebar--primary" data-md-component=sidebar data-md-type=navigation> <div class=md-sidebar__scrollwrap> <div class=md-sidebar__inner> <nav class="md-nav md-nav--primary" aria-label=Navigation data-md-level=0> <label class=md-nav__title for=__drawer> <a href=../../../../index.html title=ayon-flame class="md-nav__button md-logo" aria-label=ayon-flame data-md-component=logo> <img src=../../../../img/ay-symbol-blackw-full.png alt=logo> </a> ayon-flame </label> <div class=md-nav__source> <a href=https://github.com/ynput/ayon-flame title="Go to repository" class=md-source data-md-component=source> <div class="md-source__icon md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 448 512"><!-- Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg> </div> <div class=md-source__repository> GitHub </div> </a> </div> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../../../index.html class=md-nav__link> <span class=md-ellipsis> Home </span> </a> </li> <li class=md-nav__item> <a href=../../../../license.html class=md-nav__link> <span class=md-ellipsis> License </span> </a> </li> <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_3 checked> <label class=md-nav__link for=__nav_3 id=__nav_3_label tabindex> <span class=md-ellipsis> Reference </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=1 aria-labelledby=__nav_3_label aria-expanded=true> <label class=md-nav__title for=__nav_3> <span class="md-nav__icon md-icon"></span> Reference </label> <ul class=md-nav__list data-md-scrollfix> <li class="md-nav__item md-nav__item--active md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_3_1 checked> <label class=md-nav__link for=__nav_3_1 id=__nav_3_1_label tabindex=0> <span class=md-ellipsis> client </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=2 aria-labelledby=__nav_3_1_label aria-expanded=true> <label class=md-nav__title for=__nav_3_1> <span class="md-nav__icon md-icon"></span> client </label> <ul class=md-nav__list data-md-scrollfix> <li class="md-nav__item md-nav__item--active md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_3_1_1 checked> <label class=md-nav__link for=__nav_3_1_1 id=__nav_3_1_1_label tabindex=0> <span class=md-ellipsis> ayon_flame </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=3 aria-labelledby=__nav_3_1_1_label aria-expanded=true> <label class=md-nav__title for=__nav_3_1_1> <span class="md-nav__icon md-icon"></span> ayon_flame </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../addon.html class=md-nav__link> <span class=md-ellipsis> addon </span> </a> </li> <li class="md-nav__item md-nav__item--active md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_3_1_1_2 checked> <label class=md-nav__link for=__nav_3_1_1_2 id=__nav_3_1_1_2_label tabindex=0> <span class=md-ellipsis> api </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=4 aria-labelledby=__nav_3_1_1_2_label aria-expanded=true> <label class=md-nav__title for=__nav_3_1_1_2> <span class="md-nav__icon md-icon"></span> api </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=batch_utils.html class=md-nav__link> <span class=md-ellipsis> batch_utils </span> </a> </li> <li class=md-nav__item> <a href=constants.html class=md-nav__link> <span class=md-ellipsis> constants </span> </a> </li> <li class="md-nav__item md-nav__item--active"> <input class="md-nav__toggle md-toggle" type=checkbox id=__toc> <label class="md-nav__link md-nav__link--active" for=__toc> <span class=md-ellipsis> lib </span> <span class="md-nav__icon md-icon"></span> </label> <a href=lib.html class="md-nav__link md-nav__link--active"> <span class=md-ellipsis> lib </span> </a> <nav class="md-nav md-nav--secondary" aria-label="Table of contents"> <label class=md-nav__title for=__toc> <span class="md-nav__icon md-icon"></span> Table of contents </label> <ul class=md-nav__list data-md-component=toc data-md-scrollfix> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib class=md-nav__link> <span class=md-ellipsis> lib </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.MediaInfoFile class=md-nav__link> <span class=md-ellipsis> MediaInfoFile </span> </a> <nav class=md-nav aria-label=MediaInfoFile> <ul class=md-nav__list> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.MediaInfoFile.clip_data class=md-nav__link> <span class=md-ellipsis> clip_data </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.MediaInfoFile.drop_mode class=md-nav__link> <span class=md-ellipsis> drop_mode </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.MediaInfoFile.file_pattern class=md-nav__link> <span class=md-ellipsis> file_pattern </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.MediaInfoFile.fps class=md-nav__link> <span class=md-ellipsis> fps </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.MediaInfoFile.start_frame class=md-nav__link> <span class=md-ellipsis> start_frame </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.MediaInfoFile.write_clip_data_to_file class=md-nav__link> <span class=md-ellipsis> write_clip_data_to_file </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.TimeEffectMetadata class=md-nav__link> <span class=md-ellipsis> TimeEffectMetadata </span> </a> <nav class=md-nav aria-label=TimeEffectMetadata> <ul class=md-nav__list> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.TimeEffectMetadata.data class=md-nav__link> <span class=md-ellipsis> data </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.TimeEffectMetadata.is_empty class=md-nav__link> <span class=md-ellipsis> is_empty </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.TimeEffectMetadata.setup_data class=md-nav__link> <span class=md-ellipsis> setup_data </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.create_segment_data_marker class=md-nav__link> <span class=md-ellipsis> create_segment_data_marker </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.get_frame_from_filename class=md-nav__link> <span class=md-ellipsis> get_frame_from_filename </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.get_padding_from_filename class=md-nav__link> <span class=md-ellipsis> get_padding_from_filename </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.get_publish_attribute class=md-nav__link> <span class=md-ellipsis> get_publish_attribute </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.get_reformatted_filename class=md-nav__link> <span class=md-ellipsis> get_reformatted_filename </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.get_segment_data_marker class=md-nav__link> <span class=md-ellipsis> get_segment_data_marker </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.maintained_object_duplication class=md-nav__link> <span class=md-ellipsis> maintained_object_duplication </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.maintained_segment_selection class=md-nav__link> <span class=md-ellipsis> maintained_segment_selection </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.reset_segment_selection class=md-nav__link> <span class=md-ellipsis> reset_segment_selection </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.set_publish_attribute class=md-nav__link> <span class=md-ellipsis> set_publish_attribute </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.set_segment_data_marker class=md-nav__link> <span class=md-ellipsis> set_segment_data_marker </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=menu.html class=md-nav__link> <span class=md-ellipsis> menu </span> </a> </li> <li class=md-nav__item> <a href=pipeline.html class=md-nav__link> <span class=md-ellipsis> pipeline </span> </a> </li> <li class=md-nav__item> <a href=plugin.html class=md-nav__link> <span class=md-ellipsis> plugin </span> </a> </li> <li class=md-nav__item> <a href=render_utils.html class=md-nav__link> <span class=md-ellipsis> render_utils </span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=scripts/wiretap_com.html class=md-nav__link> <span class=md-ellipsis> scripts </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class=md-nav__item> <a href=utils.html class=md-nav__link> <span class=md-ellipsis> utils </span> </a> </li> <li class=md-nav__item> <a href=workio.html class=md-nav__link> <span class=md-ellipsis> workio </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../hooks/pre_flame_setup.html class=md-nav__link> <span class=md-ellipsis> hooks </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../otio/flame_export.html class=md-nav__link> <span class=md-ellipsis> otio </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../plugins/create/create_shot_clip.html class=md-nav__link> <span class=md-ellipsis> plugins </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../startup/AYON_in_flame.html class=md-nav__link> <span class=md-ellipsis> startup </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class=md-nav__item> <a href=../version.html class=md-nav__link> <span class=md-ellipsis> version </span> </a> </li> </ul> </nav> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../../../server/settings/conversion.html class=md-nav__link> <span class=md-ellipsis> server </span> <span class="md-nav__icon md-icon"></span> </a> </li> </ul> </nav> </li> </ul> </nav> </div> </div> </div> <div class="md-sidebar md-sidebar--secondary" data-md-component=sidebar data-md-type=toc> <div class=md-sidebar__scrollwrap> <div class=md-sidebar__inner> <nav class="md-nav md-nav--secondary" aria-label="Table of contents"> <label class=md-nav__title for=__toc> <span class="md-nav__icon md-icon"></span> Table of contents </label> <ul class=md-nav__list data-md-component=toc data-md-scrollfix> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib class=md-nav__link> <span class=md-ellipsis> lib </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.MediaInfoFile class=md-nav__link> <span class=md-ellipsis> MediaInfoFile </span> </a> <nav class=md-nav aria-label=MediaInfoFile> <ul class=md-nav__list> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.MediaInfoFile.clip_data class=md-nav__link> <span class=md-ellipsis> clip_data </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.MediaInfoFile.drop_mode class=md-nav__link> <span class=md-ellipsis> drop_mode </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.MediaInfoFile.file_pattern class=md-nav__link> <span class=md-ellipsis> file_pattern </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.MediaInfoFile.fps class=md-nav__link> <span class=md-ellipsis> fps </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.MediaInfoFile.start_frame class=md-nav__link> <span class=md-ellipsis> start_frame </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.MediaInfoFile.write_clip_data_to_file class=md-nav__link> <span class=md-ellipsis> write_clip_data_to_file </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.TimeEffectMetadata class=md-nav__link> <span class=md-ellipsis> TimeEffectMetadata </span> </a> <nav class=md-nav aria-label=TimeEffectMetadata> <ul class=md-nav__list> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.TimeEffectMetadata.data class=md-nav__link> <span class=md-ellipsis> data </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.TimeEffectMetadata.is_empty class=md-nav__link> <span class=md-ellipsis> is_empty </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.TimeEffectMetadata.setup_data class=md-nav__link> <span class=md-ellipsis> setup_data </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.create_segment_data_marker class=md-nav__link> <span class=md-ellipsis> create_segment_data_marker </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.get_frame_from_filename class=md-nav__link> <span class=md-ellipsis> get_frame_from_filename </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.get_padding_from_filename class=md-nav__link> <span class=md-ellipsis> get_padding_from_filename </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.get_publish_attribute class=md-nav__link> <span class=md-ellipsis> get_publish_attribute </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.get_reformatted_filename class=md-nav__link> <span class=md-ellipsis> get_reformatted_filename </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.get_segment_data_marker class=md-nav__link> <span class=md-ellipsis> get_segment_data_marker </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.maintained_object_duplication class=md-nav__link> <span class=md-ellipsis> maintained_object_duplication </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.maintained_segment_selection class=md-nav__link> <span class=md-ellipsis> maintained_segment_selection </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.reset_segment_selection class=md-nav__link> <span class=md-ellipsis> reset_segment_selection </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.set_publish_attribute class=md-nav__link> <span class=md-ellipsis> set_publish_attribute </span> </a> </li> <li class=md-nav__item> <a href=#client.ayon_flame.api.lib.set_segment_data_marker class=md-nav__link> <span class=md-ellipsis> set_segment_data_marker </span> </a> </li> </ul> </nav> </div> </div> </div> <div class=md-content data-md-component=content> <article class="md-content__inner md-typeset"> <h1>lib</h1> <div class="doc doc-object doc-module"> <a id=client.ayon_flame.api.lib></a> <div class="doc doc-contents first"> <div class="doc doc-children"> <div class="doc doc-object doc-class"> <h2 id=client.ayon_flame.api.lib.MediaInfoFile class="doc doc-heading"> <code>MediaInfoFile</code> </h2> <div class="doc doc-contents "> <p class="doc doc-class-bases"> Bases: <code><span title=object>object</span></code></p> <p>Class to get media info file clip data</p> <p><span class=doc-section-title>Raises:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code><span title=IOError>IOError</span></code> </td> <td> <div class=doc-md-description> <p>MEDIA_SCRIPT_PATH path doesn't exists</p> </div> </td> </tr> <tr class=doc-section-item> <td> <code><span title=TypeError>TypeError</span></code> </td> <td> <div class=doc-md-description> <p>Not able to generate clip xml data file</p> </div> </td> </tr> <tr class=doc-section-item> <td> <code><span title=xml.etree.ElementTree.ParseError>ParseError</span></code> </td> <td> <div class=doc-md-description> <p>Missing clip in xml clip data</p> </div> </td> </tr> <tr class=doc-section-item> <td> <code><span title=IOError>IOError</span></code> </td> <td> <div class=doc-md-description> <p>Not able to save xml clip data to file</p> </div> </td> </tr> </tbody> </table> <p><span class=doc-section-title>Attributes:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td><code><span title=client.ayon_flame.api.lib.MediaInfoFile.str>str</span></code></td> <td> </td> <td> <div class=doc-md-description> <p><code>MEDIA_SCRIPT_PATH</code> path to flame binary</p> </div> </td> </tr> <tr class=doc-section-item> <td><code><span title=client.ayon_flame.api.lib.MediaInfoFile.logging.Logger>logging.Logger</span></code></td> <td> </td> <td> <div class=doc-md-description> <p><code>log</code> logger</p> </div> </td> </tr> </tbody> </table> <p>TODO: add method for getting metadata to dict</p> <details class=quote> <summary>Source code in <code>client/ayon_flame/api/lib.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal> 760</span>
+<span class=normal> 761</span>
+<span class=normal> 762</span>
+<span class=normal> 763</span>
+<span class=normal> 764</span>
+<span class=normal> 765</span>
+<span class=normal> 766</span>
+<span class=normal> 767</span>
+<span class=normal> 768</span>
+<span class=normal> 769</span>
+<span class=normal> 770</span>
+<span class=normal> 771</span>
+<span class=normal> 772</span>
+<span class=normal> 773</span>
+<span class=normal> 774</span>
+<span class=normal> 775</span>
+<span class=normal> 776</span>
+<span class=normal> 777</span>
+<span class=normal> 778</span>
+<span class=normal> 779</span>
+<span class=normal> 780</span>
+<span class=normal> 781</span>
+<span class=normal> 782</span>
+<span class=normal> 783</span>
+<span class=normal> 784</span>
+<span class=normal> 785</span>
+<span class=normal> 786</span>
+<span class=normal> 787</span>
+<span class=normal> 788</span>
+<span class=normal> 789</span>
+<span class=normal> 790</span>
+<span class=normal> 791</span>
+<span class=normal> 792</span>
+<span class=normal> 793</span>
+<span class=normal> 794</span>
+<span class=normal> 795</span>
+<span class=normal> 796</span>
+<span class=normal> 797</span>
+<span class=normal> 798</span>
+<span class=normal> 799</span>
+<span class=normal> 800</span>
+<span class=normal> 801</span>
+<span class=normal> 802</span>
+<span class=normal> 803</span>
+<span class=normal> 804</span>
+<span class=normal> 805</span>
+<span class=normal> 806</span>
+<span class=normal> 807</span>
+<span class=normal> 808</span>
+<span class=normal> 809</span>
+<span class=normal> 810</span>
+<span class=normal> 811</span>
+<span class=normal> 812</span>
+<span class=normal> 813</span>
+<span class=normal> 814</span>
+<span class=normal> 815</span>
+<span class=normal> 816</span>
+<span class=normal> 817</span>
+<span class=normal> 818</span>
+<span class=normal> 819</span>
+<span class=normal> 820</span>
+<span class=normal> 821</span>
+<span class=normal> 822</span>
+<span class=normal> 823</span>
+<span class=normal> 824</span>
+<span class=normal> 825</span>
+<span class=normal> 826</span>
+<span class=normal> 827</span>
+<span class=normal> 828</span>
+<span class=normal> 829</span>
+<span class=normal> 830</span>
+<span class=normal> 831</span>
+<span class=normal> 832</span>
+<span class=normal> 833</span>
+<span class=normal> 834</span>
+<span class=normal> 835</span>
+<span class=normal> 836</span>
+<span class=normal> 837</span>
+<span class=normal> 838</span>
+<span class=normal> 839</span>
+<span class=normal> 840</span>
+<span class=normal> 841</span>
+<span class=normal> 842</span>
+<span class=normal> 843</span>
+<span class=normal> 844</span>
+<span class=normal> 845</span>
+<span class=normal> 846</span>
+<span class=normal> 847</span>
+<span class=normal> 848</span>
+<span class=normal> 849</span>
+<span class=normal> 850</span>
+<span class=normal> 851</span>
+<span class=normal> 852</span>
+<span class=normal> 853</span>
+<span class=normal> 854</span>
+<span class=normal> 855</span>
+<span class=normal> 856</span>
+<span class=normal> 857</span>
+<span class=normal> 858</span>
+<span class=normal> 859</span>
+<span class=normal> 860</span>
+<span class=normal> 861</span>
+<span class=normal> 862</span>
+<span class=normal> 863</span>
+<span class=normal> 864</span>
+<span class=normal> 865</span>
+<span class=normal> 866</span>
+<span class=normal> 867</span>
+<span class=normal> 868</span>
+<span class=normal> 869</span>
+<span class=normal> 870</span>
+<span class=normal> 871</span>
+<span class=normal> 872</span>
+<span class=normal> 873</span>
+<span class=normal> 874</span>
+<span class=normal> 875</span>
+<span class=normal> 876</span>
+<span class=normal> 877</span>
+<span class=normal> 878</span>
+<span class=normal> 879</span>
+<span class=normal> 880</span>
+<span class=normal> 881</span>
+<span class=normal> 882</span>
+<span class=normal> 883</span>
+<span class=normal> 884</span>
+<span class=normal> 885</span>
+<span class=normal> 886</span>
+<span class=normal> 887</span>
+<span class=normal> 888</span>
+<span class=normal> 889</span>
+<span class=normal> 890</span>
+<span class=normal> 891</span>
+<span class=normal> 892</span>
+<span class=normal> 893</span>
+<span class=normal> 894</span>
+<span class=normal> 895</span>
+<span class=normal> 896</span>
+<span class=normal> 897</span>
+<span class=normal> 898</span>
+<span class=normal> 899</span>
+<span class=normal> 900</span>
+<span class=normal> 901</span>
+<span class=normal> 902</span>
+<span class=normal> 903</span>
+<span class=normal> 904</span>
+<span class=normal> 905</span>
+<span class=normal> 906</span>
+<span class=normal> 907</span>
+<span class=normal> 908</span>
+<span class=normal> 909</span>
+<span class=normal> 910</span>
+<span class=normal> 911</span>
+<span class=normal> 912</span>
+<span class=normal> 913</span>
+<span class=normal> 914</span>
+<span class=normal> 915</span>
+<span class=normal> 916</span>
+<span class=normal> 917</span>
+<span class=normal> 918</span>
+<span class=normal> 919</span>
+<span class=normal> 920</span>
+<span class=normal> 921</span>
+<span class=normal> 922</span>
+<span class=normal> 923</span>
+<span class=normal> 924</span>
+<span class=normal> 925</span>
+<span class=normal> 926</span>
+<span class=normal> 927</span>
+<span class=normal> 928</span>
+<span class=normal> 929</span>
+<span class=normal> 930</span>
+<span class=normal> 931</span>
+<span class=normal> 932</span>
+<span class=normal> 933</span>
+<span class=normal> 934</span>
+<span class=normal> 935</span>
+<span class=normal> 936</span>
+<span class=normal> 937</span>
+<span class=normal> 938</span>
+<span class=normal> 939</span>
+<span class=normal> 940</span>
+<span class=normal> 941</span>
+<span class=normal> 942</span>
+<span class=normal> 943</span>
+<span class=normal> 944</span>
+<span class=normal> 945</span>
+<span class=normal> 946</span>
+<span class=normal> 947</span>
+<span class=normal> 948</span>
+<span class=normal> 949</span>
+<span class=normal> 950</span>
+<span class=normal> 951</span>
+<span class=normal> 952</span>
+<span class=normal> 953</span>
+<span class=normal> 954</span>
+<span class=normal> 955</span>
+<span class=normal> 956</span>
+<span class=normal> 957</span>
+<span class=normal> 958</span>
+<span class=normal> 959</span>
+<span class=normal> 960</span>
+<span class=normal> 961</span>
+<span class=normal> 962</span>
+<span class=normal> 963</span>
+<span class=normal> 964</span>
+<span class=normal> 965</span>
+<span class=normal> 966</span>
+<span class=normal> 967</span>
+<span class=normal> 968</span>
+<span class=normal> 969</span>
+<span class=normal> 970</span>
+<span class=normal> 971</span>
+<span class=normal> 972</span>
+<span class=normal> 973</span>
+<span class=normal> 974</span>
+<span class=normal> 975</span>
+<span class=normal> 976</span>
+<span class=normal> 977</span>
+<span class=normal> 978</span>
+<span class=normal> 979</span>
+<span class=normal> 980</span>
+<span class=normal> 981</span>
+<span class=normal> 982</span>
+<span class=normal> 983</span>
+<span class=normal> 984</span>
+<span class=normal> 985</span>
+<span class=normal> 986</span>
+<span class=normal> 987</span>
+<span class=normal> 988</span>
+<span class=normal> 989</span>
+<span class=normal> 990</span>
+<span class=normal> 991</span>
+<span class=normal> 992</span>
+<span class=normal> 993</span>
+<span class=normal> 994</span>
+<span class=normal> 995</span>
+<span class=normal> 996</span>
+<span class=normal> 997</span>
+<span class=normal> 998</span>
+<span class=normal> 999</span>
+<span class=normal>1000</span>
+<span class=normal>1001</span>
+<span class=normal>1002</span>
+<span class=normal>1003</span>
+<span class=normal>1004</span>
+<span class=normal>1005</span>
+<span class=normal>1006</span>
+<span class=normal>1007</span>
+<span class=normal>1008</span>
+<span class=normal>1009</span>
+<span class=normal>1010</span>
+<span class=normal>1011</span>
+<span class=normal>1012</span>
+<span class=normal>1013</span>
+<span class=normal>1014</span>
+<span class=normal>1015</span>
+<span class=normal>1016</span>
+<span class=normal>1017</span>
+<span class=normal>1018</span>
+<span class=normal>1019</span>
+<span class=normal>1020</span>
+<span class=normal>1021</span>
+<span class=normal>1022</span>
+<span class=normal>1023</span>
+<span class=normal>1024</span>
+<span class=normal>1025</span>
+<span class=normal>1026</span>
+<span class=normal>1027</span>
+<span class=normal>1028</span>
+<span class=normal>1029</span>
+<span class=normal>1030</span>
+<span class=normal>1031</span>
+<span class=normal>1032</span>
+<span class=normal>1033</span>
+<span class=normal>1034</span>
+<span class=normal>1035</span>
+<span class=normal>1036</span>
+<span class=normal>1037</span>
+<span class=normal>1038</span>
+<span class=normal>1039</span>
+<span class=normal>1040</span>
+<span class=normal>1041</span>
+<span class=normal>1042</span>
+<span class=normal>1043</span>
+<span class=normal>1044</span>
+<span class=normal>1045</span>
+<span class=normal>1046</span>
+<span class=normal>1047</span>
+<span class=normal>1048</span>
+<span class=normal>1049</span>
+<span class=normal>1050</span>
+<span class=normal>1051</span>
+<span class=normal>1052</span>
+<span class=normal>1053</span>
+<span class=normal>1054</span>
+<span class=normal>1055</span>
+<span class=normal>1056</span>
+<span class=normal>1057</span>
+<span class=normal>1058</span>
+<span class=normal>1059</span>
+<span class=normal>1060</span>
+<span class=normal>1061</span>
+<span class=normal>1062</span>
+<span class=normal>1063</span>
+<span class=normal>1064</span>
+<span class=normal>1065</span>
+<span class=normal>1066</span>
+<span class=normal>1067</span>
+<span class=normal>1068</span>
+<span class=normal>1069</span>
+<span class=normal>1070</span>
+<span class=normal>1071</span>
+<span class=normal>1072</span>
+<span class=normal>1073</span>
+<span class=normal>1074</span>
+<span class=normal>1075</span>
+<span class=normal>1076</span>
+<span class=normal>1077</span>
+<span class=normal>1078</span>
+<span class=normal>1079</span>
+<span class=normal>1080</span>
+<span class=normal>1081</span>
+<span class=normal>1082</span>
+<span class=normal>1083</span>
+<span class=normal>1084</span>
+<span class=normal>1085</span>
+<span class=normal>1086</span>
+<span class=normal>1087</span>
+<span class=normal>1088</span>
+<span class=normal>1089</span>
+<span class=normal>1090</span>
+<span class=normal>1091</span>
+<span class=normal>1092</span>
+<span class=normal>1093</span>
+<span class=normal>1094</span>
+<span class=normal>1095</span>
+<span class=normal>1096</span>
+<span class=normal>1097</span>
+<span class=normal>1098</span>
+<span class=normal>1099</span>
+<span class=normal>1100</span>
+<span class=normal>1101</span>
+<span class=normal>1102</span>
+<span class=normal>1103</span>
+<span class=normal>1104</span>
+<span class=normal>1105</span>
+<span class=normal>1106</span>
+<span class=normal>1107</span>
+<span class=normal>1108</span>
+<span class=normal>1109</span>
+<span class=normal>1110</span>
+<span class=normal>1111</span>
+<span class=normal>1112</span>
+<span class=normal>1113</span>
+<span class=normal>1114</span>
+<span class=normal>1115</span>
+<span class=normal>1116</span>
+<span class=normal>1117</span>
+<span class=normal>1118</span>
+<span class=normal>1119</span>
+<span class=normal>1120</span>
+<span class=normal>1121</span>
+<span class=normal>1122</span>
+<span class=normal>1123</span>
+<span class=normal>1124</span>
+<span class=normal>1125</span>
+<span class=normal>1126</span>
+<span class=normal>1127</span>
+<span class=normal>1128</span>
+<span class=normal>1129</span>
+<span class=normal>1130</span>
+<span class=normal>1131</span>
+<span class=normal>1132</span>
+<span class=normal>1133</span>
+<span class=normal>1134</span>
+<span class=normal>1135</span>
+<span class=normal>1136</span>
+<span class=normal>1137</span>
+<span class=normal>1138</span>
+<span class=normal>1139</span>
+<span class=normal>1140</span>
+<span class=normal>1141</span>
+<span class=normal>1142</span>
+<span class=normal>1143</span>
+<span class=normal>1144</span>
+<span class=normal>1145</span>
+<span class=normal>1146</span>
+<span class=normal>1147</span>
+<span class=normal>1148</span>
+<span class=normal>1149</span>
+<span class=normal>1150</span>
+<span class=normal>1151</span>
+<span class=normal>1152</span>
+<span class=normal>1153</span>
+<span class=normal>1154</span>
+<span class=normal>1155</span>
+<span class=normal>1156</span>
+<span class=normal>1157</span>
+<span class=normal>1158</span>
+<span class=normal>1159</span>
+<span class=normal>1160</span>
+<span class=normal>1161</span>
+<span class=normal>1162</span>
+<span class=normal>1163</span>
+<span class=normal>1164</span>
+<span class=normal>1165</span>
+<span class=normal>1166</span>
+<span class=normal>1167</span>
+<span class=normal>1168</span>
+<span class=normal>1169</span>
+<span class=normal>1170</span>
+<span class=normal>1171</span>
+<span class=normal>1172</span>
+<span class=normal>1173</span>
+<span class=normal>1174</span>
+<span class=normal>1175</span>
+<span class=normal>1176</span>
+<span class=normal>1177</span>
+<span class=normal>1178</span>
+<span class=normal>1179</span>
+<span class=normal>1180</span>
+<span class=normal>1181</span>
+<span class=normal>1182</span>
+<span class=normal>1183</span>
+<span class=normal>1184</span>
+<span class=normal>1185</span>
+<span class=normal>1186</span>
+<span class=normal>1187</span>
+<span class=normal>1188</span>
+<span class=normal>1189</span>
+<span class=normal>1190</span>
+<span class=normal>1191</span>
+<span class=normal>1192</span>
+<span class=normal>1193</span>
+<span class=normal>1194</span>
+<span class=normal>1195</span>
+<span class=normal>1196</span>
+<span class=normal>1197</span>
+<span class=normal>1198</span>
+<span class=normal>1199</span>
+<span class=normal>1200</span></pre></div></td><td class=code><div><pre><span></span><code><span class=k>class</span><span class=w> </span><span class=nc>MediaInfoFile</span><span class=p>(</span><span class=nb>object</span><span class=p>):</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot;Class to get media info file clip data</span>
+
+<span class=sd>    Raises:</span>
+<span class=sd>        IOError: MEDIA_SCRIPT_PATH path doesn&#39;t exists</span>
+<span class=sd>        TypeError: Not able to generate clip xml data file</span>
+<span class=sd>        ET.ParseError: Missing clip in xml clip data</span>
+<span class=sd>        IOError: Not able to save xml clip data to file</span>
+
+<span class=sd>    Attributes:</span>
+<span class=sd>        str: `MEDIA_SCRIPT_PATH` path to flame binary</span>
+<span class=sd>        logging.Logger: `log` logger</span>
+
+<span class=sd>    TODO: add method for getting metadata to dict</span>
+<span class=sd>    &quot;&quot;&quot;</span>
+    <span class=n>MEDIA_SCRIPT_PATH</span> <span class=o>=</span> <span class=s2>&quot;/opt/Autodesk/mio/current/dl_get_media_info&quot;</span>
+
+    <span class=n>log</span> <span class=o>=</span> <span class=n>log</span>
+
+    <span class=n>_clip_data</span> <span class=o>=</span> <span class=kc>None</span>
+    <span class=n>_start_frame</span> <span class=o>=</span> <span class=kc>None</span>
+    <span class=n>_fps</span> <span class=o>=</span> <span class=kc>None</span>
+    <span class=n>_drop_mode</span> <span class=o>=</span> <span class=kc>None</span>
+    <span class=n>_file_pattern</span> <span class=o>=</span> <span class=kc>None</span>
+
+    <span class=k>def</span><span class=w> </span><span class=fm>__init__</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>path</span><span class=p>,</span> <span class=n>logger</span><span class=o>=</span><span class=kc>None</span><span class=p>):</span>
+
+        <span class=c1># replace log if any</span>
+        <span class=k>if</span> <span class=n>logger</span><span class=p>:</span>
+            <span class=bp>self</span><span class=o>.</span><span class=n>log</span> <span class=o>=</span> <span class=n>logger</span>
+
+        <span class=c1># test if `dl_get_media_info` path exists</span>
+        <span class=bp>self</span><span class=o>.</span><span class=n>_validate_media_script_path</span><span class=p>()</span>
+
+        <span class=c1># derivate other feed variables</span>
+        <span class=n>feed_basename</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>basename</span><span class=p>(</span><span class=n>path</span><span class=p>)</span>
+        <span class=n>feed_dir</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>dirname</span><span class=p>(</span><span class=n>path</span><span class=p>)</span>
+        <span class=n>feed_ext</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>splitext</span><span class=p>(</span><span class=n>feed_basename</span><span class=p>)[</span><span class=mi>1</span><span class=p>][</span><span class=mi>1</span><span class=p>:]</span><span class=o>.</span><span class=n>lower</span><span class=p>()</span>
+
+        <span class=k>with</span> <span class=n>maintained_temp_file_path</span><span class=p>(</span><span class=s2>&quot;.clip&quot;</span><span class=p>)</span> <span class=k>as</span> <span class=n>tmp_path</span><span class=p>:</span>
+            <span class=bp>self</span><span class=o>.</span><span class=n>log</span><span class=o>.</span><span class=n>info</span><span class=p>(</span><span class=s2>&quot;Temp File: </span><span class=si>{}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=n>tmp_path</span><span class=p>))</span>
+            <span class=bp>self</span><span class=o>.</span><span class=n>_generate_media_info_file</span><span class=p>(</span><span class=n>tmp_path</span><span class=p>,</span> <span class=n>feed_ext</span><span class=p>,</span> <span class=n>feed_dir</span><span class=p>)</span>
+
+            <span class=c1># get collection containing feed_basename from path</span>
+            <span class=bp>self</span><span class=o>.</span><span class=n>file_pattern</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>_get_collection</span><span class=p>(</span>
+                <span class=n>feed_basename</span><span class=p>,</span> <span class=n>feed_dir</span><span class=p>,</span> <span class=n>feed_ext</span><span class=p>)</span>
+
+            <span class=k>if</span> <span class=p>(</span>
+                <span class=ow>not</span> <span class=bp>self</span><span class=o>.</span><span class=n>file_pattern</span>
+                <span class=ow>and</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>exists</span><span class=p>(</span><span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=n>feed_dir</span><span class=p>,</span> <span class=n>feed_basename</span><span class=p>))</span>
+            <span class=p>):</span>
+                <span class=bp>self</span><span class=o>.</span><span class=n>file_pattern</span> <span class=o>=</span> <span class=n>feed_basename</span>
+
+            <span class=c1># get clip data and make them single if there is multiple</span>
+            <span class=c1># clips data</span>
+            <span class=n>xml_data</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>_make_single_clip_media_info</span><span class=p>(</span>
+                <span class=n>tmp_path</span><span class=p>,</span> <span class=n>feed_basename</span><span class=p>,</span> <span class=bp>self</span><span class=o>.</span><span class=n>file_pattern</span><span class=p>)</span>
+            <span class=bp>self</span><span class=o>.</span><span class=n>log</span><span class=o>.</span><span class=n>debug</span><span class=p>(</span><span class=s2>&quot;xml_data: </span><span class=si>{}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=n>xml_data</span><span class=p>))</span>
+            <span class=bp>self</span><span class=o>.</span><span class=n>log</span><span class=o>.</span><span class=n>debug</span><span class=p>(</span><span class=s2>&quot;type: </span><span class=si>{}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=nb>type</span><span class=p>(</span><span class=n>xml_data</span><span class=p>)))</span>
+
+            <span class=c1># get all time related data and assign them</span>
+            <span class=bp>self</span><span class=o>.</span><span class=n>_get_time_info_from_origin</span><span class=p>(</span><span class=n>xml_data</span><span class=p>)</span>
+            <span class=bp>self</span><span class=o>.</span><span class=n>log</span><span class=o>.</span><span class=n>debug</span><span class=p>(</span><span class=s2>&quot;start_frame: </span><span class=si>{}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>start_frame</span><span class=p>))</span>
+            <span class=bp>self</span><span class=o>.</span><span class=n>log</span><span class=o>.</span><span class=n>debug</span><span class=p>(</span><span class=s2>&quot;fps: </span><span class=si>{}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>fps</span><span class=p>))</span>
+            <span class=bp>self</span><span class=o>.</span><span class=n>log</span><span class=o>.</span><span class=n>debug</span><span class=p>(</span><span class=s2>&quot;drop frame: </span><span class=si>{}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>drop_mode</span><span class=p>))</span>
+            <span class=c1># get all resolution related data and assign them</span>
+            <span class=bp>self</span><span class=o>.</span><span class=n>_get_resolution_info_from_origin</span><span class=p>(</span><span class=n>xml_data</span><span class=p>)</span>
+
+            <span class=k>try</span><span class=p>:</span>
+                <span class=bp>self</span><span class=o>.</span><span class=n>log</span><span class=o>.</span><span class=n>debug</span><span class=p>(</span><span class=s2>&quot;width: </span><span class=si>{}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>width</span><span class=p>))</span>
+                <span class=bp>self</span><span class=o>.</span><span class=n>log</span><span class=o>.</span><span class=n>debug</span><span class=p>(</span><span class=s2>&quot;height: </span><span class=si>{}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>height</span><span class=p>))</span>
+                <span class=bp>self</span><span class=o>.</span><span class=n>log</span><span class=o>.</span><span class=n>debug</span><span class=p>(</span><span class=s2>&quot;pixel aspect: </span><span class=si>{}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>pixel_aspect</span><span class=p>))</span>
+
+            <span class=k>except</span> <span class=ne>AttributeError</span><span class=p>:</span>
+                <span class=bp>self</span><span class=o>.</span><span class=n>log</span><span class=o>.</span><span class=n>debug</span><span class=p>(</span><span class=s2>&quot;audio: true&quot;</span><span class=p>)</span>
+
+            <span class=bp>self</span><span class=o>.</span><span class=n>clip_data</span> <span class=o>=</span> <span class=n>xml_data</span>
+
+    <span class=k>def</span><span class=w> </span><span class=nf>_get_typed_value</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>xml_obj</span><span class=p>):</span>
+<span class=w>        </span><span class=sd>&quot;&quot;&quot; Get typed value from xml object</span>
+
+<span class=sd>        Args:</span>
+<span class=sd>            xml_obj (xml.etree.ElementTree.Element): xml object</span>
+
+<span class=sd>        Returns:</span>
+<span class=sd>            str: value</span>
+<span class=sd>        &quot;&quot;&quot;</span>
+        <span class=k>if</span> <span class=nb>hasattr</span><span class=p>(</span><span class=n>xml_obj</span><span class=p>,</span> <span class=s2>&quot;type&quot;</span><span class=p>):</span>
+            <span class=k>if</span> <span class=n>xml_obj</span><span class=o>.</span><span class=n>type</span> <span class=ow>in</span> <span class=p>[</span><span class=s2>&quot;int&quot;</span><span class=p>,</span> <span class=s2>&quot;uint&quot;</span><span class=p>]:</span>
+                <span class=k>return</span> <span class=nb>int</span><span class=p>(</span><span class=n>xml_obj</span><span class=o>.</span><span class=n>text</span><span class=p>)</span>
+            <span class=k>if</span> <span class=n>xml_obj</span><span class=o>.</span><span class=n>type</span> <span class=o>==</span> <span class=s2>&quot;float&quot;</span><span class=p>:</span>
+                <span class=k>return</span> <span class=nb>float</span><span class=p>(</span><span class=n>xml_obj</span><span class=o>.</span><span class=n>text</span><span class=p>)</span>
+            <span class=k>if</span> <span class=n>xml_obj</span><span class=o>.</span><span class=n>type</span> <span class=o>==</span> <span class=s2>&quot;string&quot;</span><span class=p>:</span>
+                <span class=k>return</span> <span class=nb>str</span><span class=p>(</span><span class=n>xml_obj</span><span class=o>.</span><span class=n>text</span><span class=p>)</span>
+
+        <span class=k>return</span> <span class=n>xml_obj</span><span class=o>.</span><span class=n>text</span>
+
+    <span class=k>def</span><span class=w> </span><span class=nf>_get_collection</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>feed_basename</span><span class=p>,</span> <span class=n>feed_dir</span><span class=p>,</span> <span class=n>feed_ext</span><span class=p>):</span>
+<span class=w>        </span><span class=sd>&quot;&quot;&quot; Get collection string</span>
+
+<span class=sd>        Args:</span>
+<span class=sd>            feed_basename (str): file base name</span>
+<span class=sd>            feed_dir (str): file&#39;s directory</span>
+<span class=sd>            feed_ext (str): file extension</span>
+
+<span class=sd>        Raises:</span>
+<span class=sd>            AttributeError: feed_ext is not matching feed_basename</span>
+
+<span class=sd>        Returns:</span>
+<span class=sd>            str: collection basename with range of sequence</span>
+<span class=sd>        &quot;&quot;&quot;</span>
+        <span class=n>partialname</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>_separate_file_head</span><span class=p>(</span><span class=n>feed_basename</span><span class=p>,</span> <span class=n>feed_ext</span><span class=p>)</span>
+
+        <span class=c1># make sure partial input basename is having correct extensoon</span>
+        <span class=k>if</span> <span class=ow>not</span> <span class=n>partialname</span><span class=p>:</span>
+            <span class=k>raise</span> <span class=ne>AttributeError</span><span class=p>(</span>
+                <span class=s2>&quot;Wrong input attributes. Basename - </span><span class=si>{}</span><span class=s2>, Ext - </span><span class=si>{}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span>
+                    <span class=n>feed_basename</span><span class=p>,</span> <span class=n>feed_ext</span>
+                <span class=p>)</span>
+            <span class=p>)</span>
+
+        <span class=c1># get all related files</span>
+        <span class=n>files</span> <span class=o>=</span> <span class=p>[</span>
+            <span class=n>f</span> <span class=k>for</span> <span class=n>f</span> <span class=ow>in</span> <span class=n>os</span><span class=o>.</span><span class=n>listdir</span><span class=p>(</span><span class=n>feed_dir</span><span class=p>)</span>
+            <span class=k>if</span> <span class=n>partialname</span> <span class=o>==</span> <span class=bp>self</span><span class=o>.</span><span class=n>_separate_file_head</span><span class=p>(</span><span class=n>f</span><span class=p>,</span> <span class=n>feed_ext</span><span class=p>)</span>
+        <span class=p>]</span>
+
+        <span class=c1># ignore reminders as we dont need them</span>
+        <span class=n>collections</span> <span class=o>=</span> <span class=n>clique</span><span class=o>.</span><span class=n>assemble</span><span class=p>(</span><span class=n>files</span><span class=p>)[</span><span class=mi>0</span><span class=p>]</span>
+
+        <span class=c1># in case no collection found return None</span>
+        <span class=c1># it is probably just single file</span>
+        <span class=k>if</span> <span class=ow>not</span> <span class=n>collections</span><span class=p>:</span>
+            <span class=k>return</span>
+
+        <span class=c1># we expect only one collection</span>
+        <span class=n>collection</span> <span class=o>=</span> <span class=n>collections</span><span class=p>[</span><span class=mi>0</span><span class=p>]</span>
+
+        <span class=bp>self</span><span class=o>.</span><span class=n>log</span><span class=o>.</span><span class=n>debug</span><span class=p>(</span><span class=s2>&quot;__ collection: </span><span class=si>{}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=n>collection</span><span class=p>))</span>
+
+        <span class=k>if</span> <span class=n>collection</span><span class=o>.</span><span class=n>is_contiguous</span><span class=p>():</span>
+            <span class=k>return</span> <span class=bp>self</span><span class=o>.</span><span class=n>_format_collection</span><span class=p>(</span><span class=n>collection</span><span class=p>)</span>
+
+        <span class=c1># add `[` in front to make sure it want capture</span>
+        <span class=c1># shot name with the same number</span>
+        <span class=n>number_from_path</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>_separate_number</span><span class=p>(</span><span class=n>feed_basename</span><span class=p>,</span> <span class=n>feed_ext</span><span class=p>)</span>
+        <span class=n>search_number_pattern</span> <span class=o>=</span> <span class=s2>&quot;[&quot;</span> <span class=o>+</span> <span class=n>number_from_path</span>
+        <span class=c1># convert to multiple collections</span>
+        <span class=n>_continues_colls</span> <span class=o>=</span> <span class=n>collection</span><span class=o>.</span><span class=n>separate</span><span class=p>()</span>
+        <span class=k>for</span> <span class=n>_coll</span> <span class=ow>in</span> <span class=n>_continues_colls</span><span class=p>:</span>
+            <span class=n>coll_to_text</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>_format_collection</span><span class=p>(</span>
+                <span class=n>_coll</span><span class=p>,</span> <span class=nb>len</span><span class=p>(</span><span class=n>number_from_path</span><span class=p>))</span>
+            <span class=bp>self</span><span class=o>.</span><span class=n>log</span><span class=o>.</span><span class=n>debug</span><span class=p>(</span><span class=s2>&quot;__ coll_to_text: </span><span class=si>{}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=n>coll_to_text</span><span class=p>))</span>
+            <span class=k>if</span> <span class=n>search_number_pattern</span> <span class=ow>in</span> <span class=n>coll_to_text</span><span class=p>:</span>
+                <span class=k>return</span> <span class=n>coll_to_text</span>
+
+    <span class=nd>@staticmethod</span>
+    <span class=k>def</span><span class=w> </span><span class=nf>_format_collection</span><span class=p>(</span><span class=n>collection</span><span class=p>,</span> <span class=n>padding</span><span class=o>=</span><span class=kc>None</span><span class=p>):</span>
+        <span class=n>padding</span> <span class=o>=</span> <span class=n>padding</span> <span class=ow>or</span> <span class=n>collection</span><span class=o>.</span><span class=n>padding</span>
+        <span class=c1># if no holes then return collection</span>
+        <span class=n>head</span> <span class=o>=</span> <span class=n>collection</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=s2>&quot;</span><span class=si>{head}</span><span class=s2>&quot;</span><span class=p>)</span>
+        <span class=n>tail</span> <span class=o>=</span> <span class=n>collection</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=s2>&quot;</span><span class=si>{tail}</span><span class=s2>&quot;</span><span class=p>)</span>
+        <span class=n>range_template</span> <span class=o>=</span> <span class=s2>&quot;[{{:0</span><span class=si>{0}</span><span class=s2>d}}-{{:0</span><span class=si>{0}</span><span class=s2>d}}]&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span>
+            <span class=n>padding</span><span class=p>)</span>
+        <span class=n>ranges</span> <span class=o>=</span> <span class=n>range_template</span><span class=o>.</span><span class=n>format</span><span class=p>(</span>
+            <span class=nb>min</span><span class=p>(</span><span class=n>collection</span><span class=o>.</span><span class=n>indexes</span><span class=p>),</span>
+            <span class=nb>max</span><span class=p>(</span><span class=n>collection</span><span class=o>.</span><span class=n>indexes</span><span class=p>)</span>
+        <span class=p>)</span>
+        <span class=c1># if no holes then return collection</span>
+        <span class=k>return</span> <span class=s2>&quot;</span><span class=si>{}{}{}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=n>head</span><span class=p>,</span> <span class=n>ranges</span><span class=p>,</span> <span class=n>tail</span><span class=p>)</span>
+
+    <span class=k>def</span><span class=w> </span><span class=nf>_separate_file_head</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>basename</span><span class=p>,</span> <span class=n>extension</span><span class=p>):</span>
+<span class=w>        </span><span class=sd>&quot;&quot;&quot; Get only head with out sequence and extension</span>
+
+<span class=sd>        Args:</span>
+<span class=sd>            basename (str): file base name</span>
+<span class=sd>            extension (str): file extension</span>
+
+<span class=sd>        Returns:</span>
+<span class=sd>            str: file head</span>
+<span class=sd>        &quot;&quot;&quot;</span>
+        <span class=c1># in case sequence file</span>
+        <span class=n>found</span> <span class=o>=</span> <span class=n>re</span><span class=o>.</span><span class=n>findall</span><span class=p>(</span>
+            <span class=sa>r</span><span class=s2>&quot;(.*)[._][\d]*(?=.</span><span class=si>{}</span><span class=s2>)&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=n>extension</span><span class=p>),</span>
+            <span class=n>basename</span><span class=p>,</span>
+        <span class=p>)</span>
+        <span class=k>if</span> <span class=n>found</span><span class=p>:</span>
+            <span class=k>return</span> <span class=n>found</span><span class=o>.</span><span class=n>pop</span><span class=p>()</span>
+
+        <span class=c1># in case single file</span>
+        <span class=n>name</span><span class=p>,</span> <span class=n>ext</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>splitext</span><span class=p>(</span><span class=n>basename</span><span class=p>)</span>
+
+        <span class=k>if</span> <span class=n>extension</span> <span class=o>==</span> <span class=n>ext</span><span class=p>[</span><span class=mi>1</span><span class=p>:]:</span>
+            <span class=k>return</span> <span class=n>name</span>
+
+    <span class=k>def</span><span class=w> </span><span class=nf>_separate_number</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>basename</span><span class=p>,</span> <span class=n>extension</span><span class=p>):</span>
+<span class=w>        </span><span class=sd>&quot;&quot;&quot; Get only sequence number as string</span>
+
+<span class=sd>        Args:</span>
+<span class=sd>            basename (str): file base name</span>
+<span class=sd>            extension (str): file extension</span>
+
+<span class=sd>        Returns:</span>
+<span class=sd>            str: number with padding</span>
+<span class=sd>        &quot;&quot;&quot;</span>
+        <span class=c1># in case sequence file</span>
+        <span class=n>found</span> <span class=o>=</span> <span class=n>re</span><span class=o>.</span><span class=n>findall</span><span class=p>(</span>
+            <span class=sa>r</span><span class=s2>&quot;[._]([\d]*)(?=.</span><span class=si>{}</span><span class=s2>)&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=n>extension</span><span class=p>),</span>
+            <span class=n>basename</span><span class=p>,</span>
+        <span class=p>)</span>
+        <span class=k>if</span> <span class=n>found</span><span class=p>:</span>
+            <span class=k>return</span> <span class=n>found</span><span class=o>.</span><span class=n>pop</span><span class=p>()</span>
+
+    <span class=nd>@property</span>
+    <span class=k>def</span><span class=w> </span><span class=nf>clip_data</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+<span class=w>        </span><span class=sd>&quot;&quot;&quot;Clip&#39;s xml clip data</span>
+
+<span class=sd>        Returns:</span>
+<span class=sd>            xml.etree.ElementTree: xml data</span>
+<span class=sd>        &quot;&quot;&quot;</span>
+        <span class=k>return</span> <span class=bp>self</span><span class=o>.</span><span class=n>_clip_data</span>
+
+    <span class=nd>@clip_data</span><span class=o>.</span><span class=n>setter</span>
+    <span class=k>def</span><span class=w> </span><span class=nf>clip_data</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>data</span><span class=p>):</span>
+        <span class=bp>self</span><span class=o>.</span><span class=n>_clip_data</span> <span class=o>=</span> <span class=n>data</span>
+
+    <span class=nd>@property</span>
+    <span class=k>def</span><span class=w> </span><span class=nf>start_frame</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+<span class=w>        </span><span class=sd>&quot;&quot;&quot; Clip&#39;s starting frame found in timecode</span>
+
+<span class=sd>        Returns:</span>
+<span class=sd>            int: number of frames</span>
+<span class=sd>        &quot;&quot;&quot;</span>
+        <span class=k>return</span> <span class=bp>self</span><span class=o>.</span><span class=n>_start_frame</span>
+
+    <span class=nd>@start_frame</span><span class=o>.</span><span class=n>setter</span>
+    <span class=k>def</span><span class=w> </span><span class=nf>start_frame</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>number</span><span class=p>):</span>
+        <span class=bp>self</span><span class=o>.</span><span class=n>_start_frame</span> <span class=o>=</span> <span class=nb>int</span><span class=p>(</span><span class=n>number</span><span class=p>)</span>
+
+    <span class=nd>@property</span>
+    <span class=k>def</span><span class=w> </span><span class=nf>fps</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+<span class=w>        </span><span class=sd>&quot;&quot;&quot; Clip&#39;s frame rate</span>
+
+<span class=sd>        Returns:</span>
+<span class=sd>            float: frame rate</span>
+<span class=sd>        &quot;&quot;&quot;</span>
+        <span class=k>return</span> <span class=bp>self</span><span class=o>.</span><span class=n>_fps</span>
+
+    <span class=nd>@fps</span><span class=o>.</span><span class=n>setter</span>
+    <span class=k>def</span><span class=w> </span><span class=nf>fps</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>fl_number</span><span class=p>):</span>
+        <span class=bp>self</span><span class=o>.</span><span class=n>_fps</span> <span class=o>=</span> <span class=nb>float</span><span class=p>(</span><span class=n>fl_number</span><span class=p>)</span>
+
+    <span class=nd>@property</span>
+    <span class=k>def</span><span class=w> </span><span class=nf>drop_mode</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+<span class=w>        </span><span class=sd>&quot;&quot;&quot; Clip&#39;s drop frame mode</span>
+
+<span class=sd>        Returns:</span>
+<span class=sd>            str: drop frame flag</span>
+<span class=sd>        &quot;&quot;&quot;</span>
+        <span class=k>return</span> <span class=bp>self</span><span class=o>.</span><span class=n>_drop_mode</span>
+
+    <span class=nd>@drop_mode</span><span class=o>.</span><span class=n>setter</span>
+    <span class=k>def</span><span class=w> </span><span class=nf>drop_mode</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>text</span><span class=p>):</span>
+        <span class=bp>self</span><span class=o>.</span><span class=n>_drop_mode</span> <span class=o>=</span> <span class=nb>str</span><span class=p>(</span><span class=n>text</span><span class=p>)</span>
+
+    <span class=nd>@property</span>
+    <span class=k>def</span><span class=w> </span><span class=nf>file_pattern</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+<span class=w>        </span><span class=sd>&quot;&quot;&quot;Clips file pattern.</span>
+
+<span class=sd>        Returns:</span>
+<span class=sd>            str: file pattern. ex. file.[1-2].exr</span>
+<span class=sd>        &quot;&quot;&quot;</span>
+        <span class=k>return</span> <span class=bp>self</span><span class=o>.</span><span class=n>_file_pattern</span>
+
+    <span class=nd>@file_pattern</span><span class=o>.</span><span class=n>setter</span>
+    <span class=k>def</span><span class=w> </span><span class=nf>file_pattern</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>fpattern</span><span class=p>):</span>
+        <span class=bp>self</span><span class=o>.</span><span class=n>_file_pattern</span> <span class=o>=</span> <span class=n>fpattern</span>
+
+    <span class=k>def</span><span class=w> </span><span class=nf>_validate_media_script_path</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+        <span class=k>if</span> <span class=ow>not</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>isfile</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>MEDIA_SCRIPT_PATH</span><span class=p>):</span>
+            <span class=k>raise</span> <span class=ne>IOError</span><span class=p>(</span><span class=s2>&quot;Media Script does not exist: `</span><span class=si>{}</span><span class=s2>`&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span>
+                <span class=bp>self</span><span class=o>.</span><span class=n>MEDIA_SCRIPT_PATH</span><span class=p>))</span>
+
+    <span class=k>def</span><span class=w> </span><span class=nf>_generate_media_info_file</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>fpath</span><span class=p>,</span> <span class=n>feed_ext</span><span class=p>,</span> <span class=n>feed_dir</span><span class=p>):</span>
+<span class=w>        </span><span class=sd>&quot;&quot;&quot; Generate media info xml .clip file</span>
+
+<span class=sd>        Args:</span>
+<span class=sd>            fpath (str): .clip file path</span>
+<span class=sd>            feed_ext (str): file extension to be filtered</span>
+<span class=sd>            feed_dir (str): look up directory</span>
+
+<span class=sd>        Raises:</span>
+<span class=sd>            TypeError: Type error if it fails</span>
+<span class=sd>        &quot;&quot;&quot;</span>
+        <span class=c1># Create cmd arguments for gettig xml file info file</span>
+        <span class=n>cmd_args</span> <span class=o>=</span> <span class=p>[</span>
+            <span class=bp>self</span><span class=o>.</span><span class=n>MEDIA_SCRIPT_PATH</span><span class=p>,</span>
+            <span class=s2>&quot;-e&quot;</span><span class=p>,</span> <span class=n>feed_ext</span><span class=p>,</span>
+            <span class=s2>&quot;-o&quot;</span><span class=p>,</span> <span class=n>fpath</span><span class=p>,</span>
+            <span class=n>feed_dir</span>
+        <span class=p>]</span>
+
+        <span class=k>try</span><span class=p>:</span>
+            <span class=c1># execute creation of clip xml template data</span>
+            <span class=n>run_subprocess</span><span class=p>(</span><span class=n>cmd_args</span><span class=p>)</span>
+        <span class=k>except</span> <span class=ne>TypeError</span> <span class=k>as</span> <span class=n>error</span><span class=p>:</span>
+            <span class=k>raise</span> <span class=ne>TypeError</span><span class=p>(</span>
+                <span class=s2>&quot;Error creating `</span><span class=si>{}</span><span class=s2>` due: </span><span class=si>{}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=n>fpath</span><span class=p>,</span> <span class=n>error</span><span class=p>))</span>
+
+    <span class=k>def</span><span class=w> </span><span class=nf>_make_single_clip_media_info</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>fpath</span><span class=p>,</span> <span class=n>feed_basename</span><span class=p>,</span> <span class=n>path_pattern</span><span class=p>):</span>
+<span class=w>        </span><span class=sd>&quot;&quot;&quot; Separate only relative clip object form .clip file</span>
+
+<span class=sd>        Args:</span>
+<span class=sd>            fpath (str): clip file path</span>
+<span class=sd>            feed_basename (str): search basename</span>
+<span class=sd>            path_pattern (str): search file pattern (file.[1-2].exr)</span>
+
+<span class=sd>        Raises:</span>
+<span class=sd>            ET.ParseError: if nothing found</span>
+
+<span class=sd>        Returns:</span>
+<span class=sd>            ET.Element: xml element data of matching clip</span>
+<span class=sd>        &quot;&quot;&quot;</span>
+        <span class=k>with</span> <span class=nb>open</span><span class=p>(</span><span class=n>fpath</span><span class=p>)</span> <span class=k>as</span> <span class=n>f</span><span class=p>:</span>
+            <span class=n>lines</span> <span class=o>=</span> <span class=n>f</span><span class=o>.</span><span class=n>readlines</span><span class=p>()</span>
+            <span class=n>_added_root</span> <span class=o>=</span> <span class=n>itertools</span><span class=o>.</span><span class=n>chain</span><span class=p>(</span>
+                <span class=s2>&quot;&lt;root&gt;&quot;</span><span class=p>,</span> <span class=n>deepcopy</span><span class=p>(</span><span class=n>lines</span><span class=p>)[</span><span class=mi>1</span><span class=p>:],</span> <span class=s2>&quot;&lt;/root&gt;&quot;</span><span class=p>)</span>
+            <span class=n>new_root</span> <span class=o>=</span> <span class=n>ET</span><span class=o>.</span><span class=n>fromstringlist</span><span class=p>(</span><span class=n>_added_root</span><span class=p>)</span>
+
+        <span class=c1># find the clip which is matching to my input name</span>
+        <span class=n>xml_clips</span> <span class=o>=</span> <span class=n>new_root</span><span class=o>.</span><span class=n>findall</span><span class=p>(</span><span class=s2>&quot;clip&quot;</span><span class=p>)</span>
+        <span class=n>matching_clip</span> <span class=o>=</span> <span class=kc>None</span>
+        <span class=k>for</span> <span class=n>xml_clip</span> <span class=ow>in</span> <span class=n>xml_clips</span><span class=p>:</span>
+            <span class=n>clip_name</span> <span class=o>=</span> <span class=n>xml_clip</span><span class=o>.</span><span class=n>find</span><span class=p>(</span><span class=s2>&quot;name&quot;</span><span class=p>)</span><span class=o>.</span><span class=n>text</span>
+            <span class=bp>self</span><span class=o>.</span><span class=n>log</span><span class=o>.</span><span class=n>debug</span><span class=p>(</span><span class=s2>&quot;__ clip_name: `</span><span class=si>{}</span><span class=s2>`&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=n>clip_name</span><span class=p>))</span>
+            <span class=k>if</span> <span class=n>clip_name</span> <span class=ow>not</span> <span class=ow>in</span> <span class=n>feed_basename</span><span class=p>:</span>
+                <span class=k>continue</span>
+
+            <span class=c1># test path pattern</span>
+            <span class=k>for</span> <span class=n>out_track</span> <span class=ow>in</span> <span class=n>xml_clip</span><span class=o>.</span><span class=n>iter</span><span class=p>(</span><span class=s2>&quot;track&quot;</span><span class=p>):</span>
+                <span class=k>for</span> <span class=n>out_feed</span> <span class=ow>in</span> <span class=n>out_track</span><span class=o>.</span><span class=n>iter</span><span class=p>(</span><span class=s2>&quot;feed&quot;</span><span class=p>):</span>
+                    <span class=k>for</span> <span class=n>span</span> <span class=ow>in</span> <span class=n>out_feed</span><span class=o>.</span><span class=n>iter</span><span class=p>(</span><span class=s2>&quot;span&quot;</span><span class=p>):</span>
+                        <span class=c1># start frame</span>
+                        <span class=n>span_path</span> <span class=o>=</span> <span class=n>span</span><span class=o>.</span><span class=n>find</span><span class=p>(</span><span class=s2>&quot;path&quot;</span><span class=p>)</span>
+                        <span class=bp>self</span><span class=o>.</span><span class=n>log</span><span class=o>.</span><span class=n>debug</span><span class=p>(</span>
+                            <span class=s2>&quot;__ span_path.text: </span><span class=si>{}</span><span class=s2>, path_pattern: </span><span class=si>{}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span>
+                                <span class=n>span_path</span><span class=o>.</span><span class=n>text</span><span class=p>,</span> <span class=n>path_pattern</span>
+                            <span class=p>)</span>
+                        <span class=p>)</span>
+                        <span class=k>if</span> <span class=n>path_pattern</span> <span class=ow>in</span> <span class=n>span_path</span><span class=o>.</span><span class=n>text</span><span class=p>:</span>
+                            <span class=n>matching_clip</span> <span class=o>=</span> <span class=n>xml_clip</span>
+
+        <span class=k>if</span> <span class=n>matching_clip</span> <span class=ow>is</span> <span class=kc>None</span><span class=p>:</span>
+            <span class=c1># return warning there is missing clip</span>
+            <span class=k>raise</span> <span class=n>ET</span><span class=o>.</span><span class=n>ParseError</span><span class=p>(</span>
+                <span class=s2>&quot;Missing clip in `</span><span class=si>{}</span><span class=s2>`. Available clips </span><span class=si>{}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span>
+                    <span class=n>feed_basename</span><span class=p>,</span> <span class=p>[</span>
+                        <span class=n>xml_clip</span><span class=o>.</span><span class=n>find</span><span class=p>(</span><span class=s2>&quot;name&quot;</span><span class=p>)</span><span class=o>.</span><span class=n>text</span>
+                        <span class=k>for</span> <span class=n>xml_clip</span> <span class=ow>in</span> <span class=n>xml_clips</span>
+                    <span class=p>]</span>
+                <span class=p>))</span>
+
+        <span class=k>return</span> <span class=n>matching_clip</span>
+
+    <span class=k>def</span><span class=w> </span><span class=nf>_get_time_info_from_origin</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>xml_data</span><span class=p>):</span>
+<span class=w>        </span><span class=sd>&quot;&quot;&quot;Set time info to class attributes</span>
+
+<span class=sd>        Args:</span>
+<span class=sd>            xml_data (ET.Element): clip data</span>
+<span class=sd>        &quot;&quot;&quot;</span>
+        <span class=k>try</span><span class=p>:</span>
+            <span class=k>for</span> <span class=n>out_track</span> <span class=ow>in</span> <span class=n>xml_data</span><span class=o>.</span><span class=n>iter</span><span class=p>(</span><span class=s2>&quot;track&quot;</span><span class=p>):</span>
+                <span class=k>for</span> <span class=n>out_feed</span> <span class=ow>in</span> <span class=n>out_track</span><span class=o>.</span><span class=n>iter</span><span class=p>(</span><span class=s2>&quot;feed&quot;</span><span class=p>):</span>
+                    <span class=c1># start frame</span>
+                    <span class=n>out_feed_nb_ticks_obj</span> <span class=o>=</span> <span class=n>out_feed</span><span class=o>.</span><span class=n>find</span><span class=p>(</span>
+                        <span class=s2>&quot;startTimecode/nbTicks&quot;</span><span class=p>)</span>
+                    <span class=bp>self</span><span class=o>.</span><span class=n>start_frame</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>_get_typed_value</span><span class=p>(</span>
+                        <span class=n>out_feed_nb_ticks_obj</span><span class=p>)</span>
+
+                    <span class=c1># fps</span>
+                    <span class=n>out_feed_fps_obj</span> <span class=o>=</span> <span class=n>out_feed</span><span class=o>.</span><span class=n>find</span><span class=p>(</span>
+                        <span class=s2>&quot;startTimecode/rate&quot;</span><span class=p>)</span>
+                    <span class=bp>self</span><span class=o>.</span><span class=n>fps</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>_get_typed_value</span><span class=p>(</span><span class=n>out_feed_fps_obj</span><span class=p>)</span>
+
+                    <span class=c1># drop frame mode</span>
+                    <span class=n>out_feed_drop_mode_obj</span> <span class=o>=</span> <span class=n>out_feed</span><span class=o>.</span><span class=n>find</span><span class=p>(</span>
+                        <span class=s2>&quot;startTimecode/dropMode&quot;</span><span class=p>)</span>
+                    <span class=bp>self</span><span class=o>.</span><span class=n>drop_mode</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>_get_typed_value</span><span class=p>(</span>
+                        <span class=n>out_feed_drop_mode_obj</span><span class=p>)</span>
+                    <span class=k>break</span>
+        <span class=k>except</span> <span class=ne>Exception</span> <span class=k>as</span> <span class=n>msg</span><span class=p>:</span>
+            <span class=bp>self</span><span class=o>.</span><span class=n>log</span><span class=o>.</span><span class=n>warning</span><span class=p>(</span><span class=n>msg</span><span class=p>)</span>
+
+    <span class=k>def</span><span class=w> </span><span class=nf>_get_resolution_info_from_origin</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>xml_data</span><span class=p>):</span>
+<span class=w>        </span><span class=sd>&quot;&quot;&quot;Set resolution info to class attributes</span>
+
+<span class=sd>        Args:</span>
+<span class=sd>            xml_data (ET.Element): clip data</span>
+<span class=sd>        &quot;&quot;&quot;</span>
+        <span class=k>try</span><span class=p>:</span>
+            <span class=k>for</span> <span class=n>out_track</span> <span class=ow>in</span> <span class=n>xml_data</span><span class=o>.</span><span class=n>iter</span><span class=p>(</span><span class=s2>&quot;track&quot;</span><span class=p>):</span>
+                <span class=k>for</span> <span class=n>out_feed</span> <span class=ow>in</span> <span class=n>out_track</span><span class=o>.</span><span class=n>iter</span><span class=p>(</span><span class=s2>&quot;feed&quot;</span><span class=p>):</span>
+                    <span class=c1># width</span>
+                    <span class=n>out_feed_width_obj</span> <span class=o>=</span> <span class=n>out_feed</span><span class=o>.</span><span class=n>find</span><span class=p>(</span><span class=s2>&quot;storageFormat/width&quot;</span><span class=p>)</span>
+                    <span class=bp>self</span><span class=o>.</span><span class=n>width</span> <span class=o>=</span> <span class=nb>int</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>_get_typed_value</span><span class=p>(</span><span class=n>out_feed_width_obj</span><span class=p>))</span>
+
+                    <span class=c1># height</span>
+                    <span class=n>out_feed_height_obj</span> <span class=o>=</span> <span class=n>out_feed</span><span class=o>.</span><span class=n>find</span><span class=p>(</span><span class=s2>&quot;storageFormat/height&quot;</span><span class=p>)</span>
+                    <span class=bp>self</span><span class=o>.</span><span class=n>height</span> <span class=o>=</span> <span class=nb>int</span><span class=p>(</span>
+                        <span class=bp>self</span><span class=o>.</span><span class=n>_get_typed_value</span><span class=p>(</span><span class=n>out_feed_height_obj</span><span class=p>))</span>
+
+                    <span class=c1># pixel aspect ratio</span>
+                    <span class=n>out_feed_pixel_aspect_obj</span> <span class=o>=</span> <span class=n>out_feed</span><span class=o>.</span><span class=n>find</span><span class=p>(</span>
+                        <span class=s2>&quot;storageFormat/pixelRatio&quot;</span><span class=p>)</span>
+                    <span class=bp>self</span><span class=o>.</span><span class=n>pixel_aspect</span> <span class=o>=</span> <span class=nb>float</span><span class=p>(</span>
+                        <span class=bp>self</span><span class=o>.</span><span class=n>_get_typed_value</span><span class=p>(</span><span class=n>out_feed_pixel_aspect_obj</span><span class=p>))</span>
+                    <span class=k>break</span>
+        <span class=k>except</span> <span class=ne>Exception</span> <span class=k>as</span> <span class=n>msg</span><span class=p>:</span>
+            <span class=bp>self</span><span class=o>.</span><span class=n>log</span><span class=o>.</span><span class=n>warning</span><span class=p>(</span><span class=n>msg</span><span class=p>)</span>
+
+    <span class=nd>@staticmethod</span>
+    <span class=k>def</span><span class=w> </span><span class=nf>write_clip_data_to_file</span><span class=p>(</span><span class=n>fpath</span><span class=p>,</span> <span class=n>xml_element_data</span><span class=p>):</span>
+<span class=w>        </span><span class=sd>&quot;&quot;&quot; Write xml element of clip data to file</span>
+
+<span class=sd>        Args:</span>
+<span class=sd>            fpath (string): file path</span>
+<span class=sd>            xml_element_data (xml.etree.ElementTree.Element): xml data</span>
+
+<span class=sd>        Raises:</span>
+<span class=sd>            IOError: If data could not be written to file</span>
+<span class=sd>        &quot;&quot;&quot;</span>
+        <span class=k>try</span><span class=p>:</span>
+            <span class=c1># save it as new file</span>
+            <span class=n>tree</span> <span class=o>=</span> <span class=n>cET</span><span class=o>.</span><span class=n>ElementTree</span><span class=p>(</span><span class=n>xml_element_data</span><span class=p>)</span>
+            <span class=n>tree</span><span class=o>.</span><span class=n>write</span><span class=p>(</span>
+                <span class=n>fpath</span><span class=p>,</span> <span class=n>xml_declaration</span><span class=o>=</span><span class=kc>True</span><span class=p>,</span>
+                <span class=n>method</span><span class=o>=</span><span class=s2>&quot;xml&quot;</span><span class=p>,</span> <span class=n>encoding</span><span class=o>=</span><span class=s2>&quot;UTF-8&quot;</span>
+            <span class=p>)</span>
+        <span class=k>except</span> <span class=ne>IOError</span> <span class=k>as</span> <span class=n>error</span><span class=p>:</span>
+            <span class=k>raise</span> <span class=ne>IOError</span><span class=p>(</span>
+                <span class=s2>&quot;Not able to write data to file: </span><span class=si>{}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=n>error</span><span class=p>))</span>
+</code></pre></div></td></tr></table></div> </details> <div class="doc doc-children"> <div class="doc doc-object doc-attribute"> <h3 id=client.ayon_flame.api.lib.MediaInfoFile.clip_data class="doc doc-heading"> <code class="highlight language-python"><span class=n>clip_data</span></code> <span class="doc doc-labels"> <small class="doc doc-label doc-label-property"><code>property</code></small> <small class="doc doc-label doc-label-writable"><code>writable</code></small> </span> </h3> <div class="doc doc-contents "> <p>Clip's xml clip data</p> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> </td> <td> <div class=doc-md-description> <p>xml.etree.ElementTree: xml data</p> </div> </td> </tr> </tbody> </table> </div> </div> <div class="doc doc-object doc-attribute"> <h3 id=client.ayon_flame.api.lib.MediaInfoFile.drop_mode class="doc doc-heading"> <code class="highlight language-python"><span class=n>drop_mode</span></code> <span class="doc doc-labels"> <small class="doc doc-label doc-label-property"><code>property</code></small> <small class="doc doc-label doc-label-writable"><code>writable</code></small> </span> </h3> <div class="doc doc-contents "> <p>Clip's drop frame mode</p> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td><code>str</code></td> <td> </td> <td> <div class=doc-md-description> <p>drop frame flag</p> </div> </td> </tr> </tbody> </table> </div> </div> <div class="doc doc-object doc-attribute"> <h3 id=client.ayon_flame.api.lib.MediaInfoFile.file_pattern class="doc doc-heading"> <code class="highlight language-python"><span class=n>file_pattern</span></code> <span class="doc doc-labels"> <small class="doc doc-label doc-label-property"><code>property</code></small> <small class="doc doc-label doc-label-writable"><code>writable</code></small> </span> </h3> <div class="doc doc-contents "> <p>Clips file pattern.</p> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td><code>str</code></td> <td> </td> <td> <div class=doc-md-description> <p>file pattern. ex. file.[1-2].exr</p> </div> </td> </tr> </tbody> </table> </div> </div> <div class="doc doc-object doc-attribute"> <h3 id=client.ayon_flame.api.lib.MediaInfoFile.fps class="doc doc-heading"> <code class="highlight language-python"><span class=n>fps</span></code> <span class="doc doc-labels"> <small class="doc doc-label doc-label-property"><code>property</code></small> <small class="doc doc-label doc-label-writable"><code>writable</code></small> </span> </h3> <div class="doc doc-contents "> <p>Clip's frame rate</p> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td><code>float</code></td> <td> </td> <td> <div class=doc-md-description> <p>frame rate</p> </div> </td> </tr> </tbody> </table> </div> </div> <div class="doc doc-object doc-attribute"> <h3 id=client.ayon_flame.api.lib.MediaInfoFile.start_frame class="doc doc-heading"> <code class="highlight language-python"><span class=n>start_frame</span></code> <span class="doc doc-labels"> <small class="doc doc-label doc-label-property"><code>property</code></small> <small class="doc doc-label doc-label-writable"><code>writable</code></small> </span> </h3> <div class="doc doc-contents "> <p>Clip's starting frame found in timecode</p> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td><code>int</code></td> <td> </td> <td> <div class=doc-md-description> <p>number of frames</p> </div> </td> </tr> </tbody> </table> </div> </div> <div class="doc doc-object doc-function"> <h3 id=client.ayon_flame.api.lib.MediaInfoFile.write_clip_data_to_file class="doc doc-heading"> <code class="highlight language-python"><span class=n>write_clip_data_to_file</span><span class=p>(</span><span class=n>fpath</span><span class=p>,</span> <span class=n>xml_element_data</span><span class=p>)</span></code> <span class="doc doc-labels"> <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small> </span> </h3> <div class="doc doc-contents "> <p>Write xml element of clip data to file</p> <p><span class=doc-section-title>Parameters:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> <th>Default</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code>fpath</code> </td> <td> <code><span title=string>string</span></code> </td> <td> <div class=doc-md-description> <p>file path</p> </div> </td> <td> <em>required</em> </td> </tr> <tr class=doc-section-item> <td> <code>xml_element_data</code> </td> <td> <code><span title=xml.etree.ElementTree.Element>Element</span></code> </td> <td> <div class=doc-md-description> <p>xml data</p> </div> </td> <td> <em>required</em> </td> </tr> </tbody> </table> <p><span class=doc-section-title>Raises:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code><span title=IOError>IOError</span></code> </td> <td> <div class=doc-md-description> <p>If data could not be written to file</p> </div> </td> </tr> </tbody> </table> <details class=quote> <summary>Source code in <code>client/ayon_flame/api/lib.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal>1180</span>
+<span class=normal>1181</span>
+<span class=normal>1182</span>
+<span class=normal>1183</span>
+<span class=normal>1184</span>
+<span class=normal>1185</span>
+<span class=normal>1186</span>
+<span class=normal>1187</span>
+<span class=normal>1188</span>
+<span class=normal>1189</span>
+<span class=normal>1190</span>
+<span class=normal>1191</span>
+<span class=normal>1192</span>
+<span class=normal>1193</span>
+<span class=normal>1194</span>
+<span class=normal>1195</span>
+<span class=normal>1196</span>
+<span class=normal>1197</span>
+<span class=normal>1198</span>
+<span class=normal>1199</span>
+<span class=normal>1200</span></pre></div></td><td class=code><div><pre><span></span><code><span class=nd>@staticmethod</span>
+<span class=k>def</span><span class=w> </span><span class=nf>write_clip_data_to_file</span><span class=p>(</span><span class=n>fpath</span><span class=p>,</span> <span class=n>xml_element_data</span><span class=p>):</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot; Write xml element of clip data to file</span>
+
+<span class=sd>    Args:</span>
+<span class=sd>        fpath (string): file path</span>
+<span class=sd>        xml_element_data (xml.etree.ElementTree.Element): xml data</span>
+
+<span class=sd>    Raises:</span>
+<span class=sd>        IOError: If data could not be written to file</span>
+<span class=sd>    &quot;&quot;&quot;</span>
+    <span class=k>try</span><span class=p>:</span>
+        <span class=c1># save it as new file</span>
+        <span class=n>tree</span> <span class=o>=</span> <span class=n>cET</span><span class=o>.</span><span class=n>ElementTree</span><span class=p>(</span><span class=n>xml_element_data</span><span class=p>)</span>
+        <span class=n>tree</span><span class=o>.</span><span class=n>write</span><span class=p>(</span>
+            <span class=n>fpath</span><span class=p>,</span> <span class=n>xml_declaration</span><span class=o>=</span><span class=kc>True</span><span class=p>,</span>
+            <span class=n>method</span><span class=o>=</span><span class=s2>&quot;xml&quot;</span><span class=p>,</span> <span class=n>encoding</span><span class=o>=</span><span class=s2>&quot;UTF-8&quot;</span>
+        <span class=p>)</span>
+    <span class=k>except</span> <span class=ne>IOError</span> <span class=k>as</span> <span class=n>error</span><span class=p>:</span>
+        <span class=k>raise</span> <span class=ne>IOError</span><span class=p>(</span>
+            <span class=s2>&quot;Not able to write data to file: </span><span class=si>{}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=n>error</span><span class=p>))</span>
+</code></pre></div></td></tr></table></div> </details> </div> </div> </div> </div> </div> <div class="doc doc-object doc-class"> <h2 id=client.ayon_flame.api.lib.TimeEffectMetadata class="doc doc-heading"> <code>TimeEffectMetadata</code> </h2> <div class="doc doc-contents "> <p class="doc doc-class-bases"> Bases: <code><span title=object>object</span></code></p> <details class=quote> <summary>Source code in <code>client/ayon_flame/api/lib.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal>1203</span>
+<span class=normal>1204</span>
+<span class=normal>1205</span>
+<span class=normal>1206</span>
+<span class=normal>1207</span>
+<span class=normal>1208</span>
+<span class=normal>1209</span>
+<span class=normal>1210</span>
+<span class=normal>1211</span>
+<span class=normal>1212</span>
+<span class=normal>1213</span>
+<span class=normal>1214</span>
+<span class=normal>1215</span>
+<span class=normal>1216</span>
+<span class=normal>1217</span>
+<span class=normal>1218</span>
+<span class=normal>1219</span>
+<span class=normal>1220</span>
+<span class=normal>1221</span>
+<span class=normal>1222</span>
+<span class=normal>1223</span>
+<span class=normal>1224</span>
+<span class=normal>1225</span>
+<span class=normal>1226</span>
+<span class=normal>1227</span>
+<span class=normal>1228</span>
+<span class=normal>1229</span>
+<span class=normal>1230</span>
+<span class=normal>1231</span>
+<span class=normal>1232</span>
+<span class=normal>1233</span>
+<span class=normal>1234</span>
+<span class=normal>1235</span>
+<span class=normal>1236</span>
+<span class=normal>1237</span>
+<span class=normal>1238</span>
+<span class=normal>1239</span>
+<span class=normal>1240</span>
+<span class=normal>1241</span>
+<span class=normal>1242</span>
+<span class=normal>1243</span>
+<span class=normal>1244</span>
+<span class=normal>1245</span>
+<span class=normal>1246</span>
+<span class=normal>1247</span>
+<span class=normal>1248</span>
+<span class=normal>1249</span>
+<span class=normal>1250</span>
+<span class=normal>1251</span>
+<span class=normal>1252</span>
+<span class=normal>1253</span>
+<span class=normal>1254</span>
+<span class=normal>1255</span>
+<span class=normal>1256</span>
+<span class=normal>1257</span>
+<span class=normal>1258</span>
+<span class=normal>1259</span>
+<span class=normal>1260</span>
+<span class=normal>1261</span>
+<span class=normal>1262</span>
+<span class=normal>1263</span>
+<span class=normal>1264</span>
+<span class=normal>1265</span>
+<span class=normal>1266</span>
+<span class=normal>1267</span>
+<span class=normal>1268</span>
+<span class=normal>1269</span>
+<span class=normal>1270</span>
+<span class=normal>1271</span>
+<span class=normal>1272</span>
+<span class=normal>1273</span>
+<span class=normal>1274</span>
+<span class=normal>1275</span>
+<span class=normal>1276</span>
+<span class=normal>1277</span>
+<span class=normal>1278</span>
+<span class=normal>1279</span>
+<span class=normal>1280</span>
+<span class=normal>1281</span>
+<span class=normal>1282</span>
+<span class=normal>1283</span>
+<span class=normal>1284</span>
+<span class=normal>1285</span>
+<span class=normal>1286</span>
+<span class=normal>1287</span>
+<span class=normal>1288</span>
+<span class=normal>1289</span>
+<span class=normal>1290</span>
+<span class=normal>1291</span>
+<span class=normal>1292</span>
+<span class=normal>1293</span>
+<span class=normal>1294</span>
+<span class=normal>1295</span>
+<span class=normal>1296</span>
+<span class=normal>1297</span>
+<span class=normal>1298</span>
+<span class=normal>1299</span>
+<span class=normal>1300</span>
+<span class=normal>1301</span>
+<span class=normal>1302</span>
+<span class=normal>1303</span>
+<span class=normal>1304</span>
+<span class=normal>1305</span>
+<span class=normal>1306</span>
+<span class=normal>1307</span>
+<span class=normal>1308</span>
+<span class=normal>1309</span>
+<span class=normal>1310</span>
+<span class=normal>1311</span>
+<span class=normal>1312</span>
+<span class=normal>1313</span>
+<span class=normal>1314</span>
+<span class=normal>1315</span>
+<span class=normal>1316</span>
+<span class=normal>1317</span>
+<span class=normal>1318</span>
+<span class=normal>1319</span>
+<span class=normal>1320</span>
+<span class=normal>1321</span>
+<span class=normal>1322</span>
+<span class=normal>1323</span>
+<span class=normal>1324</span>
+<span class=normal>1325</span>
+<span class=normal>1326</span>
+<span class=normal>1327</span>
+<span class=normal>1328</span>
+<span class=normal>1329</span>
+<span class=normal>1330</span>
+<span class=normal>1331</span>
+<span class=normal>1332</span>
+<span class=normal>1333</span>
+<span class=normal>1334</span>
+<span class=normal>1335</span>
+<span class=normal>1336</span>
+<span class=normal>1337</span>
+<span class=normal>1338</span>
+<span class=normal>1339</span>
+<span class=normal>1340</span>
+<span class=normal>1341</span>
+<span class=normal>1342</span>
+<span class=normal>1343</span>
+<span class=normal>1344</span>
+<span class=normal>1345</span>
+<span class=normal>1346</span>
+<span class=normal>1347</span>
+<span class=normal>1348</span>
+<span class=normal>1349</span>
+<span class=normal>1350</span>
+<span class=normal>1351</span>
+<span class=normal>1352</span>
+<span class=normal>1353</span>
+<span class=normal>1354</span>
+<span class=normal>1355</span>
+<span class=normal>1356</span>
+<span class=normal>1357</span>
+<span class=normal>1358</span>
+<span class=normal>1359</span>
+<span class=normal>1360</span>
+<span class=normal>1361</span>
+<span class=normal>1362</span>
+<span class=normal>1363</span>
+<span class=normal>1364</span>
+<span class=normal>1365</span>
+<span class=normal>1366</span></pre></div></td><td class=code><div><pre><span></span><code><span class=k>class</span><span class=w> </span><span class=nc>TimeEffectMetadata</span><span class=p>(</span><span class=nb>object</span><span class=p>):</span>
+    <span class=n>log</span> <span class=o>=</span> <span class=n>log</span>
+    <span class=n>_data</span> <span class=o>=</span> <span class=p>{}</span>
+    <span class=n>_retime_modes</span> <span class=o>=</span> <span class=p>{</span>
+        <span class=mi>0</span><span class=p>:</span> <span class=s2>&quot;speed&quot;</span><span class=p>,</span>
+        <span class=mi>1</span><span class=p>:</span> <span class=s2>&quot;timewarp&quot;</span><span class=p>,</span>
+        <span class=mi>2</span><span class=p>:</span> <span class=s2>&quot;duration&quot;</span>
+    <span class=p>}</span>
+
+    <span class=k>def</span><span class=w> </span><span class=fm>__init__</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>segment</span><span class=p>,</span> <span class=n>logger</span><span class=o>=</span><span class=kc>None</span><span class=p>):</span>
+        <span class=k>if</span> <span class=n>logger</span><span class=p>:</span>
+            <span class=bp>self</span><span class=o>.</span><span class=n>log</span> <span class=o>=</span> <span class=n>logger</span>
+
+        <span class=bp>self</span><span class=o>.</span><span class=n>_setup_data</span><span class=p>,</span> <span class=bp>self</span><span class=o>.</span><span class=n>_data</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>_get_metadata</span><span class=p>(</span><span class=n>segment</span><span class=p>)</span>
+
+    <span class=nd>@property</span>
+    <span class=k>def</span><span class=w> </span><span class=nf>is_empty</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+<span class=w>        </span><span class=sd>&quot;&quot;&quot; Returns either the current object is empty or not.</span>
+
+<span class=sd>        Returns:</span>
+<span class=sd>            bool. Is the TimeEffectMetadata object empty?</span>
+<span class=sd>        &quot;&quot;&quot;</span>
+        <span class=k>return</span> <span class=bp>self</span><span class=o>.</span><span class=n>_setup_data</span> <span class=ow>is</span> <span class=kc>None</span>
+
+    <span class=nd>@property</span>
+    <span class=k>def</span><span class=w> </span><span class=nf>data</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+<span class=w>        </span><span class=sd>&quot;&quot;&quot; Returns timewarp effect data</span>
+
+<span class=sd>        Returns:</span>
+<span class=sd>            dict: retime data</span>
+<span class=sd>        &quot;&quot;&quot;</span>
+        <span class=k>return</span> <span class=bp>self</span><span class=o>.</span><span class=n>_data</span>
+
+    <span class=nd>@property</span>
+    <span class=k>def</span><span class=w> </span><span class=nf>setup_data</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+<span class=w>        </span><span class=sd>&quot;&quot;&quot; Returns timewarp effect setup data</span>
+
+<span class=sd>        Returns:</span>
+<span class=sd>            str. The XML formatted setup data.</span>
+<span class=sd>        &quot;&quot;&quot;</span>
+        <span class=k>return</span> <span class=bp>self</span><span class=o>.</span><span class=n>_setup_data</span>
+
+    <span class=k>def</span><span class=w> </span><span class=nf>_get_metadata</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>segment</span><span class=p>):</span>
+        <span class=n>effects</span> <span class=o>=</span> <span class=n>segment</span><span class=o>.</span><span class=n>effects</span> <span class=ow>or</span> <span class=p>[]</span>
+        <span class=k>for</span> <span class=n>effect</span> <span class=ow>in</span> <span class=n>effects</span><span class=p>:</span>
+            <span class=k>if</span> <span class=n>effect</span><span class=o>.</span><span class=n>type</span> <span class=o>==</span> <span class=s2>&quot;Timewarp&quot;</span><span class=p>:</span>
+                <span class=k>with</span> <span class=n>maintained_temp_file_path</span><span class=p>(</span><span class=s2>&quot;.timewarp_node&quot;</span><span class=p>)</span> <span class=k>as</span> <span class=n>tmp_path</span><span class=p>:</span>
+                    <span class=bp>self</span><span class=o>.</span><span class=n>log</span><span class=o>.</span><span class=n>info</span><span class=p>(</span><span class=s2>&quot;Temp File: </span><span class=si>{}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=n>tmp_path</span><span class=p>))</span>
+                    <span class=n>effect</span><span class=o>.</span><span class=n>save_setup</span><span class=p>(</span><span class=n>tmp_path</span><span class=p>)</span>
+                    <span class=k>return</span> <span class=bp>self</span><span class=o>.</span><span class=n>_get_attributes_from_xml</span><span class=p>(</span><span class=n>tmp_path</span><span class=p>)</span>
+
+        <span class=k>return</span> <span class=kc>None</span><span class=p>,</span> <span class=p>{}</span>
+
+    <span class=k>def</span><span class=w> </span><span class=nf>_get_attributes_from_xml</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>tmp_path</span><span class=p>):</span>
+        <span class=k>with</span> <span class=nb>open</span><span class=p>(</span><span class=n>tmp_path</span><span class=p>,</span> <span class=s2>&quot;r&quot;</span><span class=p>)</span> <span class=k>as</span> <span class=n>tw_setup_file</span><span class=p>:</span>
+            <span class=n>tw_setup_string</span> <span class=o>=</span> <span class=n>tw_setup_file</span><span class=o>.</span><span class=n>read</span><span class=p>()</span>
+            <span class=n>tw_setup_file</span><span class=o>.</span><span class=n>close</span><span class=p>()</span>
+
+        <span class=n>tw_setup_xml</span> <span class=o>=</span> <span class=n>ET</span><span class=o>.</span><span class=n>fromstring</span><span class=p>(</span><span class=n>tw_setup_string</span><span class=p>)</span>
+        <span class=n>tw_setup</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>_dictify</span><span class=p>(</span><span class=n>tw_setup_xml</span><span class=p>)</span>
+        <span class=c1># pprint(tw_setup)</span>
+        <span class=k>try</span><span class=p>:</span>
+            <span class=n>tw_setup_state</span> <span class=o>=</span> <span class=n>tw_setup</span><span class=p>[</span><span class=s2>&quot;Setup&quot;</span><span class=p>][</span><span class=s2>&quot;State&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>]</span>
+            <span class=n>mode</span> <span class=o>=</span> <span class=nb>int</span><span class=p>(</span>
+                <span class=n>tw_setup_state</span><span class=p>[</span><span class=s2>&quot;TW_RetimerMode&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;_text&quot;</span><span class=p>]</span>
+            <span class=p>)</span>
+            <span class=n>r_data</span> <span class=o>=</span> <span class=p>{</span>
+                <span class=s2>&quot;type&quot;</span><span class=p>:</span> <span class=bp>self</span><span class=o>.</span><span class=n>_retime_modes</span><span class=p>[</span><span class=n>mode</span><span class=p>],</span>
+                <span class=s2>&quot;effectStart&quot;</span><span class=p>:</span> <span class=nb>int</span><span class=p>(</span>
+                    <span class=n>tw_setup</span><span class=p>[</span><span class=s2>&quot;Setup&quot;</span><span class=p>][</span><span class=s2>&quot;Base&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Range&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Start&quot;</span><span class=p>]),</span>
+                <span class=s2>&quot;effectEnd&quot;</span><span class=p>:</span> <span class=nb>int</span><span class=p>(</span>
+                    <span class=n>tw_setup</span><span class=p>[</span><span class=s2>&quot;Setup&quot;</span><span class=p>][</span><span class=s2>&quot;Base&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Range&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;End&quot;</span><span class=p>])</span>
+            <span class=p>}</span>
+
+            <span class=k>if</span> <span class=n>mode</span> <span class=o>==</span> <span class=mi>0</span><span class=p>:</span>  <span class=c1># speed</span>
+                <span class=n>r_data</span><span class=p>[</span><span class=bp>self</span><span class=o>.</span><span class=n>_retime_modes</span><span class=p>[</span><span class=n>mode</span><span class=p>]]</span> <span class=o>=</span> <span class=nb>float</span><span class=p>(</span>
+                    <span class=n>tw_setup_state</span><span class=p>[</span><span class=s2>&quot;TW_Speed&quot;</span><span class=p>]</span>
+                    <span class=p>[</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Channel&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Value&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;_text&quot;</span><span class=p>]</span>
+                <span class=p>)</span> <span class=o>/</span> <span class=mi>100</span>
+                <span class=n>r_data</span><span class=p>[</span><span class=s2>&quot;numKeys&quot;</span><span class=p>]</span> <span class=o>=</span> <span class=nb>int</span><span class=p>(</span>
+                    <span class=n>tw_setup_state</span><span class=p>[</span><span class=s2>&quot;TW_SpeedTiming&quot;</span><span class=p>]</span>
+                    <span class=p>[</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Channel&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Size&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;_text&quot;</span><span class=p>]</span>
+                <span class=p>)</span>
+            <span class=k>elif</span> <span class=n>mode</span> <span class=o>==</span> <span class=mi>1</span><span class=p>:</span>  <span class=c1># timewarp</span>
+                <span class=n>r_data</span><span class=p>[</span><span class=bp>self</span><span class=o>.</span><span class=n>_retime_modes</span><span class=p>[</span><span class=n>mode</span><span class=p>]]</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>_get_anim_keys</span><span class=p>(</span>
+                    <span class=n>tw_setup_state</span><span class=p>[</span><span class=s2>&quot;TW_Timing&quot;</span><span class=p>]</span>
+                <span class=p>)</span>
+            <span class=k>elif</span> <span class=n>mode</span> <span class=o>==</span> <span class=mi>2</span><span class=p>:</span>  <span class=c1># duration</span>
+                <span class=n>r_data</span><span class=p>[</span><span class=bp>self</span><span class=o>.</span><span class=n>_retime_modes</span><span class=p>[</span><span class=n>mode</span><span class=p>]]</span> <span class=o>=</span> <span class=p>{</span>
+                    <span class=s2>&quot;start&quot;</span><span class=p>:</span> <span class=p>{</span>
+                        <span class=s2>&quot;source&quot;</span><span class=p>:</span> <span class=nb>int</span><span class=p>(</span>
+                            <span class=n>tw_setup_state</span><span class=p>[</span><span class=s2>&quot;TW_DurationTiming&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Channel&quot;</span><span class=p>]</span>
+                            <span class=p>[</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;KFrames&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Key&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Value&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;_text&quot;</span><span class=p>]</span>
+                        <span class=p>),</span>
+                        <span class=s2>&quot;timeline&quot;</span><span class=p>:</span> <span class=nb>int</span><span class=p>(</span>
+                            <span class=n>tw_setup_state</span><span class=p>[</span><span class=s2>&quot;TW_DurationTiming&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Channel&quot;</span><span class=p>]</span>
+                            <span class=p>[</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;KFrames&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Key&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Frame&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;_text&quot;</span><span class=p>]</span>
+                        <span class=p>)</span>
+                    <span class=p>},</span>
+                    <span class=s2>&quot;end&quot;</span><span class=p>:</span> <span class=p>{</span>
+                        <span class=s2>&quot;source&quot;</span><span class=p>:</span> <span class=nb>int</span><span class=p>(</span>
+                            <span class=n>tw_setup_state</span><span class=p>[</span><span class=s2>&quot;TW_DurationTiming&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Channel&quot;</span><span class=p>]</span>
+                            <span class=p>[</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;KFrames&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Key&quot;</span><span class=p>][</span><span class=mi>1</span><span class=p>][</span><span class=s2>&quot;Value&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;_text&quot;</span><span class=p>]</span>
+                        <span class=p>),</span>
+                        <span class=s2>&quot;timeline&quot;</span><span class=p>:</span> <span class=nb>int</span><span class=p>(</span>
+                            <span class=n>tw_setup_state</span><span class=p>[</span><span class=s2>&quot;TW_DurationTiming&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Channel&quot;</span><span class=p>]</span>
+                            <span class=p>[</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;KFrames&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Key&quot;</span><span class=p>][</span><span class=mi>1</span><span class=p>][</span><span class=s2>&quot;Frame&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;_text&quot;</span><span class=p>]</span>
+                        <span class=p>)</span>
+                    <span class=p>}</span>
+                <span class=p>}</span>
+        <span class=k>except</span> <span class=ne>Exception</span><span class=p>:</span>
+            <span class=n>lines</span> <span class=o>=</span> <span class=n>traceback</span><span class=o>.</span><span class=n>format_exception</span><span class=p>(</span><span class=o>*</span><span class=n>sys</span><span class=o>.</span><span class=n>exc_info</span><span class=p>())</span>
+            <span class=bp>self</span><span class=o>.</span><span class=n>log</span><span class=o>.</span><span class=n>error</span><span class=p>(</span><span class=s2>&quot;</span><span class=se>\n</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=n>lines</span><span class=p>))</span>
+            <span class=k>return</span> <span class=kc>None</span><span class=p>,</span> <span class=p>{}</span>
+
+        <span class=k>return</span> <span class=n>tw_setup_string</span><span class=p>,</span> <span class=n>r_data</span>
+
+    <span class=k>def</span><span class=w> </span><span class=nf>_get_anim_keys</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>setup_cat</span><span class=p>,</span> <span class=n>index</span><span class=o>=</span><span class=kc>None</span><span class=p>):</span>
+        <span class=n>return_data</span> <span class=o>=</span> <span class=p>{</span>
+            <span class=s2>&quot;extrapolation&quot;</span><span class=p>:</span> <span class=p>(</span>
+                <span class=n>setup_cat</span><span class=p>[</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Channel&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Extrap&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;_text&quot;</span><span class=p>]</span>
+            <span class=p>),</span>
+            <span class=s2>&quot;animKeys&quot;</span><span class=p>:</span> <span class=p>[]</span>
+        <span class=p>}</span>
+        <span class=k>for</span> <span class=n>key</span> <span class=ow>in</span> <span class=n>setup_cat</span><span class=p>[</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Channel&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;KFrames&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;Key&quot;</span><span class=p>]:</span>
+            <span class=k>if</span> <span class=n>index</span> <span class=ow>and</span> <span class=nb>int</span><span class=p>(</span><span class=n>key</span><span class=p>[</span><span class=s2>&quot;Index&quot;</span><span class=p>])</span> <span class=o>!=</span> <span class=n>index</span><span class=p>:</span>
+                <span class=k>continue</span>
+            <span class=n>key_data</span> <span class=o>=</span> <span class=p>{</span>
+                <span class=s2>&quot;source&quot;</span><span class=p>:</span> <span class=nb>float</span><span class=p>(</span><span class=n>key</span><span class=p>[</span><span class=s2>&quot;Value&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;_text&quot;</span><span class=p>]),</span>
+                <span class=s2>&quot;timeline&quot;</span><span class=p>:</span> <span class=nb>float</span><span class=p>(</span><span class=n>key</span><span class=p>[</span><span class=s2>&quot;Frame&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;_text&quot;</span><span class=p>]),</span>
+                <span class=s2>&quot;index&quot;</span><span class=p>:</span> <span class=nb>int</span><span class=p>(</span><span class=n>key</span><span class=p>[</span><span class=s2>&quot;Index&quot;</span><span class=p>]),</span>
+                <span class=s2>&quot;curveMode&quot;</span><span class=p>:</span> <span class=n>key</span><span class=p>[</span><span class=s2>&quot;CurveMode&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;_text&quot;</span><span class=p>],</span>
+                <span class=s2>&quot;curveOrder&quot;</span><span class=p>:</span> <span class=n>key</span><span class=p>[</span><span class=s2>&quot;CurveOrder&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;_text&quot;</span><span class=p>]</span>
+            <span class=p>}</span>
+            <span class=k>if</span> <span class=n>key</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&quot;TangentMode&quot;</span><span class=p>):</span>
+                <span class=n>key_data</span><span class=p>[</span><span class=s2>&quot;tangentMode&quot;</span><span class=p>]</span> <span class=o>=</span> <span class=n>key</span><span class=p>[</span><span class=s2>&quot;TangentMode&quot;</span><span class=p>][</span><span class=mi>0</span><span class=p>][</span><span class=s2>&quot;_text&quot;</span><span class=p>]</span>
+
+            <span class=n>return_data</span><span class=p>[</span><span class=s2>&quot;animKeys&quot;</span><span class=p>]</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=n>key_data</span><span class=p>)</span>
+
+        <span class=k>return</span> <span class=n>return_data</span>
+
+    <span class=k>def</span><span class=w> </span><span class=nf>_dictify</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>xml_</span><span class=p>,</span> <span class=n>root</span><span class=o>=</span><span class=kc>True</span><span class=p>):</span>
+<span class=w>        </span><span class=sd>&quot;&quot;&quot; Convert xml object to dictionary</span>
+
+<span class=sd>        Args:</span>
+<span class=sd>            xml_ (xml.etree.ElementTree.Element): xml data</span>
+<span class=sd>            root (bool, optional): is root available. Defaults to True.</span>
+
+<span class=sd>        Returns:</span>
+<span class=sd>            dict: dictionarized xml</span>
+<span class=sd>        &quot;&quot;&quot;</span>
+
+        <span class=k>if</span> <span class=n>root</span><span class=p>:</span>
+            <span class=k>return</span> <span class=p>{</span><span class=n>xml_</span><span class=o>.</span><span class=n>tag</span><span class=p>:</span> <span class=bp>self</span><span class=o>.</span><span class=n>_dictify</span><span class=p>(</span><span class=n>xml_</span><span class=p>,</span> <span class=kc>False</span><span class=p>)}</span>
+
+        <span class=n>d</span> <span class=o>=</span> <span class=n>copy</span><span class=p>(</span><span class=n>xml_</span><span class=o>.</span><span class=n>attrib</span><span class=p>)</span>
+        <span class=k>if</span> <span class=n>xml_</span><span class=o>.</span><span class=n>text</span><span class=p>:</span>
+            <span class=n>d</span><span class=p>[</span><span class=s2>&quot;_text&quot;</span><span class=p>]</span> <span class=o>=</span> <span class=n>xml_</span><span class=o>.</span><span class=n>text</span>
+
+        <span class=k>for</span> <span class=n>x</span> <span class=ow>in</span> <span class=n>xml_</span><span class=o>.</span><span class=n>findall</span><span class=p>(</span><span class=s2>&quot;./*&quot;</span><span class=p>):</span>
+            <span class=k>if</span> <span class=n>x</span><span class=o>.</span><span class=n>tag</span> <span class=ow>not</span> <span class=ow>in</span> <span class=n>d</span><span class=p>:</span>
+                <span class=n>d</span><span class=p>[</span><span class=n>x</span><span class=o>.</span><span class=n>tag</span><span class=p>]</span> <span class=o>=</span> <span class=p>[]</span>
+            <span class=n>d</span><span class=p>[</span><span class=n>x</span><span class=o>.</span><span class=n>tag</span><span class=p>]</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>_dictify</span><span class=p>(</span><span class=n>x</span><span class=p>,</span> <span class=kc>False</span><span class=p>))</span>
+        <span class=k>return</span> <span class=n>d</span>
+</code></pre></div></td></tr></table></div> </details> <div class="doc doc-children"> <div class="doc doc-object doc-attribute"> <h3 id=client.ayon_flame.api.lib.TimeEffectMetadata.data class="doc doc-heading"> <code class="highlight language-python"><span class=n>data</span></code> <span class="doc doc-labels"> <small class="doc doc-label doc-label-property"><code>property</code></small> </span> </h3> <div class="doc doc-contents "> <p>Returns timewarp effect data</p> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td><code>dict</code></td> <td> </td> <td> <div class=doc-md-description> <p>retime data</p> </div> </td> </tr> </tbody> </table> </div> </div> <div class="doc doc-object doc-attribute"> <h3 id=client.ayon_flame.api.lib.TimeEffectMetadata.is_empty class="doc doc-heading"> <code class="highlight language-python"><span class=n>is_empty</span></code> <span class="doc doc-labels"> <small class="doc doc-label doc-label-property"><code>property</code></small> </span> </h3> <div class="doc doc-contents "> <p>Returns either the current object is empty or not.</p> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> </td> <td> <div class=doc-md-description> <p>bool. Is the TimeEffectMetadata object empty?</p> </div> </td> </tr> </tbody> </table> </div> </div> <div class="doc doc-object doc-attribute"> <h3 id=client.ayon_flame.api.lib.TimeEffectMetadata.setup_data class="doc doc-heading"> <code class="highlight language-python"><span class=n>setup_data</span></code> <span class="doc doc-labels"> <small class="doc doc-label doc-label-property"><code>property</code></small> </span> </h3> <div class="doc doc-contents "> <p>Returns timewarp effect setup data</p> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> </td> <td> <div class=doc-md-description> <p>str. The XML formatted setup data.</p> </div> </td> </tr> </tbody> </table> </div> </div> </div> </div> </div> <div class="doc doc-object doc-function"> <h2 id=client.ayon_flame.api.lib.create_segment_data_marker class="doc doc-heading"> <code class="highlight language-python"><span class=n>create_segment_data_marker</span><span class=p>(</span><span class=n>segment</span><span class=p>)</span></code> </h2> <div class="doc doc-contents "> <p>Create AYON marker on a segment.</p> <p><span class=doc-section-title>Attributes:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td><code><span title=client.ayon_flame.api.lib.create_segment_data_marker.segment>segment</span></code></td> <td> <code><span title=flame.PySegment>PySegment</span></code> </td> <td> <div class=doc-md-description> <p>flame api object</p> </div> </td> </tr> </tbody> </table> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> </td> <td> <div class=doc-md-description> <p>flame.PyMarker: flame api object</p> </div> </td> </tr> </tbody> </table> <details class=quote> <summary>Source code in <code>client/ayon_flame/api/lib.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal>422</span>
+<span class=normal>423</span>
+<span class=normal>424</span>
+<span class=normal>425</span>
+<span class=normal>426</span>
+<span class=normal>427</span>
+<span class=normal>428</span>
+<span class=normal>429</span>
+<span class=normal>430</span>
+<span class=normal>431</span>
+<span class=normal>432</span>
+<span class=normal>433</span>
+<span class=normal>434</span>
+<span class=normal>435</span>
+<span class=normal>436</span>
+<span class=normal>437</span>
+<span class=normal>438</span>
+<span class=normal>439</span>
+<span class=normal>440</span>
+<span class=normal>441</span>
+<span class=normal>442</span>
+<span class=normal>443</span>
+<span class=normal>444</span></pre></div></td><td class=code><div><pre><span></span><code><span class=k>def</span><span class=w> </span><span class=nf>create_segment_data_marker</span><span class=p>(</span><span class=n>segment</span><span class=p>):</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot; Create AYON marker on a segment.</span>
+
+<span class=sd>    Attributes:</span>
+<span class=sd>        segment (flame.PySegment): flame api object</span>
+
+<span class=sd>    Returns:</span>
+<span class=sd>        flame.PyMarker: flame api object</span>
+<span class=sd>    &quot;&quot;&quot;</span>
+    <span class=c1># get duration of segment</span>
+    <span class=n>duration</span> <span class=o>=</span> <span class=n>segment</span><span class=o>.</span><span class=n>record_duration</span><span class=o>.</span><span class=n>relative_frame</span>
+    <span class=c1># calculate start frame of the new marker</span>
+    <span class=n>start_frame</span> <span class=o>=</span> <span class=nb>int</span><span class=p>(</span><span class=n>segment</span><span class=o>.</span><span class=n>record_in</span><span class=o>.</span><span class=n>relative_frame</span><span class=p>)</span> <span class=o>+</span> <span class=nb>int</span><span class=p>(</span><span class=n>duration</span> <span class=o>/</span> <span class=mi>2</span><span class=p>)</span>
+    <span class=c1># create marker</span>
+    <span class=n>marker</span> <span class=o>=</span> <span class=n>segment</span><span class=o>.</span><span class=n>create_marker</span><span class=p>(</span><span class=n>start_frame</span><span class=p>)</span>
+    <span class=c1># set marker name</span>
+    <span class=n>marker</span><span class=o>.</span><span class=n>name</span> <span class=o>=</span> <span class=n>MARKER_NAME</span>
+    <span class=c1># set duration</span>
+    <span class=n>marker</span><span class=o>.</span><span class=n>duration</span> <span class=o>=</span> <span class=n>MARKER_DURATION</span>
+    <span class=c1># set colour</span>
+    <span class=n>marker</span><span class=o>.</span><span class=n>colour</span> <span class=o>=</span> <span class=n>COLOR_MAP</span><span class=p>[</span><span class=n>MARKER_COLOR</span><span class=p>]</span>  <span class=c1># Red</span>
+
+    <span class=k>return</span> <span class=n>marker</span>
+</code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h2 id=client.ayon_flame.api.lib.get_frame_from_filename class="doc doc-heading"> <code class="highlight language-python"><span class=n>get_frame_from_filename</span><span class=p>(</span><span class=n>filename</span><span class=p>)</span></code> </h2> <div class="doc doc-contents "> <p>Return sequence number from Flame path style</p> <p><span class=doc-section-title>Parameters:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> <th>Default</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code>filename</code> </td> <td> <code><span title=str>str</span></code> </td> <td> <div class=doc-md-description> <p>file name</p> </div> </td> <td> <em>required</em> </td> </tr> </tbody> </table> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td><code>int</code></td> <td> </td> <td> <div class=doc-md-description> <p>sequence frame number</p> </div> </td> </tr> </tbody> </table> <details class=example open> <summary>Example</summary> <p>def get_frame_from_filename(path): ("plate.0001.exr") &gt; 0001</p> </details> <details class=quote> <summary>Source code in <code>client/ayon_flame/api/lib.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal>674</span>
+<span class=normal>675</span>
+<span class=normal>676</span>
+<span class=normal>677</span>
+<span class=normal>678</span>
+<span class=normal>679</span>
+<span class=normal>680</span>
+<span class=normal>681</span>
+<span class=normal>682</span>
+<span class=normal>683</span>
+<span class=normal>684</span>
+<span class=normal>685</span>
+<span class=normal>686</span>
+<span class=normal>687</span>
+<span class=normal>688</span>
+<span class=normal>689</span>
+<span class=normal>690</span>
+<span class=normal>691</span>
+<span class=normal>692</span></pre></div></td><td class=code><div><pre><span></span><code><span class=k>def</span><span class=w> </span><span class=nf>get_frame_from_filename</span><span class=p>(</span><span class=n>filename</span><span class=p>):</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot;</span>
+<span class=sd>    Return sequence number from Flame path style</span>
+
+<span class=sd>    Args:</span>
+<span class=sd>        filename (str): file name</span>
+
+<span class=sd>    Returns:</span>
+<span class=sd>        int: sequence frame number</span>
+
+<span class=sd>    Example:</span>
+<span class=sd>        def get_frame_from_filename(path):</span>
+<span class=sd>            (&quot;plate.0001.exr&quot;) &gt; 0001</span>
+
+<span class=sd>    &quot;&quot;&quot;</span>
+
+    <span class=n>found</span> <span class=o>=</span> <span class=n>re</span><span class=o>.</span><span class=n>findall</span><span class=p>(</span><span class=n>FRAME_PATTERN</span><span class=p>,</span> <span class=n>filename</span><span class=p>)</span>
+
+    <span class=k>return</span> <span class=n>found</span><span class=o>.</span><span class=n>pop</span><span class=p>()</span> <span class=k>if</span> <span class=n>found</span> <span class=k>else</span> <span class=kc>None</span>
+</code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h2 id=client.ayon_flame.api.lib.get_padding_from_filename class="doc doc-heading"> <code class="highlight language-python"><span class=n>get_padding_from_filename</span><span class=p>(</span><span class=n>filename</span><span class=p>)</span></code> </h2> <div class="doc doc-contents "> <p>Return padding number from Flame path style</p> <p><span class=doc-section-title>Parameters:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> <th>Default</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code>filename</code> </td> <td> <code><span title=str>str</span></code> </td> <td> <div class=doc-md-description> <p>file name</p> </div> </td> <td> <em>required</em> </td> </tr> </tbody> </table> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td><code>int</code></td> <td> </td> <td> <div class=doc-md-description> <p>padding number</p> </div> </td> </tr> </tbody> </table> <details class=example open> <summary>Example</summary> <p>get_padding_from_filename("plate.0001.exr") &gt; 4</p> </details> <details class=quote> <summary>Source code in <code>client/ayon_flame/api/lib.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal>655</span>
+<span class=normal>656</span>
+<span class=normal>657</span>
+<span class=normal>658</span>
+<span class=normal>659</span>
+<span class=normal>660</span>
+<span class=normal>661</span>
+<span class=normal>662</span>
+<span class=normal>663</span>
+<span class=normal>664</span>
+<span class=normal>665</span>
+<span class=normal>666</span>
+<span class=normal>667</span>
+<span class=normal>668</span>
+<span class=normal>669</span>
+<span class=normal>670</span>
+<span class=normal>671</span></pre></div></td><td class=code><div><pre><span></span><code><span class=k>def</span><span class=w> </span><span class=nf>get_padding_from_filename</span><span class=p>(</span><span class=n>filename</span><span class=p>):</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot;</span>
+<span class=sd>    Return padding number from Flame path style</span>
+
+<span class=sd>    Args:</span>
+<span class=sd>        filename (str): file name</span>
+
+<span class=sd>    Returns:</span>
+<span class=sd>        int: padding number</span>
+
+<span class=sd>    Example:</span>
+<span class=sd>        get_padding_from_filename(&quot;plate.0001.exr&quot;) &gt; 4</span>
+
+<span class=sd>    &quot;&quot;&quot;</span>
+    <span class=n>found</span> <span class=o>=</span> <span class=n>get_frame_from_filename</span><span class=p>(</span><span class=n>filename</span><span class=p>)</span>
+
+    <span class=k>return</span> <span class=nb>len</span><span class=p>(</span><span class=n>found</span><span class=p>)</span> <span class=k>if</span> <span class=n>found</span> <span class=k>else</span> <span class=kc>None</span>
+</code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h2 id=client.ayon_flame.api.lib.get_publish_attribute class="doc doc-heading"> <code class="highlight language-python"><span class=n>get_publish_attribute</span><span class=p>(</span><span class=n>segment</span><span class=p>)</span></code> </h2> <div class="doc doc-contents "> <p>Get Publish attribute from input Tag object</p> <details class=attribute open> <summary>Attribute</summary> <p>segment (flame.PySegment)): flame api object</p> </details> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td><code>bool</code></td> <td> </td> <td> <div class=doc-md-description> <p>True or False</p> </div> </td> </tr> </tbody> </table> <details class=quote> <summary>Source code in <code>client/ayon_flame/api/lib.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal>404</span>
+<span class=normal>405</span>
+<span class=normal>406</span>
+<span class=normal>407</span>
+<span class=normal>408</span>
+<span class=normal>409</span>
+<span class=normal>410</span>
+<span class=normal>411</span>
+<span class=normal>412</span>
+<span class=normal>413</span>
+<span class=normal>414</span>
+<span class=normal>415</span>
+<span class=normal>416</span>
+<span class=normal>417</span>
+<span class=normal>418</span>
+<span class=normal>419</span></pre></div></td><td class=code><div><pre><span></span><code><span class=k>def</span><span class=w> </span><span class=nf>get_publish_attribute</span><span class=p>(</span><span class=n>segment</span><span class=p>):</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot; Get Publish attribute from input Tag object</span>
+
+<span class=sd>    Attribute:</span>
+<span class=sd>        segment (flame.PySegment)): flame api object</span>
+
+<span class=sd>    Returns:</span>
+<span class=sd>        bool: True or False</span>
+<span class=sd>    &quot;&quot;&quot;</span>
+    <span class=n>tag_data</span> <span class=o>=</span> <span class=n>get_segment_data_marker</span><span class=p>(</span><span class=n>segment</span><span class=p>)</span>
+
+    <span class=k>if</span> <span class=ow>not</span> <span class=n>tag_data</span><span class=p>:</span>
+        <span class=n>set_publish_attribute</span><span class=p>(</span><span class=n>segment</span><span class=p>,</span> <span class=n>MARKER_PUBLISH_DEFAULT</span><span class=p>)</span>
+        <span class=k>return</span> <span class=n>MARKER_PUBLISH_DEFAULT</span>
+
+    <span class=k>return</span> <span class=n>tag_data</span><span class=p>[</span><span class=s2>&quot;publish&quot;</span><span class=p>]</span>
+</code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h2 id=client.ayon_flame.api.lib.get_reformatted_filename class="doc doc-heading"> <code class="highlight language-python"><span class=n>get_reformatted_filename</span><span class=p>(</span><span class=n>filename</span><span class=p>,</span> <span class=n>padded</span><span class=o>=</span><span class=kc>True</span><span class=p>)</span></code> </h2> <div class="doc doc-contents "> <p>Return fixed python expression path</p> <p><span class=doc-section-title>Parameters:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> <th>Default</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td> <code>filename</code> </td> <td> <code><span title=str>str</span></code> </td> <td> <div class=doc-md-description> <p>file name</p> </div> </td> <td> <em>required</em> </td> </tr> </tbody> </table> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td><code>type</code></td> <td> </td> <td> <div class=doc-md-description> <p>string with reformatted path</p> </div> </td> </tr> </tbody> </table> <details class=example open> <summary>Example</summary> <p>get_reformatted_filename("plate.1001.exr") &gt; plate.%04d.exr</p> </details> <details class=quote> <summary>Source code in <code>client/ayon_flame/api/lib.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal>625</span>
+<span class=normal>626</span>
+<span class=normal>627</span>
+<span class=normal>628</span>
+<span class=normal>629</span>
+<span class=normal>630</span>
+<span class=normal>631</span>
+<span class=normal>632</span>
+<span class=normal>633</span>
+<span class=normal>634</span>
+<span class=normal>635</span>
+<span class=normal>636</span>
+<span class=normal>637</span>
+<span class=normal>638</span>
+<span class=normal>639</span>
+<span class=normal>640</span>
+<span class=normal>641</span>
+<span class=normal>642</span>
+<span class=normal>643</span>
+<span class=normal>644</span>
+<span class=normal>645</span>
+<span class=normal>646</span>
+<span class=normal>647</span>
+<span class=normal>648</span>
+<span class=normal>649</span>
+<span class=normal>650</span>
+<span class=normal>651</span>
+<span class=normal>652</span></pre></div></td><td class=code><div><pre><span></span><code><span class=k>def</span><span class=w> </span><span class=nf>get_reformatted_filename</span><span class=p>(</span><span class=n>filename</span><span class=p>,</span> <span class=n>padded</span><span class=o>=</span><span class=kc>True</span><span class=p>):</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot;</span>
+<span class=sd>    Return fixed python expression path</span>
+
+<span class=sd>    Args:</span>
+<span class=sd>        filename (str): file name</span>
+
+<span class=sd>    Returns:</span>
+<span class=sd>        type: string with reformatted path</span>
+
+<span class=sd>    Example:</span>
+<span class=sd>        get_reformatted_filename(&quot;plate.1001.exr&quot;) &gt; plate.%04d.exr</span>
+
+<span class=sd>    &quot;&quot;&quot;</span>
+    <span class=n>found</span> <span class=o>=</span> <span class=n>FRAME_PATTERN</span><span class=o>.</span><span class=n>search</span><span class=p>(</span><span class=n>filename</span><span class=p>)</span>
+
+    <span class=k>if</span> <span class=ow>not</span> <span class=n>found</span><span class=p>:</span>
+        <span class=n>log</span><span class=o>.</span><span class=n>info</span><span class=p>(</span><span class=s2>&quot;File name is not sequence: </span><span class=si>{}</span><span class=s2>&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=n>filename</span><span class=p>))</span>
+        <span class=k>return</span> <span class=n>filename</span>
+
+    <span class=n>padding</span> <span class=o>=</span> <span class=n>get_padding_from_filename</span><span class=p>(</span><span class=n>filename</span><span class=p>)</span>
+
+    <span class=n>replacement</span> <span class=o>=</span> <span class=s2>&quot;%0</span><span class=si>{}</span><span class=s2>d&quot;</span><span class=o>.</span><span class=n>format</span><span class=p>(</span><span class=n>padding</span><span class=p>)</span> <span class=k>if</span> <span class=n>padded</span> <span class=k>else</span> <span class=s2>&quot;</span><span class=si>%d</span><span class=s2>&quot;</span>
+    <span class=n>start_idx</span><span class=p>,</span> <span class=n>end_idx</span> <span class=o>=</span> <span class=n>found</span><span class=o>.</span><span class=n>span</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+
+    <span class=k>return</span> <span class=n>replacement</span><span class=o>.</span><span class=n>join</span><span class=p>(</span>
+        <span class=p>[</span><span class=n>filename</span><span class=p>[:</span><span class=n>start_idx</span><span class=p>],</span> <span class=n>filename</span><span class=p>[</span><span class=n>end_idx</span><span class=p>:]]</span>
+    <span class=p>)</span>
+</code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h2 id=client.ayon_flame.api.lib.get_segment_data_marker class="doc doc-heading"> <code class="highlight language-python"><span class=n>get_segment_data_marker</span><span class=p>(</span><span class=n>segment</span><span class=p>,</span> <span class=n>with_marker</span><span class=o>=</span><span class=kc>None</span><span class=p>)</span></code> </h2> <div class="doc doc-contents "> <p>Get AYON track item tag created by creator or loader plugin.</p> <p><span class=doc-section-title>Attributes:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td><code><span title=client.ayon_flame.api.lib.get_segment_data_marker.segment>segment</span></code></td> <td> <code><span title=flame.PySegment>PySegment</span></code> </td> <td> <div class=doc-md-description> <p>flame api object</p> </div> </td> </tr> <tr class=doc-section-item> <td><code><span title=client.ayon_flame.api.lib.get_segment_data_marker.with_marker>with_marker</span></code></td> <td> <code>bool)[optional]</code> </td> <td> <div class=doc-md-description> <p>if true it will return also marker object</p> </div> </td> </tr> </tbody> </table> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td><code>dict</code></td> <td> </td> <td> <div class=doc-md-description> <p>AYON tag data</p> </div> </td> </tr> </tbody> </table> <p>Returns(with_marker=True): flame.PyMarker, dict</p> <details class=quote> <summary>Source code in <code>client/ayon_flame/api/lib.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal>335</span>
+<span class=normal>336</span>
+<span class=normal>337</span>
+<span class=normal>338</span>
+<span class=normal>339</span>
+<span class=normal>340</span>
+<span class=normal>341</span>
+<span class=normal>342</span>
+<span class=normal>343</span>
+<span class=normal>344</span>
+<span class=normal>345</span>
+<span class=normal>346</span>
+<span class=normal>347</span>
+<span class=normal>348</span>
+<span class=normal>349</span>
+<span class=normal>350</span>
+<span class=normal>351</span>
+<span class=normal>352</span>
+<span class=normal>353</span>
+<span class=normal>354</span>
+<span class=normal>355</span>
+<span class=normal>356</span>
+<span class=normal>357</span>
+<span class=normal>358</span>
+<span class=normal>359</span></pre></div></td><td class=code><div><pre><span></span><code><span class=k>def</span><span class=w> </span><span class=nf>get_segment_data_marker</span><span class=p>(</span><span class=n>segment</span><span class=p>,</span> <span class=n>with_marker</span><span class=o>=</span><span class=kc>None</span><span class=p>):</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot;</span>
+<span class=sd>    Get AYON track item tag created by creator or loader plugin.</span>
+
+<span class=sd>    Attributes:</span>
+<span class=sd>        segment (flame.PySegment): flame api object</span>
+<span class=sd>        with_marker (bool)[optional]: if true it will return also marker object</span>
+
+<span class=sd>    Returns:</span>
+<span class=sd>        dict: AYON tag data</span>
+
+<span class=sd>    Returns(with_marker=True):</span>
+<span class=sd>        flame.PyMarker, dict</span>
+<span class=sd>    &quot;&quot;&quot;</span>
+    <span class=k>for</span> <span class=n>marker</span> <span class=ow>in</span> <span class=n>segment</span><span class=o>.</span><span class=n>markers</span><span class=p>:</span>
+        <span class=n>comment</span> <span class=o>=</span> <span class=n>marker</span><span class=o>.</span><span class=n>comment</span><span class=o>.</span><span class=n>get_value</span><span class=p>()</span>
+        <span class=n>color</span> <span class=o>=</span> <span class=n>marker</span><span class=o>.</span><span class=n>colour</span><span class=o>.</span><span class=n>get_value</span><span class=p>()</span>
+        <span class=n>name</span> <span class=o>=</span> <span class=n>marker</span><span class=o>.</span><span class=n>name</span><span class=o>.</span><span class=n>get_value</span><span class=p>()</span>
+
+        <span class=k>if</span> <span class=p>(</span><span class=n>name</span> <span class=o>==</span> <span class=n>MARKER_NAME</span><span class=p>)</span> <span class=ow>and</span> <span class=p>(</span>
+                <span class=n>color</span> <span class=o>==</span> <span class=n>COLOR_MAP</span><span class=p>[</span><span class=n>MARKER_COLOR</span><span class=p>]):</span>
+            <span class=k>if</span> <span class=ow>not</span> <span class=n>with_marker</span><span class=p>:</span>
+                <span class=k>return</span> <span class=n>json</span><span class=o>.</span><span class=n>loads</span><span class=p>(</span><span class=n>comment</span><span class=p>)</span>
+            <span class=k>else</span><span class=p>:</span>
+                <span class=k>return</span> <span class=n>marker</span><span class=p>,</span> <span class=n>json</span><span class=o>.</span><span class=n>loads</span><span class=p>(</span><span class=n>comment</span><span class=p>)</span>
+</code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h2 id=client.ayon_flame.api.lib.maintained_object_duplication class="doc doc-heading"> <code class="highlight language-python"><span class=n>maintained_object_duplication</span><span class=p>(</span><span class=n>item</span><span class=p>)</span></code> </h2> <div class="doc doc-contents "> <p>Maintain input item duplication</p> <p><span class=doc-section-title>Attributes:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td><code><span title=client.ayon_flame.api.lib.maintained_object_duplication.item>item</span></code></td> <td> <code>any flame.PyObject</code> </td> <td> <div class=doc-md-description> <p>python api object</p> </div> </td> </tr> </tbody> </table> <details class=yield open> <summary>Yield</summary> <p>duplicate input PyObject type</p> </details> <details class=quote> <summary>Source code in <code>client/ayon_flame/api/lib.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal>695</span>
+<span class=normal>696</span>
+<span class=normal>697</span>
+<span class=normal>698</span>
+<span class=normal>699</span>
+<span class=normal>700</span>
+<span class=normal>701</span>
+<span class=normal>702</span>
+<span class=normal>703</span>
+<span class=normal>704</span>
+<span class=normal>705</span>
+<span class=normal>706</span>
+<span class=normal>707</span>
+<span class=normal>708</span>
+<span class=normal>709</span>
+<span class=normal>710</span>
+<span class=normal>711</span>
+<span class=normal>712</span>
+<span class=normal>713</span>
+<span class=normal>714</span></pre></div></td><td class=code><div><pre><span></span><code><span class=nd>@contextlib</span><span class=o>.</span><span class=n>contextmanager</span>
+<span class=k>def</span><span class=w> </span><span class=nf>maintained_object_duplication</span><span class=p>(</span><span class=n>item</span><span class=p>):</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot;Maintain input item duplication</span>
+
+<span class=sd>    Attributes:</span>
+<span class=sd>        item (any flame.PyObject): python api object</span>
+
+<span class=sd>    Yield:</span>
+<span class=sd>        duplicate input PyObject type</span>
+<span class=sd>    &quot;&quot;&quot;</span>
+    <span class=kn>import</span><span class=w> </span><span class=nn>flame</span>
+    <span class=c1># Duplicate the clip to avoid modifying the original clip</span>
+    <span class=n>duplicate</span> <span class=o>=</span> <span class=n>flame</span><span class=o>.</span><span class=n>duplicate</span><span class=p>(</span><span class=n>item</span><span class=p>)</span>
+
+    <span class=k>try</span><span class=p>:</span>
+        <span class=c1># do the operation on selected segments</span>
+        <span class=k>yield</span> <span class=n>duplicate</span>
+    <span class=k>finally</span><span class=p>:</span>
+        <span class=c1># delete the item at the end</span>
+        <span class=n>flame</span><span class=o>.</span><span class=n>delete</span><span class=p>(</span><span class=n>duplicate</span><span class=p>)</span>
+</code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h2 id=client.ayon_flame.api.lib.maintained_segment_selection class="doc doc-heading"> <code class="highlight language-python"><span class=n>maintained_segment_selection</span><span class=p>(</span><span class=n>sequence</span><span class=p>)</span></code> </h2> <div class="doc doc-contents "> <p>Maintain selection during context</p> <p><span class=doc-section-title>Attributes:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td><code><span title=client.ayon_flame.api.lib.maintained_segment_selection.sequence>sequence</span></code></td> <td> <code><span title=flame.PySequence>PySequence</span></code> </td> <td> <div class=doc-md-description> <p>python api object</p> </div> </td> </tr> </tbody> </table> <details class=yield open> <summary>Yield</summary> <p>list of flame.PySegment</p> </details> <details class=example open> <summary>Example</summary> <blockquote> <blockquote> <blockquote> <p>with maintained_segment_selection(sequence) as selected_segments: ... for segment in selected_segments: ... segment.selected = False print(segment.selected) True</p> </blockquote> </blockquote> </blockquote> </details> <details class=quote> <summary>Source code in <code>client/ayon_flame/api/lib.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal>472</span>
+<span class=normal>473</span>
+<span class=normal>474</span>
+<span class=normal>475</span>
+<span class=normal>476</span>
+<span class=normal>477</span>
+<span class=normal>478</span>
+<span class=normal>479</span>
+<span class=normal>480</span>
+<span class=normal>481</span>
+<span class=normal>482</span>
+<span class=normal>483</span>
+<span class=normal>484</span>
+<span class=normal>485</span>
+<span class=normal>486</span>
+<span class=normal>487</span>
+<span class=normal>488</span>
+<span class=normal>489</span>
+<span class=normal>490</span>
+<span class=normal>491</span>
+<span class=normal>492</span>
+<span class=normal>493</span>
+<span class=normal>494</span>
+<span class=normal>495</span>
+<span class=normal>496</span>
+<span class=normal>497</span>
+<span class=normal>498</span></pre></div></td><td class=code><div><pre><span></span><code><span class=nd>@contextlib</span><span class=o>.</span><span class=n>contextmanager</span>
+<span class=k>def</span><span class=w> </span><span class=nf>maintained_segment_selection</span><span class=p>(</span><span class=n>sequence</span><span class=p>):</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot;Maintain selection during context</span>
+
+<span class=sd>    Attributes:</span>
+<span class=sd>        sequence (flame.PySequence): python api object</span>
+
+<span class=sd>    Yield:</span>
+<span class=sd>        list of flame.PySegment</span>
+
+<span class=sd>    Example:</span>
+<span class=sd>        &gt;&gt;&gt; with maintained_segment_selection(sequence) as selected_segments:</span>
+<span class=sd>        ...     for segment in selected_segments:</span>
+<span class=sd>        ...         segment.selected = False</span>
+<span class=sd>        &gt;&gt;&gt; print(segment.selected)</span>
+<span class=sd>        True</span>
+<span class=sd>    &quot;&quot;&quot;</span>
+    <span class=n>selected_segments</span> <span class=o>=</span> <span class=n>get_sequence_segments</span><span class=p>(</span><span class=n>sequence</span><span class=p>,</span> <span class=kc>True</span><span class=p>)</span>
+    <span class=k>try</span><span class=p>:</span>
+        <span class=c1># do the operation on selected segments</span>
+        <span class=k>yield</span> <span class=n>selected_segments</span>
+    <span class=k>finally</span><span class=p>:</span>
+        <span class=c1># reset all selected clips</span>
+        <span class=n>reset_segment_selection</span><span class=p>(</span><span class=n>sequence</span><span class=p>)</span>
+        <span class=c1># select only original selection of segments</span>
+        <span class=k>for</span> <span class=n>segment</span> <span class=ow>in</span> <span class=n>selected_segments</span><span class=p>:</span>
+            <span class=n>segment</span><span class=o>.</span><span class=n>selected</span> <span class=o>=</span> <span class=kc>True</span>
+</code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h2 id=client.ayon_flame.api.lib.reset_segment_selection class="doc doc-heading"> <code class="highlight language-python"><span class=n>reset_segment_selection</span><span class=p>(</span><span class=n>sequence</span><span class=p>)</span></code> </h2> <div class="doc doc-contents "> <p>Deselect all selected nodes</p> <details class=quote> <summary>Source code in <code>client/ayon_flame/api/lib.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal>501</span>
+<span class=normal>502</span>
+<span class=normal>503</span>
+<span class=normal>504</span>
+<span class=normal>505</span>
+<span class=normal>506</span>
+<span class=normal>507</span>
+<span class=normal>508</span>
+<span class=normal>509</span></pre></div></td><td class=code><div><pre><span></span><code><span class=k>def</span><span class=w> </span><span class=nf>reset_segment_selection</span><span class=p>(</span><span class=n>sequence</span><span class=p>):</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot;Deselect all selected nodes</span>
+<span class=sd>    &quot;&quot;&quot;</span>
+    <span class=k>for</span> <span class=n>ver</span> <span class=ow>in</span> <span class=n>sequence</span><span class=o>.</span><span class=n>versions</span><span class=p>:</span>
+        <span class=k>for</span> <span class=n>track</span> <span class=ow>in</span> <span class=n>ver</span><span class=o>.</span><span class=n>tracks</span><span class=p>:</span>
+            <span class=k>if</span> <span class=nb>len</span><span class=p>(</span><span class=n>track</span><span class=o>.</span><span class=n>segments</span><span class=p>)</span> <span class=o>==</span> <span class=mi>0</span> <span class=ow>and</span> <span class=n>track</span><span class=o>.</span><span class=n>hidden</span><span class=p>:</span>
+                <span class=k>continue</span>
+            <span class=k>for</span> <span class=n>segment</span> <span class=ow>in</span> <span class=n>track</span><span class=o>.</span><span class=n>segments</span><span class=p>:</span>
+                <span class=n>segment</span><span class=o>.</span><span class=n>selected</span> <span class=o>=</span> <span class=kc>False</span>
+</code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h2 id=client.ayon_flame.api.lib.set_publish_attribute class="doc doc-heading"> <code class="highlight language-python"><span class=n>set_publish_attribute</span><span class=p>(</span><span class=n>segment</span><span class=p>,</span> <span class=n>value</span><span class=p>)</span></code> </h2> <div class="doc doc-contents "> <p>Set Publish attribute in input Tag object</p> <details class=attribute open> <summary>Attribute</summary> <p>segment (flame.PySegment)): flame api object value (bool): True or False</p> </details> <details class=quote> <summary>Source code in <code>client/ayon_flame/api/lib.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal>390</span>
+<span class=normal>391</span>
+<span class=normal>392</span>
+<span class=normal>393</span>
+<span class=normal>394</span>
+<span class=normal>395</span>
+<span class=normal>396</span>
+<span class=normal>397</span>
+<span class=normal>398</span>
+<span class=normal>399</span>
+<span class=normal>400</span>
+<span class=normal>401</span></pre></div></td><td class=code><div><pre><span></span><code><span class=k>def</span><span class=w> </span><span class=nf>set_publish_attribute</span><span class=p>(</span><span class=n>segment</span><span class=p>,</span> <span class=n>value</span><span class=p>):</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot; Set Publish attribute in input Tag object</span>
+
+<span class=sd>    Attribute:</span>
+<span class=sd>        segment (flame.PySegment)): flame api object</span>
+<span class=sd>        value (bool): True or False</span>
+<span class=sd>    &quot;&quot;&quot;</span>
+    <span class=n>tag_data</span> <span class=o>=</span> <span class=n>get_segment_data_marker</span><span class=p>(</span><span class=n>segment</span><span class=p>)</span>
+    <span class=n>tag_data</span><span class=p>[</span><span class=s2>&quot;publish&quot;</span><span class=p>]</span> <span class=o>=</span> <span class=n>value</span>
+
+    <span class=c1># set data to the publish attribute</span>
+    <span class=n>set_segment_data_marker</span><span class=p>(</span><span class=n>segment</span><span class=p>,</span> <span class=n>tag_data</span><span class=p>)</span>
+</code></pre></div></td></tr></table></div> </details> </div> </div> <div class="doc doc-object doc-function"> <h2 id=client.ayon_flame.api.lib.set_segment_data_marker class="doc doc-heading"> <code class="highlight language-python"><span class=n>set_segment_data_marker</span><span class=p>(</span><span class=n>segment</span><span class=p>,</span> <span class=n>data</span><span class=o>=</span><span class=kc>None</span><span class=p>)</span></code> </h2> <div class="doc doc-contents "> <p>Set AYON track item tag to input segment.</p> <p><span class=doc-section-title>Attributes:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td><code><span title=client.ayon_flame.api.lib.set_segment_data_marker.segment>segment</span></code></td> <td> <code><span title=flame.PySegment>PySegment</span></code> </td> <td> <div class=doc-md-description> <p>flame api object</p> </div> </td> </tr> </tbody> </table> <p><span class=doc-section-title>Returns:</span></p> <table> <thead> <tr> <th>Name</th> <th>Type</th> <th>Description</th> </tr> </thead> <tbody> <tr class=doc-section-item> <td><code>dict</code></td> <td> </td> <td> <div class=doc-md-description> <p>json loaded data</p> </div> </td> </tr> </tbody> </table> <details class=quote> <summary>Source code in <code>client/ayon_flame/api/lib.py</code></summary> <div class=highlight><table class=highlighttable><tr><td class=linenos><div class=linenodiv><pre><span></span><span class=normal>362</span>
+<span class=normal>363</span>
+<span class=normal>364</span>
+<span class=normal>365</span>
+<span class=normal>366</span>
+<span class=normal>367</span>
+<span class=normal>368</span>
+<span class=normal>369</span>
+<span class=normal>370</span>
+<span class=normal>371</span>
+<span class=normal>372</span>
+<span class=normal>373</span>
+<span class=normal>374</span>
+<span class=normal>375</span>
+<span class=normal>376</span>
+<span class=normal>377</span>
+<span class=normal>378</span>
+<span class=normal>379</span>
+<span class=normal>380</span>
+<span class=normal>381</span>
+<span class=normal>382</span>
+<span class=normal>383</span>
+<span class=normal>384</span>
+<span class=normal>385</span>
+<span class=normal>386</span>
+<span class=normal>387</span></pre></div></td><td class=code><div><pre><span></span><code><span class=k>def</span><span class=w> </span><span class=nf>set_segment_data_marker</span><span class=p>(</span><span class=n>segment</span><span class=p>,</span> <span class=n>data</span><span class=o>=</span><span class=kc>None</span><span class=p>):</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot;</span>
+<span class=sd>    Set AYON track item tag to input segment.</span>
+
+<span class=sd>    Attributes:</span>
+<span class=sd>        segment (flame.PySegment): flame api object</span>
+
+<span class=sd>    Returns:</span>
+<span class=sd>        dict: json loaded data</span>
+<span class=sd>    &quot;&quot;&quot;</span>
+    <span class=n>data</span> <span class=o>=</span> <span class=n>data</span> <span class=ow>or</span> <span class=nb>dict</span><span class=p>()</span>
+
+    <span class=n>marker_data</span> <span class=o>=</span> <span class=n>get_segment_data_marker</span><span class=p>(</span><span class=n>segment</span><span class=p>,</span> <span class=kc>True</span><span class=p>)</span>
+
+    <span class=k>if</span> <span class=n>marker_data</span><span class=p>:</span>
+        <span class=c1># get available AYON tag if any</span>
+        <span class=n>marker</span><span class=p>,</span> <span class=n>tag_data</span> <span class=o>=</span> <span class=n>marker_data</span>
+        <span class=c1># update tag data with new data</span>
+        <span class=n>tag_data</span><span class=o>.</span><span class=n>update</span><span class=p>(</span><span class=n>data</span><span class=p>)</span>
+        <span class=c1># update marker with tag data</span>
+        <span class=n>marker</span><span class=o>.</span><span class=n>comment</span> <span class=o>=</span> <span class=n>json</span><span class=o>.</span><span class=n>dumps</span><span class=p>(</span><span class=n>tag_data</span><span class=p>)</span>
+    <span class=k>else</span><span class=p>:</span>
+        <span class=c1># update tag data with new data</span>
+        <span class=n>marker</span> <span class=o>=</span> <span class=n>create_segment_data_marker</span><span class=p>(</span><span class=n>segment</span><span class=p>)</span>
+        <span class=c1># add tag data to marker&#39;s comment</span>
+        <span class=n>marker</span><span class=o>.</span><span class=n>comment</span> <span class=o>=</span> <span class=n>json</span><span class=o>.</span><span class=n>dumps</span><span class=p>(</span><span class=n>data</span><span class=p>)</span>
+</code></pre></div></td></tr></table></div> </details> </div> </div> </div> </div> </div> </article> </div> <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script> </div> </main> <footer class=md-footer> <div class="md-footer-meta md-typeset"> <div class="md-footer-meta__inner md-grid"> <div class=md-copyright> Made with <a href=https://squidfunk.github.io/mkdocs-material/ target=_blank rel=noopener> Material for MkDocs </a> </div> </div> </div> </footer> </div> <div class=md-dialog data-md-component=dialog> <div class="md-dialog__inner md-typeset"></div> </div> <script id=__config type=application/json>{"base": "../../../..", "features": ["navigation.sections", "navigation.path", "navigation.prune"], "search": "../../../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script> <script src=../../../../assets/javascripts/bundle.f55a23d4.min.js></script> </body> </html>
