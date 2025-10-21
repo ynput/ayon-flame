@@ -404,6 +404,9 @@ def create_otio_clip(clip_data):
 
     source_duration = (source_out - source_in + 1)
 
+    if "source_duration" not in clip_data:
+        clip_data["source_duration"] = source_duration
+
     # secondly check if any change of speed
     if source_duration != _clip_record_duration:
         retime_speed = float(source_duration) / float(_clip_record_duration)
