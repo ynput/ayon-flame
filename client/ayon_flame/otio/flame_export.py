@@ -7,6 +7,8 @@ import json
 import logging
 import opentimelineio as otio
 
+from ayon_flame.api import lib
+
 from . import utils
 from . import tw_bake
 
@@ -402,6 +404,9 @@ def create_otio_clip(clip_data):
 
     source_duration = (source_out - source_in + 1)
 
+    if "source_duration" not in clip_data:
+        clip_data["source_duration"] = source_duration
+
     # secondly check if any change of speed
     if source_duration != _clip_record_duration:
         retime_speed = float(source_duration) / float(_clip_record_duration)
@@ -554,66 +559,6 @@ def _get_shot_tokens_values(clip, tokens):
     return output
 
 
-def get_segment_attributes(segment):
-
-    log.debug("Segment name|hidden: {}|{}".format(
-        segment.name.get_value(), segment.hidden
-    ))
-    if (
-        segment.name.get_value() == ""
-        or segment.hidden.get_value()
-    ):
-        return None
-
-    # Add timeline segment to tree
-    clip_data = {
-        "segment_name": segment.name.get_value(),
-        "segment_comment": segment.comment.get_value(),
-        "shot_name": segment.shot_name.get_value(),
-        "tape_name": segment.tape_name,
-        "source_name": segment.source_name,
-        "fpath": segment.file_path,
-        "PySegment": segment
-    }
-
-    # add all available shot tokens
-    shot_tokens = _get_shot_tokens_values(
-        segment,
-        ["<colour space>", "<width>", "<height>", "<depth>"]
-    )
-    clip_data.update(shot_tokens)
-
-    # populate shot source metadata
-    segment_attrs = [
-        "record_duration", "record_in", "record_out",
-        "source_duration", "source_in", "source_out"
-    ]
-    segment_attrs_data = {}
-    for attr in segment_attrs:
-        if not hasattr(segment, attr):
-            continue
-        _value = getattr(segment, attr)
-
-        # Not a "valid" segment, skip it.
-        if _value is None:
-            log.warning(
-                f"Could not retrieve {attr} for {segment.name}, "
-                "ensure this is a valid clip ?"
-            )
-            return {}
-
-        segment_attrs_data[attr] = str(_value).replace("+", ":")
-
-        if attr in ["record_in", "record_out"]:
-            clip_data[attr] = _value.relative_frame
-        else:
-            clip_data[attr] = _value.frame
-
-    clip_data["segment_timecodes"] = segment_attrs_data
-
-    return clip_data
-
-
 def _get_segments_from_track(flame_track):
     """ Gather segment(s) from a flame track.
 
@@ -625,7 +570,7 @@ def _get_segments_from_track(flame_track):
     """
     all_segments = []
     for segment in flame_track.segments:
-        clip_data = get_segment_attributes(segment)
+        clip_data = lib.get_segment_attributes(segment)
         if clip_data:
             all_segments.append(clip_data)
 

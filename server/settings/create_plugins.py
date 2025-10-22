@@ -96,11 +96,25 @@ class CreateShotClipModel(BaseSettingsModel):
         title="Enable retimed shot frameranges"
     )
 
+class CollectShotClipInstancesModels(BaseSettingsModel):
+    collectSelectedInstance: bool = SettingsField(
+        False,
+        title="Collect only instances from selected clips.",
+        description=(
+            "This feature allows to restrict instance "
+            "collection to selected timeline clips "
+            "in the active sequence."
+        )
+    )
 
 class CreatePluginsModel(BaseSettingsModel):
     CreateShotClip: CreateShotClipModel = SettingsField(
         default_factory=CreateShotClipModel,
         title="Create Shot Clip"
+    )
+    CollectShotClip: CollectShotClipInstancesModels = SettingsField(
+        default_factory=CollectShotClipInstancesModels,
+        title="Collect Shot Clip instances"
     )
 
 
@@ -125,5 +139,8 @@ DEFAULT_CREATE_SETTINGS = {
         "includeHandles": False,
         "retimedHandles": True,
         "retimedFramerange": True
+    },
+    "CollectShotClip": {
+        "collectSelectedInstance": False,
     }
 }

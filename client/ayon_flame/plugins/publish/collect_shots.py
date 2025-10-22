@@ -110,9 +110,11 @@ class CollectShot(pyblish.api.InstancePlugin):
         comment_attributes = self._get_comment_attributes(segment_item)
         instance.data.update(comment_attributes)
 
-        clip_data = ayfapi.get_segment_attributes(segment_item)
-        clip_name = clip_data["segment_name"]
-        self.log.debug(f"clip_name: {clip_name}")
+        sequence = ayfapi.get_current_sequence(ayfapi.CTX.selection)
+        with ayfapi.maintained_segment_selection(sequence):
+            clip_data = ayfapi.get_segment_attributes(segment_item)
+            clip_name = clip_data["segment_name"]
+            self.log.debug(f"clip_name: {clip_name}")
 
         # get file path
         file_path = clip_data["fpath"]
