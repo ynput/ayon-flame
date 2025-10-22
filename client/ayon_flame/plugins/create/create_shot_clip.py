@@ -925,7 +925,7 @@ OTIO file.
             if isinstance(seg, flame.PySegment)
         ]
         create_settings = self.project_settings[
-            "hiero"]["create"]["CollectShotClip"]
+            "flame"]["create"]["CollectShotClip"]
         restrict_to_selection = create_settings[
             "collectSelectedInstance"]
 
