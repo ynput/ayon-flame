@@ -917,11 +917,36 @@ OTIO file.
         return clip_instances.values()
 
     def collect_instances(self):
+        import flame
         """Collect all created instances from current timeline."""
+        # get selection only of sequence clip segments
+        current_selection = [
+            seg for seg in ayfapi.CTX.selection
+            if isinstance(seg, flame.PySegment)
+        ]
+        create_settings = self.project_settings[
+            "hiero"]["create"]["CollectShotClip"]
+        restrict_to_selection = create_settings[
+            "collectSelectedInstance"]
+
+        self.log.debug(
+            "Collect instances from timeline. "
+            f"restrict_to_selection setting: {restrict_to_selection} "
+            f"current_selection: {current_selection}"
+        )
+
         current_sequence = lib.get_current_sequence(lib.CTX.selection)
 
         for segment in lib.get_sequence_segments(current_sequence):
             instances = []
+
+            # Should we restrict collection to selected item ?
+            # This might be convenient for heavy timelines and
+            # can be handled via creator settings.
+            # When nothing is selected, collect everything.
+            if (restrict_to_selection and current_selection
+                and segment not in current_selection):
+                continue
 
             # attempt to get AYON tag data
             marker_data = lib.get_segment_data_marker(segment)
