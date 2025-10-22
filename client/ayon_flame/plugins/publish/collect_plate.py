@@ -56,7 +56,10 @@ class CollectPlate(pyblish.api.InstancePlugin):
         )
 
         segment_item = instance.data["item"]
-        clip_data = ayfapi.get_segment_attributes(segment_item)
+        sequence = ayfapi.get_current_sequence(ayfapi.CTX.selection)
+        with ayfapi.maintained_segment_selection(sequence):
+            clip_data = ayfapi.get_segment_attributes(segment_item)
+
         version_data = instance.data.setdefault("versionData", {})
         version_data["colorSpace"] = clip_data["colour_space"]
         instance.data["colorspace"] = clip_data["colour_space"]
