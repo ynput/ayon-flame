@@ -1,3 +1,5 @@
+import inspect
+
 import pyblish.api
 from ayon_core.pipeline.publish import (
     OptionalPyblishPluginMixin,
@@ -32,7 +34,7 @@ class ValidateSegments(
     """Validate segments attributes."""
 
     label = "Validate Segments"
-    order = pyblish.api.ValidateOrder
+    order = pyblish.api.ValidatorOrder
     settings_category = "flame"
 
     optional = False
@@ -47,18 +49,30 @@ class ValidateSegments(
             return
 
         msg = "Timeline Clips failing validation:"
-        msg_html = "## Following clips are failing validation:"
+        msg_html = self.get_description()
         for segment in failed_segments:
             shot_name = segment.shot_name.get_value()
             segment_name = segment.name.get_value()
             clip_msg = (
-                f"Clip name: {segment_name} with shot name: {shot_name}")
+                f"Clip name: '{segment_name}' with shot name: '{shot_name}'")
             msg += f"\n{clip_msg}"
 
-            msg_html += f"<br> - {clip_msg}"
+            msg_html += f"<br/> - {clip_msg}"
 
         raise PublishValidationError(
-            title="Missing correctsegments attributes",
+            title="Missing correct segments attributes",
             message=msg,
             description=msg_html
         )
+
+    def get_description(self):
+        return inspect.cleandoc("""
+            ## Following clips are failing validation:
+            <br/>
+            Make sure your clips on timeline are not converted to BatchFX
+            or are not Hard Commited. This way they will lose their link to
+            the original Media source file path and we are not able
+            to publish them anymore.
+            <br/><br/>
+            <b>Following clips are failing validation:</b>
+        """)
