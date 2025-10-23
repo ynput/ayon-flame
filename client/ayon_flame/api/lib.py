@@ -46,7 +46,7 @@ class CTX:
 
     @classmethod
     def clear_failed_segments(cls):
-        self._failed_segments = []
+        cls._failed_segments = []
 
 
 @contextlib.contextmanager
