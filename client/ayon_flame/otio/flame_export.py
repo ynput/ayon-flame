@@ -395,10 +395,12 @@ def create_otio_clip(clip_data):
         # fallback for clips with missing file path
         # they will be added as missing reference clips
         if clip_data.get("start_frame"):
-            file_first_frame = clip_data["start_frame"]
-            media_timecode_start = clip_data["start_frame"]
+            file_first_frame = int(clip_data["start_frame"])
+            media_timecode_start = file_first_frame
         if clip_data.get("source_frame_rate"):
-            media_fps = clip_data["source_frame_rate"]
+            # it returns `23.976 fps`
+            media_fps = clip_data["source_frame_rate"].replace(" fps", "")
+            media_fps = float(media_fps)
 
     first_frame = media_timecode_start or file_first_frame or 0
 
@@ -448,16 +450,26 @@ def create_otio_clip(clip_data):
     log.debug(f"_ _clip_record_duration: {_clip_record_duration}")
 
     # create media reference
-    media_reference = create_otio_reference(clip_data, media_info, media_fps)
+    if media_info:
+        media_reference = create_otio_reference(
+            clip_data, media_info=media_info, fps=media_fps)
 
-    # create source range
-    available_media_start = media_reference.available_range.start_time
-    source_in_offset = otio.opentime.RationalTime(
-        source_in,
-        available_media_start.rate
-    )
-    src_in = available_media_start + source_in_offset
-    conformed_src_in = src_in.rescaled_to(CTX.get_fps())
+        # create source range
+        available_media_start = media_reference.available_range.start_time
+        source_in_offset = otio.opentime.RationalTime(
+            source_in,
+            available_media_start.rate
+        )
+        src_in = available_media_start + source_in_offset
+        conformed_src_in = src_in.rescaled_to(CTX.get_fps())
+    else:
+        media_reference = create_otio_reference(
+            clip_data, fps=media_fps
+        )
+        conformed_src_in = otio.opentime.RationalTime(
+            source_in,
+            CTX.get_fps()
+        )
 
     source_range = create_otio_time_range(
         conformed_src_in.value,  # no rounding to preserve accuracy
