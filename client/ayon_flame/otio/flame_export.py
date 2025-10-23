@@ -263,7 +263,7 @@ def create_otio_reference(
     if not media_info:
         log.error("Media info is missing")
         return otio.schema.MissingReference(
-            name=clip_data["name"]
+            name=clip_data["segment_name"]
         )
 
     metadata = _get_metadata(clip_data)
