@@ -533,21 +533,24 @@ def _get_shot_tokens_values(clip, tokens):
 
 
 def get_segment_attributes(segment):
-    if segment.name.get_value() == "":
-        return None
+    segment_name = segment.name.get_value()
 
     # Add timeline segment to tree
     clip_data = {
         "shot_name": segment.shot_name.get_value(),
-        "segment_name": segment.name.get_value(),
         "segment_comment": segment.comment.get_value(),
         "tape_name": segment.tape_name,
         "source_name": segment.source_name,
         "PySegment": segment,
     }
 
-    if segment.file_path:
+    # make sure even segments without proper name are handled as missing
+    # this way they will be detected by Publisher Validator
+    if segment.file_path and segment_name:
         clip_data["fpath"] = segment.file_path
+        clip_data["segment_name"] = segment_name
+    else:
+        clip_data["segment_name"] = "Missing Segment Name"
 
     # head and tail with forward compatibility
     if segment.head:
