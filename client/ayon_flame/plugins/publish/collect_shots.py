@@ -123,17 +123,20 @@ class CollectShot(pyblish.api.InstancePlugin):
         if not validation_aggregator.has_errors():
             file_path = clip_data["fpath"]
             first_frame = ayfapi.get_frame_from_filename(file_path) or 0
+
+            # get file path
+            head, tail = self._get_head_tail(
+                clip_data,
+                otio_clip,
+                creator_attrs["handleStart"],
+                creator_attrs["handleEnd"]
+            )
         else:
             file_path = None
             first_frame = 0
+            head = 0
+            tail = 0
 
-        # get file path
-        head, tail = self._get_head_tail(
-            clip_data,
-            otio_clip,
-            creator_attrs["handleStart"],
-            creator_attrs["handleEnd"]
-        )
 
         # Make sure there is not None and negative number
         head = abs(head or 0)
@@ -151,6 +154,7 @@ class CollectShot(pyblish.api.InstancePlugin):
         instance.data.update({
             "item": segment_item,
             "path": file_path,
+            "failing": validation_aggregator.has_errors(),
             "sourceFirstFrame": int(first_frame),
             "workfileFrameStart": workfile_start,
             "flameAddTasks": self.add_tasks,
