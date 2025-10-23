@@ -556,6 +556,9 @@ def get_segment_attributes(
     Returns:
         dict: Dictionary of attributes.
     """
+    if segment.type == "Gap":
+        return None
+
     if not validation_aggregator:
         validation_aggregator = ValidationAggregator()
 
