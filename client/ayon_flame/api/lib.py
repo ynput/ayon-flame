@@ -543,9 +543,11 @@ def get_segment_attributes(segment):
         "segment_comment": segment.comment.get_value(),
         "tape_name": segment.tape_name,
         "source_name": segment.source_name,
-        "fpath": segment.file_path,
         "PySegment": segment,
     }
+
+    if segment.file_path:
+        clip_data["fpath"] = segment.file_path
 
     # head and tail with forward compatibility
     if segment.head:
@@ -571,7 +573,9 @@ def get_segment_attributes(segment):
     # populate shot source metadata
     segment_attrs = [
         "record_duration", "record_in", "record_out",
-        "source_in", "source_out"
+        "source_in", "source_out", "source_frame_rate", "source_height",
+        "source_width", "source_ratio", "start_frame", "head", "tail",
+        "start_frame"
     ]
     segment_attrs_data = {}
     for attr_name in segment_attrs:
@@ -854,8 +858,8 @@ class MediaInfoFile(object):
 
         return xml_obj.text
 
-    def _get_collection(self, feed_basename, feed_dir, feed_ext):
-        """ Get collection string
+    def _get_collection(self, feed_basename, feed_dir, feed_ext) -> str:
+        """Get collection string.
 
         Args:
             feed_basename (str): file base name
@@ -872,10 +876,10 @@ class MediaInfoFile(object):
 
         # make sure partial input basename is having correct extensoon
         if not partialname:
+            msg = f"Wrong input attributes. Basename - {feed_basename}, "
+            msg += f"Ext - {feed_ext}"
             raise AttributeError(
-                "Wrong input attributes. Basename - {}, Ext - {}".format(
-                    feed_basename, feed_ext
-                )
+                msg
             )
 
         # get all related files
@@ -912,6 +916,7 @@ class MediaInfoFile(object):
             self.log.debug("__ coll_to_text: {}".format(coll_to_text))
             if search_number_pattern in coll_to_text:
                 return coll_to_text
+        return None
 
     @staticmethod
     def _format_collection(collection, padding=None):
