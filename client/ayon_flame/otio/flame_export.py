@@ -600,18 +600,27 @@ def _get_shot_tokens_values(clip, tokens):
     return output
 
 
-def _get_segments_from_track(flame_track):
+def _get_segments_from_track(
+    flame_track,
+    validation_aggregator: lib.ValidationAggregator = None
+):
     """Gather segment(s) from a flame track.
 
     Args:
-        flame_track flame.PyTrack: The Flame track.
+        flame_track (flame.PyTrack): The Flame track.
+        validation_aggregator (lib.ValidationAggregator, optional):
+                Output object to store attributes for passing into
+                publishing validation. Defaults to None.
 
     Returns:
         List[flame.PySegment]. The gathered segments.
     """
+    if not validation_aggregator:
+        validation_aggregator = lib.ValidationAggregator()
+
     all_segments = []
     for segment in flame_track.segments:
-        clip_data = lib.get_segment_attributes(segment)
+        clip_data = lib.get_segment_attributes(segment, validation_aggregator)
         if clip_data:
             all_segments.append(clip_data)
 
@@ -656,12 +665,13 @@ def _distribute_segments_on_track(segments, otio_track):
         prev_item_record_out = segment_data["record_out"]
 
 
-def create_otio_timeline(sequence):
+def create_otio_timeline(
+        sequence, validation_aggregator: lib.ValidationAggregator = None):
+    if validation_aggregator is None:
+        validation_aggregator = lib.ValidationAggregator()
+
     log.info(dir(sequence))
     log.info(sequence.attributes)
-
-    # make sure segments are cleared
-    lib.CTX.clear_failed_segments()
 
     OtioExportCTX.project = get_current_flame_project()
 
@@ -694,7 +704,7 @@ def create_otio_timeline(sequence):
                 "video", str(track.name)[1:-1])
 
             # Add segments onto track.
-            segments = _get_segments_from_track(track)
+            segments = _get_segments_from_track(track, validation_aggregator=validation_aggregator)
             log.debug(f"_ segments: {pformat(segments)}")
             _distribute_segments_on_track(segments, otio_track)
 
@@ -726,7 +736,7 @@ def create_otio_timeline(sequence):
         otio_track = create_otio_track(
             "audio", audio_track.name or "unnamed")
 
-        segments = _get_segments_from_track(audio_channel)
+        segments = _get_segments_from_track(audio_channel, validation_aggregator=validation_aggregator)
         log.debug(f"_ segments: {pformat(segments)}")
         _distribute_segments_on_track(segments, otio_track)
         otio_timeline.tracks.append(otio_track)

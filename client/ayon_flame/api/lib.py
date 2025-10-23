@@ -1,26 +1,29 @@
-import sys
-import os
-import re
+from __future__ import annotations
+
+import contextlib
+import itertools
 import json
+import os
 import pickle
-import clique
+import re
+import sys
 import tempfile
 import traceback
-import itertools
-import contextlib
 import xml.etree.cElementTree as cET
-from copy import deepcopy, copy
-from xml.etree import ElementTree as ET
+from copy import copy, deepcopy
+from dataclasses import dataclass, field
 from pprint import pformat
+from xml.etree import ElementTree as ET
 
+import clique
 from ayon_core.lib import Logger, run_subprocess
 
 from .constants import (
+    COLOR_MAP,
     MARKER_COLOR,
     MARKER_DURATION,
     MARKER_NAME,
-    COLOR_MAP,
-    MARKER_PUBLISH_DEFAULT
+    MARKER_PUBLISH_DEFAULT,
 )
 
 log = Logger.get_logger(__name__)
@@ -33,20 +36,11 @@ class CTX:
     app_framework = None
     flame_apps = []
     selection = None
-    _failed_segments = []
 
-    @classmethod
-    def get_failed_segments(self):
-        return self._failed_segments
 
-    @classmethod
-    def set_failed_segments(self, segment):
-        if segment not in self._failed_segments:
-            self._failed_segments.append(segment)
-
-    @classmethod
-    def clear_failed_segments(cls):
-        cls._failed_segments = []
+@dataclass
+class ValidationAggregator:
+    failed_segments: list = field(default_factory=list)
 
 
 @contextlib.contextmanager
@@ -545,7 +539,23 @@ def _get_shot_tokens_values(clip, tokens):
 
     return output
 
-def get_segment_attributes(segment):
+
+def get_segment_attributes(
+    segment, validation_aggregator: ValidationAggregator = None):
+    """Get attributes of a segment.
+
+    Args:
+        segment (Segment): Segment to get attributes from.
+        validation_aggregator (ValidationAggregator, optional):
+                Output object to store attributes for passing into
+                publishing validation. Defaults to None.
+
+    Returns:
+        dict: Dictionary of attributes.
+    """
+    if not validation_aggregator:
+        validation_aggregator = ValidationAggregator()
+
     segment_name = segment.name.get_value()
 
     # Add timeline segment to tree
@@ -560,7 +570,8 @@ def get_segment_attributes(segment):
     # this way they will be detected by Publisher Validator
     if not segment_name:
         clip_data["segment_name"] = "Missing: Segment's Name"
-        CTX.set_failed_segments(segment)
+        if segment not in validation_aggregator.failed_segments:
+            validation_aggregator.failed_segments.append(segment)
     else:
         clip_data["segment_name"] = segment_name
 
@@ -570,7 +581,8 @@ def get_segment_attributes(segment):
         clip_data["fpath"] = segment.file_path
     else:
         clip_data["segment_name"] = "Missing: Segment's File Path"
-        CTX.set_failed_segments(segment)
+        if segment not in validation_aggregator.failed_segments:
+            validation_aggregator.failed_segments.append(segment)
 
     # head and tail with forward compatibility
     if segment.head:
