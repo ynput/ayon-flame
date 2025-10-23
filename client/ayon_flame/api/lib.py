@@ -42,6 +42,9 @@ class CTX:
 class ValidationAggregator:
     failed_segments: list = field(default_factory=list)
 
+    def has_errors(self):
+        return len(self.failed_segments) > 0
+
 
 @contextlib.contextmanager
 def io_preferences_file(klass, filepath, write=False):
