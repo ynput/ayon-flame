@@ -37,7 +37,7 @@ MARKERS_COLOR_MAP = {
 MARKERS_INCLUDE = True
 
 
-class CTX:
+class OtioExportCTX:
     _fps = None
     _tl_start_frame = None
     project = None
@@ -203,7 +203,7 @@ def _get_flame_markers(item):
 def create_otio_markers(otio_item, item):
     markers = _get_flame_markers(item)
     for marker in markers:
-        frame_rate = CTX.get_fps()
+        frame_rate = OtioExportCTX.get_fps()
 
         marked_range = otio.opentime.TimeRange(
             start_time=otio.opentime.RationalTime(
@@ -285,7 +285,7 @@ def create_otio_reference(
 
     # get file info for path and start frame
     media_start = media_info.start_frame or 0
-    fps = fps or media_info.fps or CTX.get_fps()
+    fps = fps or media_info.fps or OtioExportCTX.get_fps()
 
     path = clip_data["fpath"]
 
@@ -373,7 +373,7 @@ def create_otio_clip(clip_data):
     file_first_frame = None
     media_timecode_start = None
     tw_data = None
-    media_fps = CTX.get_fps()  # fallback from timeline
+    media_fps = OtioExportCTX.get_fps()  # fallback from timeline
     if "fpath" in clip_data:
         file_path = clip_data["fpath"]
 
@@ -461,20 +461,20 @@ def create_otio_clip(clip_data):
             available_media_start.rate
         )
         src_in = available_media_start + source_in_offset
-        conformed_src_in = src_in.rescaled_to(CTX.get_fps())
+        conformed_src_in = src_in.rescaled_to(OtioExportCTX.get_fps())
     else:
         media_reference = create_otio_reference(
             clip_data, fps=media_fps
         )
         conformed_src_in = otio.opentime.RationalTime(
             source_in,
-            CTX.get_fps()
+            OtioExportCTX.get_fps()
         )
 
     source_range = create_otio_time_range(
         conformed_src_in.value,  # no rounding to preserve accuracy
         _clip_record_duration,
-        CTX.get_fps()
+        OtioExportCTX.get_fps()
     )
 
     otio_clip = otio.schema.Clip(
@@ -507,7 +507,7 @@ def _get_colourspace_policy():
 
     output = {}
     # get policies project path
-    policy_dir = f"/opt/Autodesk/project/{CTX.project.name}/synColor/policy"
+    policy_dir = f"/opt/Autodesk/project/{OtioExportCTX.project.name}/synColor/policy"
 
     policy_fp = os.path.join(policy_dir, "policy.cfg")
 
@@ -537,7 +537,7 @@ def _create_otio_timeline(sequence):
     })
 
     rt_start_time = create_otio_rational_time(
-        CTX.get_tl_start_frame(), CTX.get_fps())
+        OtioExportCTX.get_tl_start_frame(), OtioExportCTX.get_fps())
 
     return otio.schema.Timeline(
         name=str(sequence.name)[1:-1],
@@ -561,7 +561,7 @@ def add_otio_gap(clip_data, otio_track, prev_out):
     gap = otio.opentime.TimeRange(
         duration=otio.opentime.RationalTime(
             gap_length,
-            CTX.get_fps()
+            OtioExportCTX.get_fps()
         )
     )
     otio_gap = otio.schema.Gap(source_range=gap)
@@ -660,17 +660,20 @@ def create_otio_timeline(sequence):
     log.info(dir(sequence))
     log.info(sequence.attributes)
 
-    CTX.project = get_current_flame_project()
+    # make sure segments are cleared
+    lib.CTX.clear_failed_segments()
+
+    OtioExportCTX.project = get_current_flame_project()
 
     # get current timeline
-    CTX.set_fps(
+    OtioExportCTX.set_fps(
         float(str(sequence.frame_rate)[:-4]))
 
     tl_start_frame = utils.timecode_to_frames(
         str(sequence.start_time).replace("+", ":"),
-        CTX.get_fps()
+        OtioExportCTX.get_fps()
     )
-    CTX.set_tl_start_frame(tl_start_frame)
+    OtioExportCTX.set_tl_start_frame(tl_start_frame)
 
     # convert timeline to otio
     otio_timeline = _create_otio_timeline(sequence)

@@ -33,6 +33,20 @@ class CTX:
     app_framework = None
     flame_apps = []
     selection = None
+    _failed_segments = []
+
+    @property
+    def failed_segments(self):
+        return self._failed_segments
+
+    @failed_segments.setter
+    def failed_segments(self, segment):
+        if segment not in self._failed_segments:
+            self._failed_segments.append(segment)
+
+    @classmethod
+    def clear_failed_segments(cls):
+        self._failed_segments = []
 
 
 @contextlib.contextmanager
@@ -531,7 +545,6 @@ def _get_shot_tokens_values(clip, tokens):
 
     return output
 
-
 def get_segment_attributes(segment):
     segment_name = segment.name.get_value()
 
@@ -543,14 +556,21 @@ def get_segment_attributes(segment):
         "source_name": segment.source_name,
         "PySegment": segment,
     }
-
     # make sure even segments without proper name are handled as missing
+    # this way they will be detected by Publisher Validator
+    if not segment_name:
+        clip_data["segment_name"] = "Missing: Segment's Name"
+        CTX.failed_segments = segment
+    else:
+        clip_data["segment_name"] = segment_name
+
+    # make sure even segments without file path are handled as missing
     # this way they will be detected by Publisher Validator
     if segment.file_path and segment_name:
         clip_data["fpath"] = segment.file_path
-        clip_data["segment_name"] = segment_name
     else:
-        clip_data["segment_name"] = "Missing Segment Name"
+        clip_data["segment_name"] = "Missing: Segment's File Path"
+        CTX.failed_segments = segment
 
     # head and tail with forward compatibility
     if segment.head:
