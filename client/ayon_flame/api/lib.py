@@ -35,12 +35,12 @@ class CTX:
     selection = None
     _failed_segments = []
 
-    @property
-    def failed_segments(self):
+    @classmethod
+    def get_failed_segments(self):
         return self._failed_segments
 
-    @failed_segments.setter
-    def failed_segments(self, segment):
+    @classmethod
+    def set_failed_segments(self, segment):
         if segment not in self._failed_segments:
             self._failed_segments.append(segment)
 
@@ -560,7 +560,7 @@ def get_segment_attributes(segment):
     # this way they will be detected by Publisher Validator
     if not segment_name:
         clip_data["segment_name"] = "Missing: Segment's Name"
-        CTX.failed_segments = segment
+        CTX.set_failed_segments(segment)
     else:
         clip_data["segment_name"] = segment_name
 
@@ -570,7 +570,7 @@ def get_segment_attributes(segment):
         clip_data["fpath"] = segment.file_path
     else:
         clip_data["segment_name"] = "Missing: Segment's File Path"
-        CTX.failed_segments = segment
+        CTX.set_failed_segments(segment)
 
     # head and tail with forward compatibility
     if segment.head:
