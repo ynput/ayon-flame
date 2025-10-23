@@ -22,7 +22,7 @@ class CollectTestSelection(pyblish.api.ContextPlugin):
 
         sequence = ayfapi.get_current_sequence(ayfapi.CTX.selection)
 
-        self.test_imprint_data(sequence)
+        self.test_print_attributes(sequence)
         self.test_otio_export(sequence)
 
     def test_otio_export(self, sequence):
@@ -35,7 +35,15 @@ class CollectTestSelection(pyblish.api.ContextPlugin):
             )
         )
         self.log.debug(export_path)
-        otio_timeline = otio_export.create_otio_timeline(sequence)
+        validation_aggregator = ayfapi.ValidationAggregator()
+        otio_timeline = otio_export.create_otio_timeline(
+            sequence, validation_aggregator=validation_aggregator)
+
+        failed_segments = validation_aggregator.failed_segments
+        self.log.info(failed_segments)
+        for segment in failed_segments:
+            self.log.error(f"Failed segment: {segment.name}")
+
         otio_export.write_to_file(
             otio_timeline, export_path
         )
@@ -47,17 +55,29 @@ class CollectTestSelection(pyblish.api.ContextPlugin):
         self.log.info(pformat(otio_timeline))
         self.log.info("Otio exported to: {}".format(export_path))
 
-    def test_imprint_data(self, sequence):
+    def test_print_attributes(self, sequence):
         with ayfapi.maintained_segment_selection(sequence) as sel_segments:
             for segment in sel_segments:
-                if str(segment.name)[1:-1] == "":
-                    continue
-
                 self.log.debug("Segment with AYONData: {}".format(
                     segment.name))
 
-                ayfapi.imprint(segment, {
-                    'asset': segment.name.get_value(),
-                    'productType': 'render',
-                    'productName': 'productMain'
-                })
+                self.print_segment_properties(segment)
+
+    def print_segment_properties(self, segment):
+        """
+        Loop through a PySegment object's attributes and print non-method properties.
+
+        Args:
+            segment: A flame.PySegment object
+        """
+        # Get all attributes
+        attributes = dir(segment)
+
+        self.log.debug("Properties of the PySegment object:")
+        self.log.debug("-" * 40)
+        for attr in attributes:
+            if (
+                not attr.startswith("__")
+                and not callable(getattr(segment, attr))
+            ):
+                self.log.debug(f"{attr}: {getattr(segment, attr)}")
