@@ -19,13 +19,18 @@ class CollecTimelineOTIO(pyblish.api.ContextPlugin):
         segments = ayfapi.get_sequence_segments(sequence)
 
         # adding otio timeline to context
+        validation_aggregator = ayfapi.ValidationAggregator()
         with ayfapi.maintained_segment_selection(sequence):
-            otio_timeline = flame_export.create_otio_timeline(sequence)
+            otio_timeline = flame_export.create_otio_timeline(
+                sequence, validation_aggregator=validation_aggregator)
+
+        failed_segments = validation_aggregator.failed_segments
 
         # update context with main project attributes
         timeline_data = {
             "flameProject": project,
             "flameSequence": sequence,
+            "failedSegments": failed_segments,
             "otioTimeline": otio_timeline,
             "currentFile": "Flame/{}/{}".format(
                 project.name, sequence.name.get_value()

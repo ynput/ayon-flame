@@ -2,6 +2,7 @@ import pyblish
 import re
 from pprint import pformat
 
+from ayon_core.pipeline.schema import ValidationError
 import ayon_flame.api as ayfapi
 from ayon_flame.otio import flame_export, utils
 
@@ -112,13 +113,19 @@ class CollectShot(pyblish.api.InstancePlugin):
 
         sequence = ayfapi.get_current_sequence(ayfapi.CTX.selection)
         with ayfapi.maintained_segment_selection(sequence):
-            clip_data = ayfapi.get_segment_attributes(segment_item)
+            validation_aggregator = ayfapi.ValidationAggregator()
+            clip_data = ayfapi.get_segment_attributes(
+                segment_item, validation_aggregator=validation_aggregator)
             clip_name = clip_data["segment_name"]
             self.log.debug(f"clip_name: {clip_name}")
 
         # get file path
-        file_path = clip_data["fpath"]
-        first_frame = ayfapi.get_frame_from_filename(file_path) or 0
+        if not validation_aggregator.has_errors():
+            file_path = clip_data["fpath"]
+            first_frame = ayfapi.get_frame_from_filename(file_path) or 0
+        else:
+            file_path = None
+            first_frame = 0
 
         # get file path
         head, tail = self._get_head_tail(
