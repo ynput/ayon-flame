@@ -3,7 +3,7 @@ from ayon_core.pipeline.publish import PublishValidationError
 
 
 class ValidateSegments(pyblish.api.ContextPlugin):
-    """Inject the current working context into publish context"""
+    """Validate segments attributes."""
 
     label = "Validate Segments"
     order = pyblish.api.ValidateOrder
