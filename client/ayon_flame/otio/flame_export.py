@@ -1,19 +1,18 @@
-""" compatibility OpenTimelineIO 0.12.0 and newer
+"""compatibility OpenTimelineIO 0.12.0 and newer
 """
 
-import os
-import re
 import json
 import logging
+import os
+import re
+from pprint import pformat
+
+import flame
 import opentimelineio as otio
 
 from ayon_flame.api import lib
 
-from . import utils
-from . import tw_bake
-
-import flame
-from pprint import pformat
+from . import tw_bake, utils
 
 log = logging.getLogger(__name__)
 
@@ -47,7 +46,7 @@ class CTX:
     @classmethod
     def set_fps(cls, new_fps):
         if not isinstance(new_fps, float):
-            raise TypeError("Invalid fps type {}".format(type(new_fps)))
+            raise TypeError(f"Invalid fps type {type(new_fps)}")
         if cls._fps != new_fps:
             cls._fps = new_fps
 
@@ -58,8 +57,7 @@ class CTX:
     @classmethod
     def set_tl_start_frame(cls, number):
         if not isinstance(number, int):
-            raise TypeError("Invalid timeline start frame type {}".format(
-                type(number)))
+            raise TypeError(f"Invalid timeline start frame type {type(number)}")
         if cls._tl_start_frame != number:
             cls._tl_start_frame = number
 
@@ -97,7 +95,7 @@ def create_otio_time_range(start_frame, frame_duration, fps):
 
 
 def _get_metadata(item):
-    if hasattr(item, 'metadata'):
+    if hasattr(item, "metadata"):
         return dict(item.metadata) if item.metadata else {}
     return {}
 
@@ -235,7 +233,7 @@ def create_otio_markers(otio_item, item):
                     json.loads(marker["comment"])
                 )
             except ValueError as msg:
-                log.error("Marker json conversion: {}".format(msg))
+                log.error(f"Marker json conversion: {msg}")
         else:
             metadata["comment"] = marker["comment"]
 
@@ -295,7 +293,7 @@ def create_otio_reference(
     file_head, extension = os.path.splitext(file_name)
 
     # get padding and other file infos
-    log.debug("_ path: {}".format(path))
+    log.debug(f"_ path: {path}")
 
     otio_ex_ref_item = None
 
@@ -410,12 +408,12 @@ def create_otio_clip(clip_data):
     _clip_record_out = clip_data["record_out"]
     _clip_record_duration = int(clip_data["record_duration"])
 
-    log.debug("_ file_first_frame: {}".format(file_first_frame))
-    log.debug("_ first_frame: {}".format(first_frame))
-    log.debug("_ _clip_source_in: {}".format(_clip_source_in))
-    log.debug("_ _clip_source_out: {}".format(_clip_source_out))
-    log.debug("_ _clip_record_in: {}".format(_clip_record_in))
-    log.debug("_ _clip_record_out: {}".format(_clip_record_out))
+    log.debug(f"file_first_frame: {file_first_frame}")
+    log.debug(f"first_frame: {first_frame}")
+    log.debug(f"_clip_source_in: {_clip_source_in}")
+    log.debug(f"_clip_source_out: {_clip_source_out}")
+    log.debug(f"_clip_record_in: {_clip_record_in}")
+    log.debug(f"_clip_record_out: {_clip_record_out}")
 
     # first solve if the reverse timing
     speed = 1
@@ -427,14 +425,12 @@ def create_otio_clip(clip_data):
         source_in = _clip_source_in - int(first_frame)
         source_out = _clip_source_out - int(first_frame)
 
-    log.debug("_ source_in: {}".format(source_in))
-    log.debug("_ source_out: {}".format(source_out))
+    log.debug(f"_ source_in: {source_in}")
+    log.debug(f"_ source_out: {source_out}")
 
     if file_first_frame:
-        log.debug("_ file_source_in: {}".format(
-            file_first_frame + source_in))
-        log.debug("_ file_source_in: {}".format(
-            file_first_frame + source_out))
+        log.debug(f"_ file_source_in: {file_first_frame + source_in}")
+        log.debug(f"_ file_source_in: {file_first_frame + source_out}")
 
     source_duration = (source_out - source_in + 1)
 
@@ -444,12 +440,12 @@ def create_otio_clip(clip_data):
     # secondly check if any change of speed
     if source_duration != _clip_record_duration:
         retime_speed = float(source_duration) / float(_clip_record_duration)
-        log.debug("_ calculated speed: {}".format(retime_speed))
+        log.debug(f"_ calculated speed: {retime_speed}")
         speed *= retime_speed
 
-    log.debug("_ speed: {}".format(speed))
-    log.debug("_ source_duration: {}".format(source_duration))
-    log.debug("_ _clip_record_duration: {}".format(_clip_record_duration))
+    log.debug(f"_ speed: {speed}")
+    log.debug(f"_ source_duration: {source_duration}")
+    log.debug(f"_ _clip_record_duration: {_clip_record_duration}")
 
     # create media reference
     media_reference = create_otio_reference(clip_data, media_info, media_fps)
@@ -499,9 +495,7 @@ def _get_colourspace_policy():
 
     output = {}
     # get policies project path
-    policy_dir = "/opt/Autodesk/project/{}/synColor/policy".format(
-        CTX.project.name
-    )
+    policy_dir = f"/opt/Autodesk/project/{CTX.project.name}/synColor/policy"
 
     policy_fp = os.path.join(policy_dir, "policy.cfg")
 
@@ -509,9 +503,9 @@ def _get_colourspace_policy():
         return output
 
     with open(policy_fp) as file:
-        dict_conf = dict(line.strip().split(' = ', 1) for line in file)
+        dict_conf = dict(line.strip().split(" = ", 1) for line in file)
         output.update(
-            {"ayon.flame.{}".format(k): v for k, v in dict_conf.items()}
+            {f"ayon.flame.{k}": v for k, v in dict_conf.items()}
         )
     return output
 
@@ -582,7 +576,7 @@ def _get_shot_tokens_values(clip, tokens):
 
     for token in tokens:
         clip.shot_name.set_value(token)
-        _key = re.sub("[ <>]", "", token)
+        _key = re.sub(r"[ <>]", "", token)
 
         try:
             output[_key] = int(clip.shot_name.get_value())
@@ -595,7 +589,7 @@ def _get_shot_tokens_values(clip, tokens):
 
 
 def _get_segments_from_track(flame_track):
-    """ Gather segment(s) from a flame track.
+    """Gather segment(s) from a flame track.
 
     Args:
         flame_track flame.PyTrack: The Flame track.
@@ -613,7 +607,7 @@ def _get_segments_from_track(flame_track):
 
 
 def _distribute_segments_on_track(segments, otio_track):
-    """ Distribute some Flame segments on an OTIO track.
+    """Distribute some Flame segments on an OTIO track.
 
     Args:
         segments List[flame.PySegments]: The segments to put on the track.
@@ -624,8 +618,8 @@ def _distribute_segments_on_track(segments, otio_track):
 
     prev_item_record_out = segments[0]["record_out"]
     for itemindex, segment_data in enumerate(segments):
-        log.debug("_ itemindex: %d", itemindex)
-        log.debug("_ segment_data: %r", segment_data)
+        log.debug(f"_ itemindex: {itemindex}")
+        log.debug(f"_ segment_data: {segment_data!r}")
 
         # calculate clip frame range difference from each other
         clip_diff = segment_data["record_in"] - prev_item_record_out
@@ -645,7 +639,7 @@ def _distribute_segments_on_track(segments, otio_track):
 
         # create otio clip and add it to track
         otio_clip = create_otio_clip(segment_data)
-        log.debug("_ otio_clip: %r", otio_clip)
+        log.debug(f"_ otio_clip: {otio_clip!r}")
         otio_track.append(otio_clip)
         prev_item_record_out = segment_data["record_out"]
 
@@ -686,7 +680,7 @@ def create_otio_timeline(sequence):
 
             # Add segments onto track.
             segments = _get_segments_from_track(track)
-            log.debug("_ segments: %s", pformat(segments))
+            log.debug(f"_ segments: {pformat(segments)}")
             _distribute_segments_on_track(segments, otio_track)
 
             # add track to otio timeline
@@ -700,7 +694,7 @@ def create_otio_timeline(sequence):
             and audio_track.stereo and len(audio_track.channels) < 2
         ):
             # Unsupported audio_track do not export.
-            log.debug("Unsupported audio track: %r", audio_track)
+            log.debug(f"Unsupported audio track: {audio_track!r}")
             continue
 
         audio_channel = audio_track.channels[0]
@@ -711,14 +705,14 @@ def create_otio_timeline(sequence):
             len(audio_channel.segments) == 0
             or audio_channel.hidden.get_value()
         ):
-            log.debug("Hidden or empty channel: %r", audio_channel)
+            log.debug(f"Hidden or empty channel: {audio_channel!r}")
             continue
 
         otio_track = create_otio_track(
             "audio", audio_track.name or "unnamed")
 
         segments = _get_segments_from_track(audio_channel)
-        log.debug("_ segments: %s", pformat(segments))
+        log.debug(f"_ segments: {pformat(segments)}")
         _distribute_segments_on_track(segments, otio_track)
         otio_timeline.tracks.append(otio_track)
 
