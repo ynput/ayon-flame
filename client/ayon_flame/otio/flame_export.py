@@ -250,7 +250,24 @@ def create_otio_markers(otio_item, item):
         otio_item.markers.append(otio_marker)
 
 
-def create_otio_reference(clip_data, media_info, fps=None):
+def create_otio_reference(
+        clip_data, media_info=None, fps=None):
+    """Create an OTIO reference from Flame clip data.
+
+    Args:
+        clip_data (dict): Flame clip data.
+        media_info Optional[MediaInfo]: Media information.
+        fps Optional[float]: Frames per second.
+
+    Returns:
+        otio.schema.Reference: OTIO reference.
+    """
+    if not media_info:
+        log.error("Media info is missing")
+        return otio.schema.MissingReference(
+            name=clip_data["name"]
+        )
+
     metadata = _get_metadata(clip_data)
 
     # Add image-based metadata if not a pure audio media
@@ -353,20 +370,37 @@ def create_otio_clip(clip_data):
 
     segment = clip_data["PySegment"]
 
-    # calculate source in
-    media_info = MediaInfoFile(clip_data["fpath"], logger=log)
-    media_timecode_start = media_info.start_frame
-    media_fps = media_info.fps
+    media_info = None
+    file_path = None
+    file_first_frame = None
+    media_timecode_start = None
+    tw_data = None
+    media_fps = CTX.get_fps()  # fallback from timeline
+    if "fpath" in clip_data:
+        file_path = clip_data["fpath"]
 
-    # Timewarp metadata
-    tw_data = TimeEffectMetadata(segment, logger=log)
-    log.debug("__ tw_data: {}".format(tw_data.data))
+        # calculate source in
+        media_info = MediaInfoFile(file_path, logger=log)
+        media_timecode_start = media_info.start_frame
+        media_fps = media_info.fps
 
-    # define first frame
-    file_first_frame = utils.get_frame_from_filename(
-        clip_data["fpath"])
-    if file_first_frame:
-        file_first_frame = int(file_first_frame)
+        # define first frame
+        file_first_frame = utils.get_frame_from_filename(
+            file_path)
+        if file_first_frame:
+            file_first_frame = int(file_first_frame)
+
+        # Timewarp metadata
+        tw_data = TimeEffectMetadata(segment, logger=log)
+        log.debug(f"__ tw_data: {tw_data.data}")
+    else:
+        # fallback for clips with missing file path
+        # they will be added as missing reference clips
+        if clip_data.get("start_frame"):
+            file_first_frame = clip_data["start_frame"]
+            media_timecode_start = clip_data["start_frame"]
+        if clip_data.get("source_frame_rate"):
+            media_fps = clip_data["source_frame_rate"]
 
     first_frame = media_timecode_start or file_first_frame or 0
 
@@ -445,7 +479,8 @@ def create_otio_clip(clip_data):
     if MARKERS_INCLUDE:
         create_otio_markers(otio_clip, segment)
 
-    create_time_effects(otio_clip, clip_data, speed, time_effect=tw_data)
+    if tw_data:
+        create_time_effects(otio_clip, clip_data, speed, time_effect=tw_data)
 
     return otio_clip
 
