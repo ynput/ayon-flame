@@ -64,7 +64,7 @@ class ValidateSegments(
     order = pyblish.api.ValidatorOrder
     settings_category = "flame"
 
-    optional = False
+    optional = True
     active = True
 
     actions = [ShowSegmentsRed, HideSegments]
