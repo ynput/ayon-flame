@@ -31,75 +31,61 @@ class ShowSegmentsRed(pyblish.api.Action):
                 self.log.info(clip_msg)
 
 
-class HideSegments(pyblish.api.Action):
-
-    label = "Hide Failing Segments"
-    icon = "files-o"
-    on = "failed"
-
-    def process(self, context, plugin):
-        failed_segments = context.data["failedSegments"]
-
-        if not failed_segments:
-            return
-
-        sequence = ayfapi.get_current_sequence(ayfapi.CTX.selection)
-        with ayfapi.maintained_segment_selection(sequence):
-            for segment in failed_segments:
-                shot_name = segment.shot_name.get_value()
-                segment_name = segment.name.get_value()
-                segment.hidden = True
-                clip_msg = (
-                    f"Clip name: {segment_name} with shot name: {shot_name}")
-                self.log.info(clip_msg)
-
-
-class ValidateSegments(
+class ValidateFailingProducts(
     OptionalPyblishPluginMixin,
-    pyblish.api.ContextPlugin
+    pyblish.api.InstancePlugin
 ):
-    """Validate segments attributes."""
+    """Validate Product attributes."""
 
-    label = "Validate Segments"
+    label = "Validate Product Attributes"
     order = pyblish.api.ValidatorOrder
     settings_category = "flame"
 
     optional = False
     active = True
 
-    actions = [ShowSegmentsRed, HideSegments]
+    actions = [ShowSegmentsRed]
 
-    def process(self, context):
-        failed_segments = context.data["failedSegments"]
+    def process(self, instance):
+        is_failed = instance.data.get("failing")
 
-        if not failed_segments:
+        if not is_failed:
             return
 
-        msg = "Timeline Clips failing validation:"
-        msg_html = self.get_description()
-        for segment in failed_segments:
-            shot_name = segment.shot_name.get_value()
-            segment_name = segment.name.get_value()
-            clip_msg = (
-                f"Clip name: '{segment_name}' with shot name: '{shot_name}'")
-            msg += f"\n{clip_msg}"
+        segment = instance.data["item"]
+        otio_clip = instance.data["otio_clip"]
+        reference_name = otio_clip.media_reference.name
 
-            msg_html += f"<br/> - {clip_msg}"
+        msg = "Product is failing validation due following reason:"
+        msg_html = self.get_description()
+
+        shot_name = segment.shot_name.get_value()
+        segment_name = segment.name.get_value()
+        clip_msg = (
+            f"Clip name: '{segment_name}' with shot name: '{shot_name}'\n"
+            f"Problem: '{reference_name}'"
+        )
+        msg += f"\n{clip_msg}"
+
+        msg_html += f"{clip_msg}"
 
         raise PublishValidationError(
-            title="Missing correct segments attributes",
+            title="Failing Product Validation",
             message=msg,
             description=msg_html
         )
 
     def get_description(self):
         return inspect.cleandoc("""
-            ## Following clips are failing validation:
+            ## Product is failing validation:
             <br/>
             Make sure your clips on timeline are not converted to BatchFX
             or are not Hard Commited. This way they will lose their link to
             the original Media source file path and we are not able
             to publish them anymore.
             <br/><br/>
-            <b>Following clips are failing validation:</b>
+            Also make sure timeline clip is having standart name.
+            <br/><br/>
+            <b>Validation problem:</b>
+            <br/>
         """)

@@ -41,6 +41,7 @@ class CollectShot(pyblish.api.InstancePlugin):
         "versionData",
         "workfileFrameStart",
         "xml_overrides",
+        "failing",
     )
 
     # TODO: add to own plugin for Flame
