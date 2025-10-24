@@ -917,7 +917,6 @@ OTIO file.
         return clip_instances.values()
 
     def collect_instances(self):
-        import flame
         """Collect all created instances from current timeline."""
         # get selection only of sequence clip segments
         create_settings = self.project_settings[
