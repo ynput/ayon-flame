@@ -24,12 +24,14 @@ class DeactivatePublishing(pyblish.api.Action):
 
         # Apply pyblish.logic to get the instances for the plug-in
         instances = pyblish.api.instances_by_plugin(failed, plugin)
+        create_context = context.data["create_context"]
 
-        sequence = ayfapi.get_current_sequence(ayfapi.CTX.selection)
-        with ayfapi.maintained_segment_selection(sequence):
-            for instance in instances:
-                segment = instance.data["item"]
-                ayfapi.set_publish_attribute(segment, False)
+        for instance in instances:
+            instance_id = instance.data["instance_id"]
+            ci = create_context.get_instance_by_id(instance_id)
+            ci["active"] = False
+
+        create_context.save_changes()
 
 
 class ValidateFailingProducts(

@@ -175,9 +175,6 @@ def imprint(segment, data=None):
 
     set_segment_data_marker(segment, data)
 
-    # add publish attribute
-    set_publish_attribute(segment, True)
-
 
 @contextlib.contextmanager
 def maintained_selection():
