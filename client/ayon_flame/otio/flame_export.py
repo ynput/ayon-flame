@@ -739,7 +739,8 @@ def create_otio_timeline(
         otio_track = create_otio_track(
             "audio", audio_track.name or "unnamed")
 
-        segments = _get_segments_from_track(audio_channel, validation_aggregator=validation_aggregator)
+        segments = _get_segments_from_track(
+            audio_channel, validation_aggregator=validation_aggregator)
         log.debug(f"_ segments: {pformat(segments)}")
         _distribute_segments_on_track(segments, otio_track)
         otio_timeline.tracks.append(otio_track)

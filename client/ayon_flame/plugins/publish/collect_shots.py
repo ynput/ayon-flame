@@ -2,7 +2,6 @@ import pyblish
 import re
 from pprint import pformat
 
-from ayon_core.pipeline.schema import ValidationError
 import ayon_flame.api as ayfapi
 from ayon_flame.otio import flame_export, utils
 
