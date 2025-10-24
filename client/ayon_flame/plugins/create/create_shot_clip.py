@@ -926,10 +926,17 @@ OTIO file.
             "collectSelectedInstance"]
 
         current_sequence = lib.get_current_sequence(lib.CTX.selection)
-
-        for segment in lib.get_sequence_segments(
+        # only get selected segments if user selected any
+        # and settings are enabled
+        segments = lib.get_sequence_segments(
             current_sequence, selected=restrict_to_selection
-        ):
+        )
+
+        if not segments:
+            # get all segments if user didn't select any
+            segments = lib.get_sequence_segments(current_sequence)
+
+        for segment in segments:
             instances = []
 
             # attempt to get AYON tag data
