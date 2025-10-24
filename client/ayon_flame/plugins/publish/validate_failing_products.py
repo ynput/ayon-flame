@@ -1,6 +1,5 @@
 import inspect
 
-import ayon_flame.api as ayfapi
 import pyblish.api
 from ayon_core.pipeline.publish import (
     OptionalPyblishPluginMixin,

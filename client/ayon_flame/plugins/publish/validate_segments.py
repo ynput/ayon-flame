@@ -65,7 +65,7 @@ class ValidateSegments(
     settings_category = "flame"
 
     optional = True
-    active = True
+    active = False
 
     actions = [ShowSegmentsRed, HideSegments]
 

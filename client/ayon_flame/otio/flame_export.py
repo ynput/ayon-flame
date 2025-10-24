@@ -57,7 +57,8 @@ class OtioExportCTX:
     @classmethod
     def set_tl_start_frame(cls, number):
         if not isinstance(number, int):
-            raise TypeError(f"Invalid timeline start frame type {type(number)}")
+            raise TypeError(
+                f"Invalid timeline start frame type {type(number)}")
         if cls._tl_start_frame != number:
             cls._tl_start_frame = number
 
@@ -507,7 +508,8 @@ def _get_colourspace_policy():
 
     output = {}
     # get policies project path
-    policy_dir = f"/opt/Autodesk/project/{OtioExportCTX.project.name}/synColor/policy"
+    policy_dir = (
+        f"/opt/Autodesk/project/{OtioExportCTX.project.name}/synColor/policy")
 
     policy_fp = os.path.join(policy_dir, "policy.cfg")
 
@@ -704,7 +706,8 @@ def create_otio_timeline(
                 "video", str(track.name)[1:-1])
 
             # Add segments onto track.
-            segments = _get_segments_from_track(track, validation_aggregator=validation_aggregator)
+            segments = _get_segments_from_track(
+                track, validation_aggregator=validation_aggregator)
             log.debug(f"_ segments: {pformat(segments)}")
             _distribute_segments_on_track(segments, otio_track)
 
