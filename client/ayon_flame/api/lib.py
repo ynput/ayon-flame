@@ -406,9 +406,9 @@ def set_publish_attribute(segment, value):
         value (bool): True or False
     """
     tag_data = get_segment_data_marker(segment)
-    tag_data["publish"] = value
+    tag_data["active"] = value
 
-    # set data to the publish attribute
+    # set data to the active attribute
     set_segment_data_marker(segment, tag_data)
 
 
@@ -427,7 +427,7 @@ def get_publish_attribute(segment):
         set_publish_attribute(segment, MARKER_PUBLISH_DEFAULT)
         return MARKER_PUBLISH_DEFAULT
 
-    return tag_data["publish"]
+    return tag_data["active"]
 
 
 def create_segment_data_marker(segment):

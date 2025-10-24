@@ -141,7 +141,7 @@ class PublishableClip:
         )
 
         # add publish attribute to marker data
-        self.marker_data.update({"publish": True})
+        self.marker_data.update({"active": True})
 
         # adding input data if any
         if data:
