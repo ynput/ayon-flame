@@ -8,27 +8,28 @@ from ayon_core.pipeline.publish import (
 )
 
 
-class ShowSegmentsRed(pyblish.api.Action):
+class DeactivatePublishing(pyblish.api.Action):
 
-    label = "Show Segments with Red Colour"
+    label = "Deactivate publishing"
     icon = "files-o"
     on = "failed"
 
     def process(self, context, plugin):
-        failed_segments = context.data["failedSegments"]
+        # Get the errored instances
+        failed = []
+        for result in context.data["results"]:
+            if (result["error"] is not None and result["instance"] is not None
+               and result["instance"] not in failed):
+                failed.append(result["instance"])
 
-        if not failed_segments:
-            return
+        # Apply pyblish.logic to get the instances for the plug-in
+        instances = pyblish.api.instances_by_plugin(failed, plugin)
 
         sequence = ayfapi.get_current_sequence(ayfapi.CTX.selection)
         with ayfapi.maintained_segment_selection(sequence):
-            for segment in failed_segments:
-                shot_name = segment.shot_name.get_value()
-                segment_name = segment.name.get_value()
-                segment.colour = (1.0, 0.0, 0.0)
-                clip_msg = (
-                    f"Clip name: {segment_name} with shot name: {shot_name}")
-                self.log.info(clip_msg)
+            for instance in instances:
+                segment = instance.data["item"]
+                ayfapi.set_publish_attribute(segment, False)
 
 
 class ValidateFailingProducts(
@@ -44,12 +45,18 @@ class ValidateFailingProducts(
     optional = True
     active = True
 
-    actions = [ShowSegmentsRed]
+    actions = [DeactivatePublishing]
 
-    def process(self, instance):
+    def detect_failing_instance(self, instance):
         is_failed = instance.data.get("failing")
 
         if not is_failed:
+            return
+
+        return is_failed
+
+    def process(self, instance):
+        if not self.detect_failing_instance(instance):
             return
 
         segment = instance.data["item"]
