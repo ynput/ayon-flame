@@ -53,7 +53,7 @@ class ValidateFailingProducts(
             return
 
         segment = instance.data["item"]
-        otio_clip = instance.data["otio_clip"]
+        otio_clip = instance.data["otioClip"]
         reference_name = otio_clip.media_reference.name
 
         msg = "Product is failing validation due following reason:"
@@ -79,9 +79,9 @@ class ValidateFailingProducts(
         return inspect.cleandoc("""
             ## Product is failing validation:
             <br/>
-            Make sure your clips on timeline are not converted to BatchFX
-            or are not Hard Commited. This way they will lose their link to
-            the original Media source file path and we are not able
+            Make sure your clips on timeline are not converted to BatchFX<br/>
+            or are not Hard Commited. This way they will lose their link <br/>
+            to the original Media source file path and we are not able<br/>
             to publish them anymore.
             <br/><br/>
             Also make sure timeline clip is having standart name.
