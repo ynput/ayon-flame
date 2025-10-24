@@ -1,9 +1,10 @@
 import inspect
 
+import ayon_flame.api as ayfapi
 import pyblish.api
 from ayon_core.pipeline.publish import (
     OptionalPyblishPluginMixin,
-    PublishValidationError
+    PublishValidationError,
 )
 
 
@@ -19,12 +20,15 @@ class ShowSegments(pyblish.api.Action):
         if not failed_segments:
             return
 
-        for segment in failed_segments:
-            shot_name = segment.shot_name.get_value()
-            segment_name = segment.name.get_value()
-            clip_msg = (
-                f"Clip name: {segment_name} with shot name: {shot_name}")
-            self.log.info(clip_msg)
+        sequence = ayfapi.get_current_sequence(ayfapi.CTX.selection)
+        with ayfapi.maintained_segment_selection(sequence):
+            for segment in failed_segments:
+                shot_name = segment.shot_name.get_value()
+                segment_name = segment.name.get_value()
+                segment.color = (1.0, 0.0, 0.0)
+                clip_msg = (
+                    f"Clip name: {segment_name} with shot name: {shot_name}")
+                self.log.info(clip_msg)
 
 
 class ValidateSegments(
