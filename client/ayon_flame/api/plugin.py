@@ -7,6 +7,7 @@ from xml.etree import ElementTree as ET
 import qargparse
 
 from ayon_core.lib import Logger, StringTemplate
+from ayon_core.pipeline.create import CreatorError
 from ayon_core.pipeline import LoaderPlugin, HiddenCreator
 from ayon_core.pipeline import Creator
 from ayon_core.pipeline.colorspace import get_remapped_colorspace_to_native
@@ -185,6 +186,9 @@ class PublishableClip:
             })
 
         elif self.use_shot_name:
+            if not self.shot_name:
+                raise CreatorError(
+                    f"Shot name is not set on segment: {self.cs_name}")
             self.marker_data.update({
                 "folderName": self.shot_name,
                 "folderPath": f"/{hierarchy_filled}/{self.shot_name}",
