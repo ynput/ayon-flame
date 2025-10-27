@@ -179,10 +179,35 @@ class IntegrateBatchGroupModel(BaseSettingsModel):
     )
 
 
+class OptionbnalValidatorModel(BaseSettingsModel):
+    enabled: bool = SettingsField(
+        False,
+        title="Enabled"
+    )
+    optional: bool = SettingsField(
+        False,
+        title="Optional"
+    )
+    active: bool = SettingsField(
+        False,
+        title="Active"
+    )
+
+
 class PublishPluginsModel(BaseSettingsModel):
     CollectShot: CollectShotsModel = SettingsField(
         default_factory=CollectShotsModel,
         title="Collect Shot instances"
+    )
+
+    ValidateProductAttributes: OptionbnalValidatorModel = SettingsField(
+        default_factory=OptionbnalValidatorModel,
+        title="Validate Product Attributes"
+    )
+
+    ValidateSegments: OptionbnalValidatorModel = SettingsField(
+        default_factory=OptionbnalValidatorModel,
+        title="Validate Segments"
     )
 
     ExtractProductResources: ExtractProductResourcesModel = SettingsField(
@@ -227,6 +252,17 @@ DEFAULT_PUBLISH_SETTINGS = {
                 "create_batch_group": True
             }
         ]
+    },
+    "ValidateProductAttributes": {
+        "enabled": True,
+        "active": True,
+        "optional": True
+    },
+    "ValidateSegments": {
+        "enabled": False,
+        "active": False,
+        "optional": True
+
     },
     "ExtractProductResources": {
         "keep_original_representation": False,
