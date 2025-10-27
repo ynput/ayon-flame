@@ -33,7 +33,7 @@ class DeactivatePublishing(pyblish.api.Action):
         create_context.save_changes()
 
 
-class ValidateFailingProducts(
+class ValidateProductsAttributes(
     OptionalPyblishPluginMixin,
     pyblish.api.InstancePlugin
 ):
