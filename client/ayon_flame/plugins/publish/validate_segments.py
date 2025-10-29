@@ -97,7 +97,7 @@ class ValidateSegments(
             ## Following clips are failing validation:
             <br/>
             Make sure your clips on timeline are not converted to BatchFX
-            or are not Hard Commited. This way they will lose their link to
+            or are not Hard Committed. This way they will lose their link to
             the original Media source file path and we are not able
             to publish them anymore.
             <br/><br/>
