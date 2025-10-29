@@ -917,10 +917,9 @@ class MediaInfoFile(object):
 
         # make sure partial input basename is having correct extensoon
         if not partialname:
-            msg = f"Wrong input attributes. Basename - {feed_basename}, "
-            msg += f"Ext - {feed_ext}"
             raise AttributeError(
-                msg
+                f"Wrong input attributes. Basename - {feed_basename}, "
+                f"Ext - {feed_ext}"
             )
 
         # get all related files
