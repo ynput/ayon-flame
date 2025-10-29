@@ -64,7 +64,7 @@ class CollectTestSelection(pyblish.api.ContextPlugin):
                 self.print_segment_properties(segment)
 
     def print_segment_properties(self, segment):
-        """Loop through a PySegment object's attributes and printproperties.
+        """Loop through a PySegment object's attributes and print properties.
 
         Args:
             segment: A flame.PySegment object
