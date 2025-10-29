@@ -92,7 +92,7 @@ class ValidateProductAttributes(
             to the original Media source file path and we are not able<br/>
             to publish them anymore.
             <br/><br/>
-            Also make sure timeline clip is having standart name.
+            Also make sure timeline clip has a standard name.
             <br/><br/>
             <b>Validation problem:</b>
             <br/>
