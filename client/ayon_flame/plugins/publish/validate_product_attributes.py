@@ -88,7 +88,7 @@ class ValidateProductAttributes(
             ## Product is failing validation:
             <br/>
             Make sure your clips on timeline are not converted to BatchFX<br/>
-            or are not Hard Commited. This way they will lose their link <br/>
+            or are not Hard Committed. This way they will lose their link <br/>
             to the original Media source file path and we are not able<br/>
             to publish them anymore.
             <br/><br/>
