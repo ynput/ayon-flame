@@ -19,7 +19,8 @@ class CollecTimelineOTIO(pyblish.api.ContextPlugin):
         segments = ayfapi.get_sequence_segments(sequence)
 
         # adding otio timeline to context
-        otio_timeline = flame_export.create_otio_timeline(sequence)
+        with ayfapi.maintained_segment_selection(sequence):
+            otio_timeline = flame_export.create_otio_timeline(sequence)
 
         # update context with main project attributes
         timeline_data = {
