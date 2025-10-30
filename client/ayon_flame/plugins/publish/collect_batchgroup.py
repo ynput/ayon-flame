@@ -9,6 +9,7 @@ class CollectBatchgroup(pyblish.api.InstancePlugin):
     order = pyblish.api.CollectorOrder - 0.47
     label = "Collect Batchgroup"
     hosts = ["flame"]
+    families = ["batchgroup"]
 
     def process(self, instance):
         """
