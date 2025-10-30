@@ -378,7 +378,6 @@ OTIO file.
 
         # Project settings might be applied to this creator via
         # the inherited `Creator.apply_settings`
-        presets = self.presets
 
         return [
 
@@ -399,44 +398,44 @@ OTIO file.
                 label="Shot Parent Hierarchy",
                 tooltip="Parents folder for shot root folder, "
                         "Template filled with *Hierarchy Data* section",
-                default=presets.get("hierarchy", "{folder}/{sequence}"),
+                default=self.presets.get("hierarchy", "{folder}/{sequence}"),
             ),
             BoolDef(
                 "useShotName",
                 label="Use shot name",
                 tooltip="Use name form Shot name clip attribute.",
-                default=presets.get("useShotName", True),
+                default=self.presets.get("useShotName", True),
             ),
             BoolDef(
                 "clipRename",
                 label="Rename clips",
                 tooltip="Renaming selected clips on fly",
-                default=presets.get("clipRename", False),
+                default=self.presets.get("clipRename", False),
             ),
             TextDef(
                 "clipName",
                 label="Clip Name Template",
                 tooltip="template for creating shot names, used for "
                         "renaming (use rename: on)",
-                default=presets.get("clipName", "{sequence}{shot}"),
+                default=self.presets.get("clipName", "{sequence}{shot}"),
             ),
             BoolDef(
                 "segmentIndex",
                 label="Segment Index",
                 tooltip="Take number from segment index",
-                default=presets.get("segmentIndex", True),
+                default=self.presets.get("segmentIndex", True),
             ),
             NumberDef(
                 "countFrom",
                 label="Count sequence from",
                 tooltip="Set where the sequence number starts from",
-                default=presets.get("countFrom", 10),
+                default=self.presets.get("countFrom", 10),
             ),
             NumberDef(
                 "countSteps",
                 label="Stepping number",
                 tooltip="What number is adding every new step",
-                default=presets.get("countSteps", 10),
+                default=self.presets.get("countSteps", 10),
             ),
 
             # hierarchyData
@@ -448,32 +447,32 @@ OTIO file.
                 label="{folder}",
                 tooltip="Name of folder used for root of generated shots.\n"
                         f"{tokens_help}",
-                default=presets.get("folder", "shots"),
+                default=self.presets.get("folder", "shots"),
             ),
             TextDef(
                 "episode",
                 label="{episode}",
                 tooltip=f"Name of episode.\n{tokens_help}",
-                default=presets.get("episode", "ep01"),
+                default=self.presets.get("episode", "ep01"),
             ),
             TextDef(
                 "sequence",
                 label="{sequence}",
                 tooltip=f"Name of sequence of shots.\n{tokens_help}",
-                default=presets.get("sequence", "sq01"),
+                default=self.presets.get("sequence", "sq01"),
             ),
             TextDef(
                 "track",
                 label="{track}",
                 tooltip=f"Name of timeline track.\n{tokens_help}",
-                default=presets.get("track", "{_track_}"),
+                default=self.presets.get("track", "{_track_}"),
             ),
             TextDef(
                 "shot",
                 label="{shot}",
                 tooltip="Name of shot. '#' is converted to padded number."
                         f"\n{tokens_help}",
-                default=presets.get("shot", "sh###"),
+                default=self.presets.get("shot", "sh###"),
             ),
 
             # verticalSync
@@ -485,7 +484,7 @@ OTIO file.
                 label="Enable Vertical Sync",
                 tooltip="Switch on if you want clips above "
                         "each other to share its attributes",
-                default=presets.get("vSyncOn", True),
+                default=self.presets.get("vSyncOn", True),
             ),
             EnumDef(
                 "vSyncTrack",
@@ -527,7 +526,7 @@ OTIO file.
                 "export_audio",
                 label="Include audio",
                 tooltip="Process subsets with corresponding audio",
-                default=presets.get("export_audio", False),
+                default=self.presets.get("export_audio", False),
             ),
             BoolDef(
                 "export_batchgroup",
@@ -539,7 +538,7 @@ OTIO file.
                 "sourceResolution",
                 label="Source resolution",
                 tooltip="Is resolution taken from timeline or source?",
-                default=presets.get("sourceResolution", False),
+                default=self.presets.get("sourceResolution", False),
             ),
 
             # shotAttr
@@ -550,37 +549,37 @@ OTIO file.
                 "workfileFrameStart",
                 label="Workfiles Start Frame",
                 tooltip="Set workfile starting frame number",
-                default=presets.get("workfileFrameStart", 1001),
+                default=self.presets.get("workfileFrameStart", 1001),
             ),
             NumberDef(
                 "handleStart",
                 label="Handle start (head)",
                 tooltip="Handle at start of clip",
-                default=presets.get("handleStart", 0),
+                default=self.presets.get("handleStart", 0),
             ),
             NumberDef(
                 "handleEnd",
                 label="Handle end (tail)",
                 tooltip="Handle at end of clip",
-                default=presets.get("handleEnd", 0),
+                default=self.presets.get("handleEnd", 0),
             ),
             BoolDef(
                 "includeHandles",
                 label="Include handles",
                 tooltip="Should the handles be included?",
-                default=presets.get("includeHandles", True),
+                default=self.presets.get("includeHandles", True),
             ),
             BoolDef(
                 "retimedHandles",
                 label="Retimed handles",
                 tooltip="Should the handles be retimed?",
-                default=presets.get("retimedHandles", True),
+                default=self.presets.get("retimedHandles", True),
             ),
             BoolDef(
                 "retimedFramerange",
                 label="Retimed framerange",
                 tooltip="Should the framerange be retimed?",
-                default=presets.get("retimedFramerange", True),
+                default=self.presets.get("retimedFramerange", True),
             ),
         ]
 
