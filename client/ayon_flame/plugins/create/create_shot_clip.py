@@ -331,6 +331,13 @@ class EditorialAudioInstanceCreator(_FlameInstanceClipCreatorBase):
     label = "Editorial Audio"
 
 
+class EditorialBatchgroupInstanceCreator(_FlameInstanceClipCreatorBase):
+    """Batchgroup product type creator class"""
+    identifier = "io.ayon.creators.flame.batchgroup"
+    product_type = "workfile"
+    label = "Editorial Batchgroup"
+
+
 class CreateShotClip(plugin.FlameCreator):
     """Publishable clip"""
 
@@ -523,6 +530,12 @@ OTIO file.
                 default=presets.get("export_audio", False),
             ),
             BoolDef(
+                "export_batchgroup",
+                label="Include batchgroup",
+                tooltip="Also generate batchgroup product for the shot",
+                default=self.presets.get("export_batchgroup", False),
+            ),
+            BoolDef(
                 "sourceResolution",
                 label="Source resolution",
                 tooltip="Is resolution taken from timeline or source?",
@@ -615,10 +628,12 @@ OTIO file.
         shot_creator_id = "io.ayon.creators.flame.shot"
         plate_creator_id = "io.ayon.creators.flame.plate"
         audio_creator_id = "io.ayon.creators.flame.audio"
+        batchgroup_creator_id = "io.ayon.creators.flame.batchgroup"
         all_creators = {
             shot_creator_id: True,
             plate_creator_id: True,
             audio_creator_id: True,
+            batchgroup_creator_id: True,
         }
         instances = []
 
@@ -671,6 +686,11 @@ OTIO file.
             all_creators[audio_creator_id] = (
                 segment_instance_data.get("heroTrack", False) and
                 pre_create_data.get("export_audio", False)
+            )
+            # disable batchgroup creator if batchgroup is not enabled
+            all_creators[batchgroup_creator_id] = (
+                segment_instance_data.get("heroTrack", False) and
+                pre_create_data.get("export_batchgroup", False)
             )
 
             enabled_creators = tuple(
@@ -773,7 +793,8 @@ OTIO file.
                             "label": (
                                 f"{sub_instance_data['folderPath']} "
                                 f"{sub_instance_data['productName']}"
-                            )
+                            ),
+                            "families": ["batchgroup"]
                         }
                     )
                     creator_attributes["parentInstance"] = parenting_data[
@@ -781,6 +802,27 @@ OTIO file.
 
                     if sub_instance_data.get("reviewableSource"):
                         creator_attributes["review"] = True
+
+                # Batchgroup
+                # insert parent instance data
+                elif creator_id == batchgroup_creator_id:
+                    sub_instance_data["variant"] = "Batchgroup"
+                    sub_instance_data["productType"] = "workfile"
+                    sub_instance_data["productName"] = "workfileBatchgroup"
+
+                    parenting_data = shot_instances[shot_creator_id]
+                    sub_instance_data.update(
+                        {
+                            "parent_instance_id": parenting_data[
+                                "instance_id"],
+                            "label": (
+                                f"{sub_instance_data['folderPath']} "
+                                f"{sub_instance_data['productName']}"
+                            )
+                        }
+                    )
+                    creator_attributes["parentInstance"] = parenting_data[
+                        "label"]
 
                 instance = creator.create(sub_instance_data, None)
                 instance.transient_data["segment_item"] = segment
