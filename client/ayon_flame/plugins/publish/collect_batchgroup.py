@@ -2,6 +2,8 @@ import pyblish.api
 
 from ayon_flame.otio import utils
 
+from copy import deepcopy
+
 
 class CollectBatchgroup(pyblish.api.InstancePlugin):
     """Collect Shot related batchgroup workfile products."""
@@ -11,6 +13,9 @@ class CollectBatchgroup(pyblish.api.InstancePlugin):
     hosts = ["flame"]
     families = ["workfile"]
 
+    output_node_properties = {}
+    attach_to_task = {}
+
     def process(self, instance):
         creator_identifier = instance.data["creator_identifier"]
 
@@ -18,7 +23,10 @@ class CollectBatchgroup(pyblish.api.InstancePlugin):
             # only interested in flame batchgroup
             return
 
-        # Retrieve instance data from parent instance shot instance.
+        # Update parent instance tasks with attach_to_task
+        self._update_parent_instance_tasks(instance)
+
+        # update shot related shared attributes
         parent_instance_id = instance.data["parent_instance_id"]
         edit_shared_data = instance.context.data["editorialSharedData"]
         instance.data.update(
@@ -42,7 +50,27 @@ class CollectBatchgroup(pyblish.api.InstancePlugin):
         instance.data.update({
             "clipInH": clip_src_in,
             "clipOutH": clip_src_out,
-            "families": ["batchgroup"]
+            "families": ["batchgroup"],
+            "taskName": self.attach_to_task["name"],
+            "attachToTask": self.attach_to_task,
+            "outputNodeProperties": self.output_node_properties,
         })
         self.log.info(
             f"Collected batchgroup workfile products for shot {instance}")
+
+    def _update_parent_instance_tasks(self, instance):
+        """Update parent instance tasks with attach_to_task if not present."""
+        parent_instance_id = instance.data["parent_instance_id"]
+        context = instance.context
+        for parent_instance in context:
+            if parent_instance.data["instance_id"] == parent_instance_id:
+                tasks = parent_instance.data.get("tasks", {})
+                attach_task_name = self.attach_to_task["name"]
+                new_task_data = {"type": self.attach_to_task["task_type"]}
+                if attach_task_name not in tasks:
+                    tasks[attach_task_name] = new_task_data
+                else:
+                    tasks[attach_task_name].update(new_task_data)
+
+                parent_instance.data["tasks"] = tasks
+                break
