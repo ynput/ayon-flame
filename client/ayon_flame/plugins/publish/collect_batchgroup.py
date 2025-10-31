@@ -4,18 +4,20 @@ from ayon_flame.otio import utils
 
 
 class CollectBatchgroup(pyblish.api.InstancePlugin):
-    """Collect new batchgroup."""
+    """Collect Shot related batchgroup workfile products."""
 
     order = pyblish.api.CollectorOrder - 0.47
     label = "Collect Batchgroup"
     hosts = ["flame"]
-    families = ["batchgroup"]
+    families = ["workfile"]
 
     def process(self, instance):
-        """
-        Args:
-            instance (pyblish.Instance): The shot instance to update.
-        """
+        creator_identifier = instance.data["creator_identifier"]
+
+        if creator_identifier != "io.ayon.creators.flame.batchgroup":
+            # only interested in flame batchgroup
+            return
+
         # Retrieve instance data from parent instance shot instance.
         parent_instance_id = instance.data["parent_instance_id"]
         edit_shared_data = instance.context.data["editorialSharedData"]
@@ -39,5 +41,8 @@ class CollectBatchgroup(pyblish.api.InstancePlugin):
         clip_src_out = clip_src_in + clip_src.duration.to_frames()
         instance.data.update({
             "clipInH": clip_src_in,
-            "clipOutH": clip_src_out
+            "clipOutH": clip_src_out,
+            "families": ["batchgroup"]
         })
+        self.log.info(
+            f"Collected batchgroup workfile products for shot {instance}")
