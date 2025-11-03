@@ -1,3 +1,4 @@
+import contextlib
 import copy
 import os
 from pprint import pformat
@@ -10,7 +11,7 @@ from ayon_core.pipeline.workfile import get_workdir
 class ExtractBatchgroup(pyblish.api.InstancePlugin):
     """Extract Batchgroup Product data."""
 
-    order = pyblish.api.CollectorOrder + 0.496  #  Testing order
+    order = pyblish.api.CollectorOrder + 0.496  # Testing order
     label = "Extract Batchgroup"
     hosts = ["flame"]
     families = ["batchgroup"]
@@ -173,12 +174,14 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
             # /path/to/file.[0001-0010].exr
             "media_path": render_dir_path,
             # name of file represented by tokens
-            "media_path_pattern": "<name>_v<iteration###>/<name>_v<iteration###>.<frame><ext>",
+            "media_path_pattern": (
+                "<name>_v<iteration###>/<name>_v<iteration###>.<frame><ext>"),
             # The Create Open Clip attribute of the Write File node.
             # Determines if an Open Clip is created by the Write File node.
             "create_clip": True,
             # The Include Setup attribute of the Write File node.
-            # Determines if a Batch Setup file is created by the Write File node.
+            # Determines if a Batch Setup file is created by the Write File
+            # node.
             "include_setup": True,
             # The path attribute where the Open Clip file is exported by
             # the Write File node.
@@ -197,10 +200,12 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
             # set format_extension after setting file_type.
             "format_extension": "exr",
             # The bit depth for the files written by the Write File node.
-            # This attribute resets to match file_type whenever file_type is set.
+            # This attribute resets to match file_type whenever file_type is
+            # set.
             "bit_depth": "16",
             # The compressing attribute for the files exported by the Write
-            # File node. Only relevant when file_type in 'OpenEXR', 'Sgi', 'Tiff'
+            # File node. Only relevant when file_type in 'OpenEXR', 'Sgi',
+            # 'Tiff'
             "compress": True,
             # The compression format attribute for the specific File Types
             # export by the Write File node. You must set compress_mode
@@ -210,7 +215,8 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
             # Value range: `Use Timecode` or `Use Start Frame`
             "frame_index_mode": "Use Start Frame",
             "frame_padding": 6,
-            # The versioning mode of the Open Clip exported by the Write File node.
+            # The versioning mode of the Open Clip exported by the Write File
+            # node.
             # Only available if create_clip = True.
             "version_mode": "Follow Iteration",
             "version_name": "v<version>",
@@ -218,11 +224,18 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
         }
         # update properties from settings override
         for settings in output_node_properties:
-            properties[settings["name"]] = settings["value"]
+            value = settings["value"]
+
+            # convert to int if it is possible
+            with contextlib.suppress(ValueError):
+                value = int(value)
+
+            properties[settings["name"]] = value
 
         return properties
 
-    def _get_shot_task_dir_path(self, instance, anatomy_data):
+    @staticmethod
+    def _get_shot_task_dir_path(instance, anatomy_data):
         # TODO: does this already exists at future context?
         project_entity = instance.data["projectEntity"]
         folder_entity = instance.data["folderEntity"]
