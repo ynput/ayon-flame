@@ -21,6 +21,17 @@ class CollectBatchgroup(pyblish.api.InstancePlugin):
             # only interested in flame batchgroup
             return
 
+        # Validate that attach_to_task has required keys
+        required_keys = ["name", "task_type"]
+        missing_keys = [
+            k for k in required_keys if k not in self.attach_to_task]
+        if missing_keys:
+            raise ValueError(str(
+                "CollectBatchgroup.attach_to_task is missing "
+                f"required keys: {missing_keys}. "
+                "Please ensure settings are properly configured."
+            ))
+
         # Update parent instance tasks with attach_to_task
         self._update_parent_instance_tasks(instance)
 
@@ -33,7 +44,7 @@ class CollectBatchgroup(pyblish.api.InstancePlugin):
 
         # Adjust instance data from parent otio timeline.
         otio_timeline = instance.context.data["otioTimeline"]
-        otio_clip, marker = utils.get_marker_from_clip_index(
+        otio_clip, _ = utils.get_marker_from_clip_index(
             otio_timeline, instance.data["clip_index"]
         )
         if not otio_clip:

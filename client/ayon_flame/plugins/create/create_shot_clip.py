@@ -792,8 +792,7 @@ OTIO file.
                             "label": (
                                 f"{sub_instance_data['folderPath']} "
                                 f"{sub_instance_data['productName']}"
-                            ),
-                            "families": ["batchgroup"]
+                            )
                         }
                     )
                     creator_attributes["parentInstance"] = parenting_data[
