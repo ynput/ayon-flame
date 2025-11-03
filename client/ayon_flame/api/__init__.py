@@ -77,7 +77,7 @@ from .render_utils import (
 )
 from .batch_utils import (
     create_batch_group,
-    create_batch_group_conent
+    create_batch_group_content
 )
 
 __all__ = [
@@ -160,5 +160,5 @@ __all__ = [
 
     # batch utils
     "create_batch_group",
-    "create_batch_group_conent"
+    "create_batch_group_content"
 ]

@@ -21,7 +21,7 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
         output_node_properties = instance.data["outputNodeProperties"]
 
         # update task in anatomy data
-        task_anatomy_data = self._get_anamoty_data_with_current_task(
+        task_anatomy_data = self._get_anatomy_data_with_current_task(
             instance, attach_to_task)
 
         task_workdir = self._get_shot_task_dir_path(
@@ -51,8 +51,6 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
         batch_group,
         write_pref_data
     ):
-        # get write file node properties > OrederDict because order does matter
-
         batch_nodes = [
             {
                 "type": "comp",
@@ -79,7 +77,7 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
         ]
 
         # add nodes into batch group
-        return ayfapi.create_batch_group_conent(
+        return ayfapi.create_batch_group_content(
             batch_nodes, batch_links, batch_group)
 
     def _get_batch_group(self, instance):
@@ -93,7 +91,7 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
         batchgroup_name = folder_path.replace("/", "_")
 
         batch_data = {
-            "shematic_reels": [
+            "schematic_reels": [
                 "AYON_LoadedReel"
             ],
             "handleStart": handle_start,
@@ -129,7 +127,8 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
 
         return bgroup
 
-    def _get_anamoty_data_with_current_task(self, instance, task_data):
+    @staticmethod
+    def _get_anatomy_data_with_current_task(instance, task_data):
         anatomy_data = copy.deepcopy(instance.data["anatomyData"])
         task_name = task_data["task_name"]
         task_type = task_data["task_type"]
@@ -165,6 +164,7 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
         name = "{project[code]}_{folder[name]}_{task[name]}".format(
             **task_anatomy_data
         )
+        self.log.debug(f"Extracting batch group for task {name}")
 
         # need to make sure the order of keys is correct
         properties = {

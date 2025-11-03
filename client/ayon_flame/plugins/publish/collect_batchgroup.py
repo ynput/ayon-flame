@@ -2,8 +2,6 @@ import pyblish.api
 
 from ayon_flame.otio import utils
 
-from copy import deepcopy
-
 
 class CollectBatchgroup(pyblish.api.InstancePlugin):
     """Collect Shot related batchgroup workfile products."""

@@ -22,7 +22,7 @@ def create_batch_group(
     # make sure some batch obj is present
     batch_group = update_batch_group or flame.batch
 
-    schematic_reels = kwargs.get("shematic_reels") or ['LoadedReel1']
+    schematic_reels = kwargs.get("schematic_reels") or ['LoadedReel1']
     shelf_reels = kwargs.get("shelf_reels") or ['ShelfReel1']
 
     handle_start = kwargs.get("handleStart") or 0
@@ -84,7 +84,7 @@ def _add_reels_to_batch_group(batch_group, reels, shelf_reels):
         batch_group.create_shelf_reel(_sr)
 
 
-def create_batch_group_conent(batch_nodes, batch_links, batch_group=None):
+def create_batch_group_content(batch_nodes, batch_links, batch_group=None):
     """Creating batch group with links
 
     Args:
