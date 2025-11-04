@@ -126,9 +126,12 @@ def create_batch_group_content(batch_nodes, batch_links, batch_group=None):
         for key, value in node_props.items():
             if not hasattr(batch_node, key):
                 continue
-            log.debug(
+            log.warning(
                 f"Setting attribute {key} to {value} on node {batch_node}")
-            setattr(batch_node, key, value)
+            try:
+                setattr(batch_node, key, value)
+            except Exception as e:
+                log.error(f"Failed to set attribute {key} on node {batch_node}: {e}")
 
         # add created node for possible linking
         all_batch_nodes[node_id] = batch_node
