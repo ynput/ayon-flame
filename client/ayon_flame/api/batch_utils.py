@@ -1,7 +1,7 @@
 import flame
 from ayon_core.lib import Logger
 
-log = Logger(__name__)
+log = Logger.get_logger(__name__)
 
 
 def create_batch_group(
