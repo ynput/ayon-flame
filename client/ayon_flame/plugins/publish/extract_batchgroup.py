@@ -218,6 +218,7 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
             value = self._convert_to_typed_value(
                 settings["value"], task_anatomy_data)
             properties[settings["name"]] = value
+            self.log.info(f"Setting {settings['name']} to {value}")
 
         # format templated values and convert Path objects
         for key, value in properties.items():
@@ -227,6 +228,7 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
                 if not value.exists():
                     value.mkdir(parents=True, exist_ok=True)
                 properties[key] = str(value)
+            self.log.info(f"Setting {key} to {value}")
 
         return properties
 
