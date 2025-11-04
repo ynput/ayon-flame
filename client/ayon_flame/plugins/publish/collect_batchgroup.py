@@ -22,7 +22,7 @@ class CollectBatchgroup(pyblish.api.InstancePlugin):
             return
 
         # Validate that attach_to_task has required keys
-        required_keys = ["name", "task_type"]
+        required_keys = ["task_name", "task_type"]
         missing_keys = [
             k for k in required_keys if k not in self.attach_to_task]
         if missing_keys:
@@ -60,7 +60,7 @@ class CollectBatchgroup(pyblish.api.InstancePlugin):
             "clipInH": clip_src_in,
             "clipOutH": clip_src_out,
             "families": ["batchgroup"],
-            "taskName": self.attach_to_task["name"],
+            "taskName": self.attach_to_task["task_name"],
             "attachToTask": self.attach_to_task,
             "outputNodeProperties": self.output_node_properties,
         })
@@ -74,7 +74,7 @@ class CollectBatchgroup(pyblish.api.InstancePlugin):
         for parent_instance in context:
             if parent_instance.data["instance_id"] == parent_instance_id:
                 tasks = parent_instance.data.get("tasks", {})
-                attach_task_name = self.attach_to_task["name"]
+                attach_task_name = self.attach_to_task["task_name"]
                 new_task_data = {"type": self.attach_to_task["task_type"]}
                 if attach_task_name not in tasks:
                     tasks[attach_task_name] = new_task_data

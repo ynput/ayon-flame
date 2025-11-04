@@ -12,7 +12,7 @@ from ayon_core.pipeline.workfile import get_workdir
 class ExtractBatchgroup(pyblish.api.InstancePlugin):
     """Extract Batchgroup Product data."""
 
-    order = pyblish.api.CollectorOrder + 0.496  #  Extractor 0
+    order = pyblish.api.ExtractorOrder
     label = "Extract Batchgroup"
     hosts = ["flame"]
     families = ["batchgroup"]
