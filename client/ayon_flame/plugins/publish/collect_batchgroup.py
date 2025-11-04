@@ -59,7 +59,7 @@ class CollectBatchgroup(pyblish.api.InstancePlugin):
         instance.data.update({
             "clipInH": clip_src_in,
             "clipOutH": clip_src_out,
-            "families": ["batchgroup"],
+            "families": ["batchgroup", "clip"],
             "taskName": self.attach_to_task["task_name"],
             "attachToTask": self.attach_to_task,
             "outputNodeProperties": self.output_node_properties,
