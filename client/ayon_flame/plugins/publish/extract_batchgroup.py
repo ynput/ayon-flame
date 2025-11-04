@@ -255,12 +255,14 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
         # Format templates
         if isinstance(value, str) and "{" in value:
             value = value.format(**task_anatomy_data)
+            self.log.info(f"Formatting '{value}'")
 
         # Convert paths (exclude Flame templates with < >)
         if (isinstance(value, str) and
             ("/" in value or "\\" in value) and
             "<" not in value):
             value = Path(value.replace("\\", "/"))
+            self.log.info(f"Converting path '{value}'")
 
         return value
 
