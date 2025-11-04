@@ -228,7 +228,7 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
                 if not value.exists():
                     value.mkdir(parents=True, exist_ok=True)
                 properties[key] = str(value)
-            self.log.info(f"Setting {key} to {value}")
+            self.log.info(f"Properties {key} to {value}")
 
         return properties
 
