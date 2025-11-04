@@ -1,7 +1,8 @@
 import contextlib
 import copy
-import os
+from pathlib import Path
 from pprint import pformat
+from typing import Any
 
 import ayon_flame.api as ayfapi
 import pyblish.api
@@ -11,7 +12,7 @@ from ayon_core.pipeline.workfile import get_workdir
 class ExtractBatchgroup(pyblish.api.InstancePlugin):
     """Extract Batchgroup Product data."""
 
-    order = pyblish.api.CollectorOrder + 0.496  # Testing order
+    order = pyblish.api.CollectorOrder + 0.496  #  Extractor 0
     label = "Extract Batchgroup"
     hosts = ["flame"]
     families = ["batchgroup"]
@@ -138,6 +139,7 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
         # update task data in anatomy data
         project_task_types = anatomy_obj["tasks"]
         task_code = project_task_types.get(task_type, {}).get("shortName")
+
         anatomy_data.update({
             "task": {
                 "name": task_name,
@@ -154,22 +156,11 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
         output_node_properties,
     ):
 
-        # TODO: this might be done with template in settings
-        render_dir_path = os.path.join(
-            task_workdir, "render", "flame")
-
-        if not os.path.exists(render_dir_path):
-            os.makedirs(render_dir_path, mode=0o777)
-
-        # TODO: add most of these to `imageio/flame/batch/write_node`
-        name = "{project[code]}_{folder[name]}_{task[name]}".format(
-            **task_anatomy_data
-        )
-        self.log.debug(f"Extracting batch group for task {name}")
+        render_dir_path = Path(task_workdir) / "render" / "flame"
 
         # need to make sure the order of keys is correct
         properties = {
-            "name": name,
+            "name": "{project[code]}_{folder[name]}_{task[name]}",
             # The path attribute where the rendered clip is exported
             # /path/to/file.[0001-0010].exr
             "media_path": render_dir_path,
@@ -224,15 +215,52 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
         }
         # update properties from settings override
         for settings in output_node_properties:
-            value = settings["value"]
-
-            # convert to int if it is possible
-            with contextlib.suppress(ValueError):
-                value = int(value)
-
+            value = self._convert_to_typed_value(
+                settings["value"], task_anatomy_data)
             properties[settings["name"]] = value
 
+        # format templated values and convert Path objects
+        for key, value in properties.items():
+            if isinstance(value, str) and "{" in value:
+                properties[key] = value.format(**task_anatomy_data)
+            elif isinstance(value, Path):
+                if not value.exists():
+                    value.mkdir(parents=True, exist_ok=True)
+                properties[key] = str(value)
+
         return properties
+
+    def _convert_to_typed_value(
+            self, value: Any, task_anatomy_data: dict[str, Any]) -> Any:
+        """Convert and format a single value.
+
+        Args:
+            value (Any): The value to convert.
+            task_anatomy_data (dict): The task anatomy data.
+
+        Returns:
+            Any: The converted value.
+        """
+        # Try int conversion
+        with contextlib.suppress(ValueError):
+            value = int(value)
+
+        # Try bool conversion (avoid converting ints to bools)
+        with contextlib.suppress(ValueError):
+            if not isinstance(value, int):
+                value = bool(value)
+
+        # Format templates
+        if isinstance(value, str) and "{" in value:
+            value = value.format(**task_anatomy_data)
+
+        # Convert paths (exclude Flame templates with < >)
+        if (isinstance(value, str) and
+            ("/" in value or "\\" in value) and
+            "<" not in value):
+            value = Path(value.replace("\\", "/"))
+
+        return value
 
     @staticmethod
     def _get_shot_task_dir_path(instance, anatomy_data):

@@ -270,6 +270,17 @@ DEFAULT_PUBLISH_SETTINGS = {
     "CollectBatchgroup": {
         "output_node_properties": [
             {
+                "name": "name",
+                "value": "{project[code]}_{folder[name]}_{task[name]}"
+            },
+            {
+                "name": "media_path",
+                "value": (
+                    "{root[work]}/{project[name]}/{hierarchy}/{folder[name]}"
+                    "/work/{task[name]}/render/flame"
+                )
+            },
+            {
                 "name": "file_type",
                 "value": "OpenEXR",
             },
