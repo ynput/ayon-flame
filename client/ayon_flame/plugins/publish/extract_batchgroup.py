@@ -6,6 +6,7 @@ from typing import Any
 
 import ayon_flame.api as ayfapi
 import pyblish.api
+from ayon_core.lib import StringTemplate
 from ayon_core.pipeline.workfile import get_workdir
 
 
@@ -141,6 +142,7 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
         task_code = project_task_types.get(task_type, {}).get("shortName")
 
         anatomy_data.update({
+            "root": anatomy_obj.roots,
             "task": {
                 "name": task_name,
                 "type": task_type,
@@ -223,7 +225,8 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
         # format templated values and convert Path objects
         for key, value in properties.items():
             if isinstance(value, str) and "{" in value:
-                properties[key] = value.format(**task_anatomy_data)
+                properties[key] = StringTemplate.format_strict_template(
+                    value, task_anatomy_data)
             elif isinstance(value, Path):
                 if not value.exists():
                     value.mkdir(parents=True, exist_ok=True)
@@ -243,18 +246,23 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
         Returns:
             Any: The converted value.
         """
+        self.log.info(f"Converting value '{value}'")
         # Try int conversion
         with contextlib.suppress(ValueError):
             value = int(value)
 
         # Try bool conversion (avoid converting ints to bools)
         with contextlib.suppress(ValueError):
-            if not isinstance(value, int):
+            if (
+                not isinstance(value, int) and
+                value in ["True", "False", "true", "false", "TRUE", "FALSE"]
+            ):
                 value = bool(value)
 
         # Format templates
         if isinstance(value, str) and "{" in value:
-            value = value.format(**task_anatomy_data)
+            value = StringTemplate.format_strict_template(
+                value, task_anatomy_data)
             self.log.info(f"Formatting '{value}'")
 
         # Convert paths (exclude Flame templates with < >)
