@@ -38,6 +38,10 @@ class CollectShotsModel(BaseSettingsModel):
             title="XML presets attributes parsable from segment comments"
         )
     )
+    ignore_shot_attributes_on_update: bool = SettingsField(
+        False,
+        title="Ignore shot attributes on update"
+    )
     add_tasks: list[AddTasksModel] = SettingsField(
         default_factory=list,
         title="Add tasks"
@@ -220,6 +224,7 @@ DEFAULT_PUBLISH_SETTINGS = {
                 "type": "string"
             }
         ],
+        "ignore_shot_attributes_on_update": False,
         "add_tasks": [
             {
                 "name": "compositing",
