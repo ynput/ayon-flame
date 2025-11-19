@@ -81,7 +81,7 @@ class IntegrateBatchGroup(pyblish.api.InstancePlugin):
         ]
 
         # add nodes into batch group
-        return ayfapi.create_batch_group_conent(
+        return ayfapi.create_batch_group_content(
             batch_nodes, batch_links, batch_group)
 
     def _load_clip_to_context(self, instance, bgroup):
@@ -176,7 +176,7 @@ class IntegrateBatchGroup(pyblish.api.InstancePlugin):
         batchgroup_name = "{}_{}".format(folder_path, task_name)
 
         batch_data = {
-            "shematic_reels": [
+            "schematic_reels": [
                 "AYON_LoadedReel"
             ],
             "handleStart": handle_start,
