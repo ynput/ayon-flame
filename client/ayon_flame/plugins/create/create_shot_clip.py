@@ -1,11 +1,10 @@
-from copy import deepcopy
 import uuid
+from copy import deepcopy
 
 import ayon_flame.api as ayfapi
-from ayon_flame.api import plugin, lib, pipeline
-
-from ayon_core.pipeline.create import CreatorError, CreatedInstance
-from ayon_core.lib import BoolDef, EnumDef, TextDef, UILabelDef, NumberDef
+from ayon_core.lib import BoolDef, EnumDef, NumberDef, TextDef, UILabelDef
+from ayon_core.pipeline.create import CreatedInstance, CreatorError
+from ayon_flame.api import lib, pipeline, plugin
 
 try:
     from ayon_core.pipeline.create import ParentFlags
