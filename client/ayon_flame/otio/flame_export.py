@@ -1,5 +1,6 @@
 """compatibility OpenTimelineIO 0.12.0 and newer
 """
+from __future__ import annotations
 
 import json
 import logging
@@ -10,7 +11,11 @@ from pprint import pformat
 import flame
 import opentimelineio as otio
 
-from ayon_flame.api import lib
+from ayon_flame.api import (
+    MediaInfoFile,
+    TimeEffectMetadata,
+    lib,
+)
 
 from . import tw_bake, utils
 
@@ -250,16 +255,25 @@ def create_otio_markers(otio_item, item):
 
 
 def create_otio_reference(
-        clip_data, media_info=None, fps=None):
+        clip_data: dict,
+        media_info: MediaInfoFile | None = None,
+        fps: float | None = None
+) -> (
+    otio.schema.ExternalReference |
+    otio.schema.ImageSequenceReference |
+    otio.schema.MissingReference
+):
     """Create an OTIO reference from Flame clip data.
 
     Args:
         clip_data (dict): Flame clip data.
-        media_info Optional[MediaInfo]: Media information.
-        fps Optional[float]: Frames per second.
+        media_info (Optional[MediaInfoFile]): Media information.
+        fps (Optional[float]): Frames per second.
 
     Returns:
-        otio.schema.Reference: OTIO reference.
+        otio.schema.ExternalReference |
+        otio.schema.ImageSequenceReference |
+        otio.schema.MissingReference: OTIO reference.
     """
     if not media_info:
         log.error("Media info is missing")
@@ -365,8 +379,6 @@ def create_otio_reference(
 
 
 def create_otio_clip(clip_data):
-    from ayon_flame.api import MediaInfoFile, TimeEffectMetadata
-
     segment = clip_data["PySegment"]
 
     media_info = None
@@ -392,16 +404,15 @@ def create_otio_clip(clip_data):
         # Timewarp metadata
         tw_data = TimeEffectMetadata(segment, logger=log)
         log.debug(f"__ tw_data: {tw_data.data}")
-    else:
-        # fallback for clips with missing file path
-        # they will be added as missing reference clips
-        if clip_data.get("start_frame"):
-            file_first_frame = int(clip_data["start_frame"])
-            media_timecode_start = file_first_frame
-        if clip_data.get("source_frame_rate"):
-            # it returns `23.976 fps`
-            media_fps = clip_data["source_frame_rate"].replace(" fps", "")
-            media_fps = float(media_fps)
+    # fallback for clips with missing file path
+    # they will be added as missing reference clips
+    elif clip_data.get("start_frame"):
+        file_first_frame = int(clip_data["start_frame"])
+        media_timecode_start = file_first_frame
+    elif clip_data.get("source_frame_rate"):
+        # it returns `23.976 fps`
+        media_fps = clip_data["source_frame_rate"].replace(" fps", "")
+        media_fps = float(media_fps)
 
     first_frame = media_timecode_start or file_first_frame or 0
 

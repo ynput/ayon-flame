@@ -262,7 +262,6 @@ DEFAULT_PUBLISH_SETTINGS = {
         "enabled": False,
         "active": False,
         "optional": True
-
     },
     "ExtractProductResources": {
         "keep_original_representation": False,

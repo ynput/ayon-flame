@@ -81,7 +81,7 @@ class CollectShot(pyblish.api.InstancePlugin):
 
         # Adjust instance data from parent otio timeline.
         otio_timeline = instance.context.data["otioTimeline"]
-        otio_clip, marker = utils.get_marker_from_clip_index(
+        otio_clip, _ = utils.get_marker_from_clip_index(
             otio_timeline, instance.data["clip_index"]
         )
         if not otio_clip:
@@ -120,6 +120,10 @@ class CollectShot(pyblish.api.InstancePlugin):
             self.log.debug(f"clip_name: {clip_name}")
 
         # get file path
+        file_path = None
+        first_frame = 0
+        head = 0
+        tail = 0
         if not validation_aggregator.has_errors():
             file_path = clip_data["fpath"]
             first_frame = ayfapi.get_frame_from_filename(file_path) or 0
@@ -131,12 +135,6 @@ class CollectShot(pyblish.api.InstancePlugin):
                 creator_attrs["handleStart"],
                 creator_attrs["handleEnd"]
             )
-        else:
-            file_path = None
-            first_frame = 0
-            head = 0
-            tail = 0
-
 
         # Make sure there is not None and negative number
         head = abs(head or 0)

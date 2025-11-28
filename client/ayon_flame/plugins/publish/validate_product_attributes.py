@@ -17,9 +17,13 @@ class DeactivatePublishing(pyblish.api.Action):
         # Get the errored instances
         failed = []
         for result in context.data["results"]:
-            if (result["error"] is not None and result["instance"] is not None
-               and result["instance"] not in failed):
-                failed.append(result["instance"])
+            instance = result["instance"]
+            if (
+                result["error"] is not None
+                and instance is not None
+                and instance not in failed
+            ):
+                failed.append(instance)
 
         # Apply pyblish.logic to get the instances for the plug-in
         instances = pyblish.api.instances_by_plugin(failed, plugin)
@@ -49,12 +53,7 @@ class ValidateProductAttributes(
     actions = [DeactivatePublishing]
 
     def detect_failing_instance(self, instance):
-        is_failed = instance.data.get("failing")
-
-        if not is_failed:
-            return
-
-        return is_failed
+        return instance.data.get("failing")
 
     def process(self, instance):
         if not self.detect_failing_instance(instance):

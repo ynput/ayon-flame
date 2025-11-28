@@ -616,7 +616,6 @@ def get_segment_attributes(
         "record_duration", "record_in", "record_out",
         "source_in", "source_out", "source_frame_rate", "source_height",
         "source_width", "source_ratio", "start_frame", "head", "tail",
-        "start_frame"
     ]
     segment_attrs_data = {}
     for attr_name in segment_attrs:
@@ -899,7 +898,7 @@ class MediaInfoFile(object):
 
         return xml_obj.text
 
-    def _get_collection(self, feed_basename, feed_dir, feed_ext) -> str:
+    def _get_collection(self, feed_basename, feed_dir, feed_ext) -> str | None:
         """Get collection string.
 
         Args:
