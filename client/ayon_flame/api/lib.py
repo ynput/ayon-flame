@@ -1,26 +1,26 @@
-import sys
-import os
-import re
+import contextlib
+import itertools
 import json
+import os
 import pickle
-import clique
+import re
+import sys
 import tempfile
 import traceback
-import itertools
-import contextlib
 import xml.etree.cElementTree as cET
-from copy import deepcopy, copy
-from xml.etree import ElementTree as ET
+from copy import copy, deepcopy
 from pprint import pformat
+from xml.etree import ElementTree as ET
 
+import clique
 from ayon_core.lib import Logger, run_subprocess
 
 from .constants import (
+    COLOR_MAP,
     MARKER_COLOR,
     MARKER_DURATION,
     MARKER_NAME,
-    COLOR_MAP,
-    MARKER_PUBLISH_DEFAULT
+    MARKER_PUBLISH_DEFAULT,
 )
 
 log = Logger.get_logger(__name__)
@@ -332,9 +332,10 @@ def get_metadata(project_name, _log=None):
     return policy_wiretap.process(project_name)
 
 
+
+
 def get_segment_data_marker(segment, with_marker=None):
-    """
-    Get AYON track item tag created by creator or loader plugin.
+    """Get AYON track item tag created by creator or loader plugin.
 
     Attributes:
         segment (flame.PySegment): flame api object
@@ -357,17 +358,33 @@ def get_segment_data_marker(segment, with_marker=None):
                 return json.loads(comment)
             else:
                 return marker, json.loads(comment)
+    return None
+
+
+def get_clip_data_marker(clip, with_marker=None):
+    """Get data marker from inside of reel clip.
+
+    Wrapper for get_segment_data_marker. Clip has actually also markers
+    but it is different object type.
+
+    Attributes:
+        clip (flame.PyClip): flame api object
+        with_marker (bool)[optional]: if true it will return also marker object
+
+    Returns:
+        dict: AYON tag data
+
+    Returns(with_marker=True):
+        flame.PyMarker, dict
+    """
+    return get_segment_data_marker(clip, with_marker)
 
 
 def set_segment_data_marker(segment, data=None):
-    """
-    Set AYON track item tag to input segment.
+    """Set AYON track item tag to input segment.
 
     Attributes:
         segment (flame.PySegment): flame api object
-
-    Returns:
-        dict: json loaded data
     """
     data = data or dict()
 
@@ -385,6 +402,16 @@ def set_segment_data_marker(segment, data=None):
         marker = create_segment_data_marker(segment)
         # add tag data to marker's comment
         marker.comment = json.dumps(data)
+
+
+def set_clip_data_marker(clip, data=None):
+    """Set AYON track item tag to input clip.
+
+    Attributes:
+        clip (flame.PyClip): flame api object
+        data (dict): json serializable data
+    """
+    set_segment_data_marker(clip, data)
 
 
 def set_publish_attribute(segment, value):
