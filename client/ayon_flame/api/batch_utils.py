@@ -1,4 +1,11 @@
+from __future__ import annotations
+
+import contextlib
+
 import flame
+from ayon_core.lib import Logger
+
+log = Logger.get_logger(__name__)
 
 
 def create_batch_group(
@@ -22,7 +29,7 @@ def create_batch_group(
     # make sure some batch obj is present
     batch_group = update_batch_group or flame.batch
 
-    schematic_reels = kwargs.get("shematic_reels") or ['LoadedReel1']
+    schematic_reels = kwargs.get("schematic_reels") or ['LoadedReel1']
     shelf_reels = kwargs.get("shelf_reels") or ['ShelfReel1']
 
     handle_start = kwargs.get("handleStart") or 0
@@ -84,7 +91,7 @@ def _add_reels_to_batch_group(batch_group, reels, shelf_reels):
         batch_group.create_shelf_reel(_sr)
 
 
-def create_batch_group_conent(batch_nodes, batch_links, batch_group=None):
+def create_batch_group_content(batch_nodes, batch_links, batch_group=None):
     """Creating batch group with links
 
     Args:
@@ -123,7 +130,9 @@ def create_batch_group_conent(batch_nodes, batch_links, batch_group=None):
         for key, value in node_props.items():
             if not hasattr(batch_node, key):
                 continue
-            setattr(batch_node, key, value)
+            with contextlib.suppress(RuntimeError):
+                setattr(batch_node, key, value)
+
 
         # add created node for possible linking
         all_batch_nodes[node_id] = batch_node
