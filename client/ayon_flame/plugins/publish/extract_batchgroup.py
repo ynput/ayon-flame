@@ -7,21 +7,24 @@ from typing import Any
 import ayon_flame.api as ayfapi
 import pyblish.api
 from ayon_core.lib import StringTemplate
+from ayon_core.pipeline import publish
 from ayon_core.pipeline.workfile import get_workdir
 
 
-class ExtractBatchgroup(pyblish.api.InstancePlugin):
+class ExtractBatchgroup(publish.Extractor):
     """Extract Batchgroup Product data."""
 
-    order = pyblish.api.ExtractorOrder
     label = "Extract Batchgroup"
     hosts = ["flame"]
     families = ["batchgroup"]
 
     def process(self, instance):
 
+        folder_path = instance.data["folderPath"]
         attach_to_task = instance.data["attachToTask"]
         output_node_properties = instance.data["outputNodeProperties"]
+
+        batchgroup_name = folder_path.replace("/", "_")
 
         # update task in anatomy data
         task_anatomy_data = self._get_anatomy_data_with_current_task(
@@ -31,9 +34,8 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
             instance, task_anatomy_data)
         self.log.debug(f"__ task_workdir: {task_workdir}")
 
-
         # create or get already created batch group
-        bgroup = self._get_batch_group(instance)
+        bgroup = self._get_batch_group(instance, batchgroup_name)
 
         write_pref_data = self._get_write_node_prefs(
             task_workdir,
@@ -48,6 +50,30 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
         for name, node in all_batch_nodes.items():
             self.log.debug(f"name: {name}, dir: {dir(node)}")
             self.log.debug(f"__ node.attributes: {node.attributes}")
+
+        # save bgroup into a temp folder
+        staging_dir = self.staging_dir(instance)
+        self.log.debug(f"Batch group temp folder: {staging_dir}")
+        bgroup.save_setup(staging_dir)
+        # get bgroup folder and asci batch file and convert all into json
+        json_file_name = f"{batchgroup_name}.json"
+        json_output = {}
+        batchgroup_folder = Path(staging_dir) / batchgroup_name
+        if batchgroup_folder.is_dir():
+            for file_path in batchgroup_folder.rglob("*"):
+                if file_path.is_file():
+                    relative_path = file_path.relative_to(batchgroup_folder)
+                    try:
+                        content = file_path.read_text(encoding="utf-8")
+                        json_output[str(relative_path)] = content
+                    except Exception as e:
+                        self.log.warning(
+                            f"Could not read file {file_path} as text: {e}")
+        else:
+            self.log.warning(
+                f"Batch group folder not found: {batchgroup_folder}"
+            )
+        # add json bgroup representation to instance data
 
     def _add_nodes_to_batch_with_links(
         self,
@@ -83,15 +109,12 @@ class ExtractBatchgroup(pyblish.api.InstancePlugin):
         return ayfapi.create_batch_group_content(
             batch_nodes, batch_links, batch_group)
 
-    def _get_batch_group(self, instance):
+    def _get_batch_group(self, instance, batchgroup_name):
         frame_start = instance.data["frameStart"]
         frame_end = instance.data["frameEnd"]
         handle_start = instance.data["handleStart"]
         handle_end = instance.data["handleEnd"]
         frame_duration = (frame_end - frame_start) + 1
-        folder_path = instance.data["folderPath"]
-
-        batchgroup_name = folder_path.replace("/", "_")
 
         batch_data = {
             "schematic_reels": [
