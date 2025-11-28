@@ -49,6 +49,8 @@ class CollectTestSelection(pyblish.api.ContextPlugin):
         )
         read_timeline_otio = otio.adapters.read_from_file(export_path)
 
+        # Making sure timelines are the same and exporting did not
+        # change anything
         if len(str(otio_timeline)) != len(str(read_timeline_otio)):
             raise Exception("Exported timeline is different from original")
 
