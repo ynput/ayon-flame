@@ -179,7 +179,7 @@ class IntegrateBatchGroupModel(BaseSettingsModel):
     )
 
 
-class OptionbnalValidatorModel(BaseSettingsModel):
+class OptionalValidatorModel(BaseSettingsModel):
     enabled: bool = SettingsField(
         False,
         title="Enabled"
@@ -200,13 +200,13 @@ class PublishPluginsModel(BaseSettingsModel):
         title="Collect Shot instances"
     )
 
-    ValidateProductAttributes: OptionbnalValidatorModel = SettingsField(
-        default_factory=OptionbnalValidatorModel,
+    ValidateProductAttributes: OptionalValidatorModel = SettingsField(
+        default_factory=OptionalValidatorModel,
         title="Validate Product Attributes"
     )
 
-    ValidateSegments: OptionbnalValidatorModel = SettingsField(
-        default_factory=OptionbnalValidatorModel,
+    ValidateSegments: OptionalValidatorModel = SettingsField(
+        default_factory=OptionalValidatorModel,
         title="Validate Segments"
     )
 
