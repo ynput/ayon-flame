@@ -19,7 +19,6 @@ from ayon_core.pipeline import (
 from ayon_flame import FLAME_ADDON_ROOT
 from .lib import (
     set_segment_data_marker,
-    set_publish_attribute,
     maintained_segment_selection,
     get_current_sequence,
     reset_segment_selection
@@ -174,9 +173,6 @@ def imprint(segment, data=None):
     data = data or {}
 
     set_segment_data_marker(segment, data)
-
-    # add publish attribute
-    set_publish_attribute(segment, True)
 
 
 @contextlib.contextmanager
