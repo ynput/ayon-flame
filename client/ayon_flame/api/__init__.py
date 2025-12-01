@@ -10,6 +10,7 @@ from .constants import (
 )
 from .lib import (
     CTX,
+    ValidationAggregator,
     FlameAppFramework,
     get_current_project,
     get_current_sequence,
@@ -92,6 +93,7 @@ __all__ = [
 
     # lib
     "CTX",
+    "ValidationAggregator",
     "FlameAppFramework",
     "get_current_project",
     "get_current_sequence",

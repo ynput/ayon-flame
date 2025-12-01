@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import contextlib
 import itertools
 import json
@@ -9,6 +11,7 @@ import tempfile
 import traceback
 import xml.etree.cElementTree as cET
 from copy import copy, deepcopy
+from dataclasses import dataclass, field
 from pprint import pformat
 from xml.etree import ElementTree as ET
 
@@ -33,6 +36,14 @@ class CTX:
     app_framework = None
     flame_apps = []
     selection = None
+
+
+@dataclass
+class ValidationAggregator:
+    failed_segments: list = field(default_factory=list)
+
+    def has_errors(self):
+        return len(self.failed_segments) > 0
 
 
 @contextlib.contextmanager
@@ -422,9 +433,9 @@ def set_publish_attribute(segment, value):
         value (bool): True or False
     """
     tag_data = get_segment_data_marker(segment)
-    tag_data["publish"] = value
+    tag_data["active"] = value
 
-    # set data to the publish attribute
+    # set data to the active attribute
     set_segment_data_marker(segment, tag_data)
 
 
@@ -443,7 +454,7 @@ def get_publish_attribute(segment):
         set_publish_attribute(segment, MARKER_PUBLISH_DEFAULT)
         return MARKER_PUBLISH_DEFAULT
 
-    return tag_data["publish"]
+    return tag_data["active"]
 
 
 def create_segment_data_marker(segment):
@@ -559,20 +570,52 @@ def _get_shot_tokens_values(clip, tokens):
     return output
 
 
-def get_segment_attributes(segment):
-    if segment.name.get_value() == "":
+def get_segment_attributes(
+    segment, validation_aggregator: ValidationAggregator = None):
+    """Get attributes of a segment.
+
+    Args:
+        segment (Segment): Segment to get attributes from.
+        validation_aggregator (ValidationAggregator, optional):
+                Output object to store attributes for passing into
+                publishing validation. Defaults to None.
+
+    Returns:
+        dict: Dictionary of attributes.
+    """
+    if segment.type == "Gap":
         return None
+
+    if not validation_aggregator:
+        validation_aggregator = ValidationAggregator()
+
+    segment_name = segment.name.get_value()
 
     # Add timeline segment to tree
     clip_data = {
         "shot_name": segment.shot_name.get_value(),
-        "segment_name": segment.name.get_value(),
         "segment_comment": segment.comment.get_value(),
         "tape_name": segment.tape_name,
         "source_name": segment.source_name,
-        "fpath": segment.file_path,
         "PySegment": segment,
     }
+    # make sure even segments without proper name are handled as missing
+    # this way they will be detected by Publisher Validator
+    if not segment_name:
+        clip_data["segment_name"] = "Missing: Segment's Name"
+        if segment not in validation_aggregator.failed_segments:
+            validation_aggregator.failed_segments.append(segment)
+    else:
+        clip_data["segment_name"] = segment_name
+
+    # make sure even segments without file path are handled as missing
+    # this way they will be detected by Publisher Validator
+    if segment.file_path and segment_name:
+        clip_data["fpath"] = segment.file_path
+    else:
+        clip_data["segment_name"] = "Missing: Segment's File Path"
+        if segment not in validation_aggregator.failed_segments:
+            validation_aggregator.failed_segments.append(segment)
 
     # head and tail with forward compatibility
     if segment.head:
@@ -598,7 +641,8 @@ def get_segment_attributes(segment):
     # populate shot source metadata
     segment_attrs = [
         "record_duration", "record_in", "record_out",
-        "source_in", "source_out"
+        "source_in", "source_out", "source_frame_rate", "source_height",
+        "source_width", "source_ratio", "start_frame", "head", "tail",
     ]
     segment_attrs_data = {}
     for attr_name in segment_attrs:
@@ -881,8 +925,8 @@ class MediaInfoFile(object):
 
         return xml_obj.text
 
-    def _get_collection(self, feed_basename, feed_dir, feed_ext):
-        """ Get collection string
+    def _get_collection(self, feed_basename, feed_dir, feed_ext) -> str | None:
+        """Get collection string.
 
         Args:
             feed_basename (str): file base name
@@ -900,9 +944,8 @@ class MediaInfoFile(object):
         # make sure partial input basename is having correct extensoon
         if not partialname:
             raise AttributeError(
-                "Wrong input attributes. Basename - {}, Ext - {}".format(
-                    feed_basename, feed_ext
-                )
+                f"Wrong input attributes. Basename - {feed_basename}, "
+                f"Ext - {feed_ext}"
             )
 
         # get all related files
@@ -939,6 +982,7 @@ class MediaInfoFile(object):
             self.log.debug("__ coll_to_text: {}".format(coll_to_text))
             if search_number_pattern in coll_to_text:
                 return coll_to_text
+        return None
 
     @staticmethod
     def _format_collection(collection, padding=None):
