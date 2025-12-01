@@ -24,6 +24,7 @@ class CollectTestSelection(pyblish.api.ContextPlugin):
 
         self.test_print_attributes(sequence)
         self.test_otio_export(sequence)
+        self.test_render_path(sequence)
 
     def test_otio_export(self, sequence):
         test_dir = os.path.normpath(
@@ -82,3 +83,8 @@ class CollectTestSelection(pyblish.api.ContextPlugin):
                 and not callable(getattr(segment, attr))
             ):
                 self.log.debug(f"{attr}: {getattr(segment, attr)}")
+
+    def test_render_path(self, sequence):
+        for shot in sequence.shots:
+            for segment in shot.segments:
+                self.log.info(f"Render path: {segment.render_path}")
