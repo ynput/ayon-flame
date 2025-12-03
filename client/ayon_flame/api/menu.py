@@ -132,20 +132,32 @@ class FlameMenuProjectConnect(_FlameMenuApp):
 
         menu = deepcopy(self.menu)
 
-        # menu['actions'].append({
-        #     "name": "Workfiles...",
-        #     "execute": lambda x: self.tools_helper.show_workfiles()
-        # })
+        menu['actions'].append(
+            {
+                "name": "1 - Create...",
+                "execute": lambda x: callback_selection(
+                    x, host_tools.show_publisher(
+                        tab="create", parent=_get_main_window()
+                    )
+                ),
+            }
+        )
+        menu["actions"].append(
+            {
+                "name": "2 - Publish...",
+                "execute": lambda x: callback_selection(
+                    x, host_tools.show_publisher(
+                        tab="publish", parent=_get_main_window()
+                    )
+                ),
+            }
+        )
         menu['actions'].append({
-            "name": "1 - Load...",
+            "name": "3 - Load...",
             "execute": lambda x: self.tools_helper.show_loader()
         })
-        # menu['actions'].append({
-        #     "name": "Manage...",
-        #     "execute": lambda x: self.tools_helper.show_scene_inventory()
-        # })
         menu['actions'].append({
-            "name": "2 - Library...",
+            "name": "4 - Library...",
             "execute": lambda x: self.tools_helper.show_library_loader()
         })
 
