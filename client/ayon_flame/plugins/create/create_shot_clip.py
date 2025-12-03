@@ -358,8 +358,7 @@ OTIO file.
             item for item in selection
             if isinstance(item, flame.PySequence)
         ]:
-            self.enabled = False
-            return None
+            cls.enabled = False
 
     def get_pre_create_attr_defs(self):
 
