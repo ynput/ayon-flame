@@ -334,7 +334,7 @@ class EditorialAudioInstanceCreator(_FlameInstanceClipCreatorBase):
 class CreateShotClip(plugin.FlameCreator):
     """Publishable clip"""
 
-    identifier = "io.ayon.creators.flame.clip"
+    identifier = "io.ayon.creators.flame.editorial.clip"
     label = "Create Publishable Clip"
     product_type = "editorial"
     icon = "film"
