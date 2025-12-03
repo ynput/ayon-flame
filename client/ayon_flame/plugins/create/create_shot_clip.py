@@ -2,6 +2,7 @@ import uuid
 from copy import deepcopy
 
 import ayon_flame.api as ayfapi
+import flame
 from ayon_core.lib import BoolDef, EnumDef, NumberDef, TextDef, UILabelDef
 from ayon_core.pipeline.create import CreatedInstance, CreatorError
 from ayon_flame.api import lib, pipeline, plugin
@@ -923,7 +924,16 @@ OTIO file.
         restrict_to_selection = create_settings[
             "collectSelectedInstance"]
 
-        current_sequence = lib.get_current_sequence(lib.CTX.selection)
+        selection = lib.CTX.selection or []
+        # make sure this is sequence timeline context
+        if not [
+            item for item in selection
+            if isinstance(item, flame.PySequence)
+        ]:
+            self.enabled = False
+
+        current_sequence = lib.get_current_sequence(selection)
+
         # only get selected segments if user selected any
         # and settings are enabled
         segments = lib.get_sequence_segments(
