@@ -350,6 +350,17 @@ OTIO file.
 
     shot_instances = {}
 
+    @classmethod
+    def apply_settings(cls, project_settings):
+        selection = lib.CTX.selection or []
+        # make sure this is sequence timeline context
+        if not [
+            item for item in selection
+            if isinstance(item, flame.PySequence)
+        ]:
+            self.enabled = False
+            return None
+
     def get_pre_create_attr_defs(self):
 
         def header_label(text):
@@ -925,13 +936,6 @@ OTIO file.
             "collectSelectedInstance"]
 
         selection = lib.CTX.selection or []
-        # make sure this is sequence timeline context
-        if not [
-            item for item in selection
-            if isinstance(item, flame.PySequence)
-        ]:
-            self.enabled = False
-            return None
 
         current_sequence = lib.get_current_sequence(selection)
 

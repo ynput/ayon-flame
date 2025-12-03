@@ -43,6 +43,7 @@ Publishing clips/plate, audio for new shots to project
 or updating already created from Flame. Publishing will create
 OTIO file.
 """
+    @classmethod
     def apply_settings(cls, project_settings):
         selection = lib.CTX.selection or []
         # make sure this is sequence timeline context
