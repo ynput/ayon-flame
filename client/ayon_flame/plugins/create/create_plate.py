@@ -43,6 +43,15 @@ Publishing clips/plate, audio for new shots to project
 or updating already created from Flame. Publishing will create
 OTIO file.
 """
+    def apply_settings(cls, project_settings):
+        selection = lib.CTX.selection or []
+        # make sure this is sequence timeline context
+        if not [
+            item for item in selection
+            if isinstance(item, flame.PyClip)
+        ]:
+            self.enabled = False
+            return None
 
     def get_pre_create_attr_defs(self):
 
@@ -102,14 +111,7 @@ OTIO file.
 
     def collect_instances(self):
         """Collect all created instances from current timeline."""
-        selection = lib.CTX.selection or []
-        # make sure this is sequence timeline context
-        if not [
-            item for item in selection
-            if isinstance(item, flame.PyClip)
-        ]:
-            self.enabled = False
-            return None
+        pass
 
     def update_instances(self, update_list):
         """Never called, update is handled via _FlameInstanceCreator."""
