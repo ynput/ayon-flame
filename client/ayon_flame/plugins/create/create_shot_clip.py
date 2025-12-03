@@ -356,7 +356,7 @@ OTIO file.
         # make sure this is sequence timeline context
         if not [
             item for item in selection
-            if isinstance(item, flame.PySequence)
+            if isinstance(item, flame.PySegment)
         ]:
             cls.enabled = False
 
