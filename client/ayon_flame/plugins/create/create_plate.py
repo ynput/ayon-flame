@@ -19,16 +19,17 @@ Restrictions:
 import uuid
 from copy import deepcopy
 
+import flame
 from ayon_core.lib import BoolDef
-from ayon_flame.api import lib, pipeline, plugin
 from ayon_core.pipeline.create import CreatedInstance, CreatorError
+from ayon_flame.api import lib, pipeline, plugin
 
 # Used as a key by the creators in order to
 # retrieve the instances data into clip markers.
 _CONTENT_ID = "flame_sub_products"
 
 
-class PlateCreator(plugin.FlameCreator):
+class PlateCreator(plugin.FlameReelCreator):
     """Publishable clip"""
     identifier = "io.ayon.creators.flame.reel.plate"
     product_type = "plate"
@@ -72,29 +73,9 @@ OTIO file.
         instance_data.update(pre_create_data)
         instance_data["task"] = None
 
-        for item in self.selected:
+        for clip_data in self.selected:
+            item = clip_data["PyClip"]
             self.log.info(f"selected item: {item} is type {type(item)}")
-
-            # get clip item attributes from discreet segment object
-            clip_data = {
-                "PyClip": item,
-                "fps": float(str(item.frame_rate)[:-4])
-            }
-
-            attrs = [
-                "name", "width", "height",
-                "ratio", "sample_rate", "bit_depth"
-            ]
-
-            for attr in attrs:
-                val = getattr(item, attr)
-                clip_data[attr] = val
-
-            version = item.versions[-1]
-            track = version.tracks[-1]
-            for segment in track.segments:
-                segment_data = lib.get_segment_attributes(segment)
-                clip_data.update(segment_data)
 
             # set instance related data
             clip_index = str(uuid.uuid4())
@@ -121,7 +102,14 @@ OTIO file.
 
     def collect_instances(self):
         """Collect all created instances from current timeline."""
-        pass
+        selection = lib.CTX.selection or []
+        # make sure this is sequence timeline context
+        if not [
+            item for item in selection
+            if isinstance(item, flame.PyClip)
+        ]:
+            self.enabled = False
+            return None
 
     def update_instances(self, update_list):
         """Never called, update is handled via _FlameInstanceCreator."""

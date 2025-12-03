@@ -661,13 +661,19 @@ def get_segment_attributes(
     return clip_data
 
 
-def get_clips_in_reels(project):
+def get_clips_in_reels(project, selected=False):
     output_clips = []
     project_desktop = project.current_workspace.desktop
 
     for reel_group in project_desktop.reel_groups:
         for reel in reel_group.reels:
             for clip in reel.clips:
+                if (
+                    selected is True
+                    and clip.selected.get_value() is not True
+                ):
+                    continue
+
                 clip_data = {
                     "PyClip": clip,
                     "fps": float(str(clip.frame_rate)[:-4])
