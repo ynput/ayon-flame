@@ -931,6 +931,7 @@ OTIO file.
             if isinstance(item, flame.PySequence)
         ]:
             self.enabled = False
+            return None
 
         current_sequence = lib.get_current_sequence(selection)
 
