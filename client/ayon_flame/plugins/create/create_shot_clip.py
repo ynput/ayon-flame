@@ -205,7 +205,7 @@ class _FlameInstanceCreator(plugin.HiddenFlameCreator):
 
 class FlameShotInstanceCreator(_FlameInstanceCreator):
     """Shot product type creator class"""
-    identifier = "io.ayon.creators.flame.shot"
+    identifier = "io.ayon.creators.flame.editorial.shot"
     product_type = "shot"
     label = "Editorial Shot"
 
@@ -307,7 +307,7 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
 
 class EditorialPlateInstanceCreator(_FlameInstanceClipCreatorBase):
     """Plate product type creator class"""
-    identifier = "io.ayon.creators.flame.plate"
+    identifier = "io.ayon.creators.flame.editorial.plate"
     product_type = "plate"
     label = "Editorial Plate"
 
@@ -325,7 +325,7 @@ class EditorialPlateInstanceCreator(_FlameInstanceClipCreatorBase):
 
 class EditorialAudioInstanceCreator(_FlameInstanceClipCreatorBase):
     """Audio product type creator class"""
-    identifier = "io.ayon.creators.flame.audio"
+    identifier = "io.ayon.creators.flame.editorial.audio"
     product_type = "audio"
     label = "Editorial Audio"
 
@@ -611,9 +611,9 @@ OTIO file.
         sorted_selected_segments.extend(unsorted_selected_segments)
 
         # detect enabled creators for review, plate and audio
-        shot_creator_id = "io.ayon.creators.flame.shot"
-        plate_creator_id = "io.ayon.creators.flame.plate"
-        audio_creator_id = "io.ayon.creators.flame.audio"
+        shot_creator_id = "io.ayon.creators.flame.editorial.shot"
+        plate_creator_id = "io.ayon.creators.flame.editorial.plate"
+        audio_creator_id = "io.ayon.creators.flame.editorial.audio"
         all_creators = {
             shot_creator_id: True,
             plate_creator_id: True,
@@ -865,7 +865,7 @@ OTIO file.
             ),
         })
 
-        shot_creator_id = "io.ayon.creators.flame.shot"
+        shot_creator_id = "io.ayon.creators.flame.editorial.shot"
         creator = self.create_context.creators[shot_creator_id]
         instance = creator.create(sub_instance_data, None)
         instance.transient_data["segment_item"] = segment
@@ -873,10 +873,10 @@ OTIO file.
         parenting_data = instance
 
         # Create plate/audio instance
-        sub_creators = ["io.ayon.creators.flame.plate"]
+        sub_creators = ["io.ayon.creators.flame.editorial.plate"]
         if instance_data["audio"]:
             sub_creators.append(
-                "io.ayon.creators.flame.audio"
+                "io.ayon.creators.flame.editorial.audio"
             )
 
         for sub_creator_id in sub_creators:

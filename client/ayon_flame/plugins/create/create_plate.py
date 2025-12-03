@@ -30,7 +30,7 @@ _CONTENT_ID = "flame_sub_products"
 
 class PlateCreator(plugin.FlameCreator):
     """Publishable clip"""
-    identifier = "io.ayon.creators.flame.plate"
+    identifier = "io.ayon.creators.flame.reel.plate"
     product_type = "plate"
     label = "Plate Reel Clip"
 
