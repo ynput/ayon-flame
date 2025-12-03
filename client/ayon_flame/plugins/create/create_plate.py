@@ -19,7 +19,6 @@ Restrictions:
 import uuid
 from copy import deepcopy
 
-import flame
 from ayon_core.lib import BoolDef
 from ayon_flame.api import lib, pipeline, plugin
 from ayon_core.pipeline.create import CreatedInstance, CreatorError
@@ -27,20 +26,6 @@ from ayon_core.pipeline.create import CreatedInstance, CreatorError
 # Used as a key by the creators in order to
 # retrieve the instances data into clip markers.
 _CONTENT_ID = "flame_sub_products"
-
-
-# get current selection from the current focus
-# TODO: implement it in plugin
-def get_segments_from_selection():
-    """Get segments from selected items.
-
-    Returns:
-        list: List of segments.
-    """
-    return [
-        segment for segment in lib.CTX.selection
-        if isinstance(segment, flame.PySegment)
-    ]
 
 
 class PlateCreator(plugin.FlameCreator):
