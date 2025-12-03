@@ -36,6 +36,7 @@ class CTX:
     app_framework = None
     flame_apps = []
     selection = None
+    context = None
 
 
 @dataclass

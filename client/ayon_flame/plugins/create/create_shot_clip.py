@@ -352,12 +352,8 @@ OTIO file.
 
     @classmethod
     def apply_settings(cls, project_settings):
-        selection = lib.CTX.selection or []
         # make sure this is sequence timeline context
-        if not [
-            item for item in selection
-            if isinstance(item, flame.PySegment)
-        ]:
+        if lib.CTX.context != "FlameMenuTimeline"
             cls.enabled = False
 
     def get_pre_create_attr_defs(self):

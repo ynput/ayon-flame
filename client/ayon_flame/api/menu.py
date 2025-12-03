@@ -27,9 +27,14 @@ default_flame_export_presets = {
 }
 
 
-def callback_selection(selection, function):
+def callback_selection(
+    selection,
+    function,
+    context,
+):
     import ayon_flame.api as ayfapi
     ayfapi.CTX.selection = selection
+    ayfapi.CTX.context = context
     print("Hook Selection: \n\t{}".format(
         pformat({
             index: (type(item), item.name)
@@ -183,9 +188,11 @@ class FlameMenuTimeline(_FlameMenuApp):
             {
                 "name": "1 - Create...",
                 "execute": lambda x: callback_selection(
-                    x, host_tools.show_publisher(
+                    x,
+                    host_tools.show_publisher(
                         tab="create", parent=_get_main_window()
-                    )
+                    ),
+                    context="FlameMenuTimeline"
                 ),
             }
         )
@@ -193,9 +200,11 @@ class FlameMenuTimeline(_FlameMenuApp):
             {
                 "name": "2 - Publish...",
                 "execute": lambda x: callback_selection(
-                    x, host_tools.show_publisher(
+                    x,
+                    host_tools.show_publisher(
                         tab="publish", parent=_get_main_window()
-                    )
+                    ),
+                    context="FlameMenuTimeline"
                 ),
             }
         )
@@ -253,9 +262,11 @@ class FlameMenuUniversal(_FlameMenuApp):
             {
                 "name": "1 - Create...",
                 "execute": lambda x: callback_selection(
-                    x, host_tools.show_publisher(
+                    x,
+                    host_tools.show_publisher(
                         tab="create", parent=_get_main_window()
-                    )
+                    ),
+                    context="FlameMenuUniversal"
                 ),
             }
         )
@@ -263,16 +274,21 @@ class FlameMenuUniversal(_FlameMenuApp):
             {
                 "name": "2 - Publish...",
                 "execute": lambda x: callback_selection(
-                    x, host_tools.show_publisher(
+                    x,
+                    host_tools.show_publisher(
                         tab="publish", parent=_get_main_window()
-                    )
+                    ),
+                    context="FlameMenuUniversal"
                 ),
             }
         )
         menu['actions'].append({
             "name": "3 - Load...",
             "execute": lambda x: callback_selection(
-                x, self.tools_helper.show_loader)
+                x,
+                self.tools_helper.show_loader,
+                context="FlameMenuUniversal"
+            )
         })
         menu['actions'].append({
             "name": "4 - Library...",
