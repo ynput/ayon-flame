@@ -353,7 +353,7 @@ OTIO file.
     @classmethod
     def apply_settings(cls, project_settings):
         # make sure this is sequence timeline context
-        if lib.CTX.context != "FlameMenuTimeline"
+        if lib.CTX.context != "FlameMenuTimeline":
             cls.enabled = False
 
     def get_pre_create_attr_defs(self):
