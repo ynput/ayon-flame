@@ -98,7 +98,6 @@ OTIO file.
             clip_name = clip_data["name"]
             product_name = f"{product_name_base}_{clip_name}"
             clip_item = clip_data.pop("PyClip")
-            self.log.info(f"selected item: {clip_item} is type {type(item)}")
 
             # set instance related data
             clip_index = str(uuid.uuid4())
