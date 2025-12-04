@@ -743,6 +743,7 @@ def get_clips_in_reels(project, selected=False):
                 track = version.tracks[-1]
                 for segment in track.segments:
                     segment_data = get_segment_attributes(segment)
+                    segment_data.pop("PySegment")
                     clip_data.update(segment_data)
 
                 output_clips.append(clip_data)
