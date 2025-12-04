@@ -17,6 +17,11 @@ except ImportError:
 # retrieve the instances data into clip markers.
 _CONTENT_ID = "flame_sub_products"
 
+IDENTIFIER_MAPPING = {
+    "io.ayon.creators.flame.shot": "io.ayon.creators.flame.editorial.shot",
+    "io.ayon.creators.flame.plate": "io.ayon.creators.flame.editorial.plate",
+    "io.ayon.creators.flame.audio": "io.ayon.creators.flame.editorial.audio",
+}
 
 # Shot attributes
 CLIP_ATTR_DEFS = [
@@ -960,6 +965,11 @@ OTIO file.
                 continue
 
             for creator_id, data in marker_data[_CONTENT_ID].items():
+                # make sure older identifiers will also work
+                older_identifier = IDENTIFIER_MAPPING.get(creator_id)
+                if older_identifier:
+                    creator_id = older_identifier
+
                 self._create_and_add_instance(
                     data, creator_id, segment, instances)
 
