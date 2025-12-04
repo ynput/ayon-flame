@@ -423,7 +423,22 @@ def set_clip_data_marker(clip, data=None):
         clip (flame.PyClip): flame api object
         data (dict): json serializable data
     """
-    set_segment_data_marker(clip, data)
+    data = data or dict()
+
+    marker_data = get_segment_data_marker(clip, True)
+
+    if marker_data:
+        # get available AYON tag if any
+        marker, tag_data = marker_data
+        # update tag data with new data
+        tag_data.update(data)
+        # update marker with tag data
+        marker.comment = json.dumps(tag_data)
+    else:
+        # update tag data with new data
+        marker = create_clip_data_marker(clip)
+        # add tag data to marker's comment
+        marker.comment = json.dumps(data)
 
 
 def set_publish_attribute(segment, value):
@@ -473,6 +488,31 @@ def create_segment_data_marker(segment):
     start_frame = int(segment.record_in.relative_frame) + int(duration / 2)
     # create marker
     marker = segment.create_marker(start_frame)
+    # set marker name
+    marker.name = MARKER_NAME
+    # set duration
+    marker.duration = MARKER_DURATION
+    # set colour
+    marker.colour = COLOR_MAP[MARKER_COLOR]  # Red
+
+    return marker
+
+
+def create_clip_data_marker(clip):
+    """ Create AYON marker on a clip.
+
+    Attributes:
+        clip (flame.PyClip): flame api object
+
+    Returns:
+        flame.PyMarker: flame api object
+    """
+    # get duration of segment
+    duration = clip.duration
+    # calculate start frame of the new marker
+    start_frame = int(clip.start_frame) + int(duration / 2)
+    # create marker
+    marker = clip.create_marker(start_frame)
     # set marker name
     marker.name = MARKER_NAME
     # set duration
