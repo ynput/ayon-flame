@@ -82,7 +82,7 @@ OTIO file.
         project_name = project_entity["name"]
         host_name = self.create_context.host_name
 
-        product_name = self.get_product_name(
+        product_name_base = self.get_product_name(
             project_name=project_name,
             project_entity=project_entity,
             folder_entity=folder_entity,
@@ -95,13 +95,20 @@ OTIO file.
         instance_data["task"] = None
 
         for clip_data in self.selected:
+            clip_name = clip_data["name"]
+            product_name = f"{product_name_base}_{clip_name}"
             clip_item = clip_data.pop("PyClip")
             self.log.info(f"selected item: {clip_item} is type {type(item)}")
 
             # set instance related data
             clip_index = str(uuid.uuid4())
             clip_instance_data = deepcopy(instance_data)
-            clip_instance_data["clip_index"] = clip_index
+            clip_instance_data.update(
+                {
+                    "clip_index": clip_index,
+                    "productName": product_name,
+                }
+            )
 
             instance = CreatedInstance(
                 self.product_type,
