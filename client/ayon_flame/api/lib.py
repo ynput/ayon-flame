@@ -508,7 +508,7 @@ def create_clip_data_marker(clip):
         flame.PyMarker: flame api object
     """
     # get duration of segment
-    duration = clip.duration
+    duration = clip.duration.frame
     print(duration)
     # calculate start frame of the new marker
     start_frame = int(clip.start_frame) + int(duration / 2)
