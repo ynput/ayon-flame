@@ -474,7 +474,7 @@ def get_publish_attribute(segment):
 
 
 def create_segment_data_marker(segment):
-    """ Create AYON marker on a segment.
+    """Create AYON marker on a segment.
 
     Attributes:
         segment (flame.PySegment): flame api object
@@ -499,7 +499,7 @@ def create_segment_data_marker(segment):
 
 
 def create_clip_data_marker(clip):
-    """ Create AYON marker on a clip.
+    """Create AYON marker on a clip.
 
     Attributes:
         clip (flame.PyClip): flame api object
@@ -508,9 +508,9 @@ def create_clip_data_marker(clip):
         flame.PyMarker: flame api object
     """
     # get duration of segment
-    duration = clip.duration
+    duration = clip.duration.frame
     # calculate start frame of the new marker
-    start_frame = int(clip.start_frame) + int(duration / 2)
+    start_frame = int(clip.start_frame.frame) + int(duration / 2)
     # create marker
     marker = clip.create_marker(start_frame)
     # set marker name
