@@ -731,6 +731,12 @@ def get_clips_in_reels(project, selected=False):
 
                 for attr in attrs:
                     val = getattr(clip, attr)
+
+                    # make sure PyAttribute is converted to value
+                    func = getattr(val, "get_value", None)
+                    if func:
+                        val = func()
+
                     clip_data[attr] = val
 
                 version = clip.versions[-1]
