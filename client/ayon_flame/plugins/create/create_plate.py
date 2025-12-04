@@ -75,6 +75,22 @@ OTIO file.
         self.log.info(self.selected)
         self.log.debug(f"Selected: {self.selected}")
 
+        project_entity = self.create_context.get_current_project_entity()
+        folder_entity = self.create_context.get_current_folder_entity()
+        task_entity = self.create_context.get_current_task_entity()
+
+        project_name = project_entity["name"]
+        host_name = self.create_context.host_name
+
+        product_name = self.get_product_name(
+            project_name=project_name,
+            project_entity=project_entity,
+            folder_entity=folder_entity,
+            task_entity=task_entity,
+            variant=self.default_variant,
+            host_name=host_name,
+        )
+
         instance_data.update(pre_create_data)
         instance_data["task"] = None
 
@@ -89,7 +105,7 @@ OTIO file.
 
             instance = CreatedInstance(
                 self.product_type,
-                instance_data["productName"],
+                product_name,
                 clip_instance_data,
                 self
             )
