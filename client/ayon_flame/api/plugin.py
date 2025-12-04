@@ -73,6 +73,8 @@ class FlameReelCreator(Creator):
         super(Creator, self).__init__(*args, **kwargs)
         self.presets = get_current_project_settings()[
             "flame"]["create"].get(self.__class__.__name__, {})
+        # adding basic current context resolve objects
+        self.project = flib.get_current_project()
 
     def create(self, product_name, instance_data, pre_create_data):
         """Prepare data for new instance creation.
@@ -83,9 +85,6 @@ class FlameReelCreator(Creator):
             pre_create_data(dict): Data based on pre creation attributes.
                 Those may affect how creator works.
         """
-        # adding basic current context resolve objects
-        self.project = flib.get_current_project()
-
         selected = pre_create_data.get("use_selection", False)
         self.selected = flib.get_clips_in_reels(
             self.project,

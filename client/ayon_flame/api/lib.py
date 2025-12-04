@@ -392,7 +392,11 @@ def get_clip_data_marker(clip, with_marker=None):
     Returns(with_marker=True):
         flame.PyMarker, dict
     """
-    return get_segment_data_marker(clip, with_marker)
+    version = clip.versions[-1]
+    track = version.tracks[-1]
+    segment = track.segments[-1]
+
+    return get_segment_data_marker(segment, with_marker)
 
 
 def set_segment_data_marker(segment, data=None):

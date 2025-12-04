@@ -95,8 +95,8 @@ OTIO file.
         instance_data["task"] = None
 
         for clip_data in self.selected:
-            item = clip_data.pop("PyClip")
-            self.log.info(f"selected item: {item} is type {type(item)}")
+            clip_item = clip_data.pop("PyClip")
+            self.log.info(f"selected item: {clip_item} is type {type(item)}")
 
             # set instance related data
             clip_index = str(uuid.uuid4())
@@ -112,9 +112,9 @@ OTIO file.
             self._add_instance_to_context(instance)
             instance.transient_data["has_promised_context"] = True
 
-            instance.transient_data["clip_item"] = item
+            instance.transient_data["clip_item"] = clip_item
             pipeline.imprint(
-                item,
+                clip_item,
                 data={
                     _CONTENT_ID: clip_instance_data,
                     "clip_data": clip_data,
@@ -123,7 +123,22 @@ OTIO file.
 
     def collect_instances(self):
         """Collect all created instances from current timeline."""
-        pass
+        clips = lib.get_clips_in_reels(self.project)
+        for clip_data in clips:
+            clip_item = clip_data.pop("PyClip")
+            marker_data = lib.get_clip_data_marker(clip_item)
+            if not marker_data:
+                continue
+            instance_data = marker_data.get(_CONTENT_ID)
+            if not instance_data:
+                continue
+
+            # Add instance
+            created_instance = CreatedInstance.from_existing(
+                instance_data, self)
+
+            self._add_instance_to_context(created_instance)
+            created_instance.transient_data["clip_item"] = clip_item
 
     def update_instances(self, update_list):
         """Never called, update is handled via _FlameInstanceCreator."""
