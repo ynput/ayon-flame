@@ -427,7 +427,12 @@ def set_clip_data_marker(clip, data=None):
         data (dict): json serializable data
     """
     data = data or dict()
-    segment = data["clip_data"].pop("PySegment")
+    segment = data["clip_data"].pop("PySegment", None)
+
+    if not segment:
+        version = clip.versions[-1]
+        track = version.tracks[-1]
+        segment = track.segments[-1]
 
     marker_data = get_segment_data_marker(segment, True)
 
