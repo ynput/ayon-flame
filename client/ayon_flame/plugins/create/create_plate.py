@@ -95,7 +95,7 @@ OTIO file.
         instance_data["task"] = None
 
         for clip_data in self.selected:
-            item = clip_data["PyClip"]
+            item = clip_data.pop("PyClip")
             self.log.info(f"selected item: {item} is type {type(item)}")
 
             # set instance related data
