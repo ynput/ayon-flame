@@ -966,12 +966,20 @@ OTIO file.
 
             for creator_id, data in marker_data[_CONTENT_ID].items():
                 # make sure older identifiers will also work
-                older_identifier = IDENTIFIER_MAPPING.get(creator_id)
-                if older_identifier:
-                    creator_id = older_identifier
+                identifier = None
+                for key, value in IDENTIFIER_MAPPING.items():
+                    if key == creator_id:
+                        identifier = value
+                        break
+                    if value == creator_id:
+                        identifier = value
+                        break
+
+                if not identifier:
+                    continue
 
                 self._create_and_add_instance(
-                    data, creator_id, segment, instances)
+                    data, identifier, segment, instances)
 
         return instances
 
