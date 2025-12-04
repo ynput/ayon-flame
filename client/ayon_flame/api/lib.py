@@ -427,8 +427,9 @@ def set_clip_data_marker(clip, data=None):
         data (dict): json serializable data
     """
     data = data or dict()
+    segment = data["clip_data"].pop("PySegment")
 
-    marker_data = get_segment_data_marker(clip, True)
+    marker_data = get_segment_data_marker(segment, True)
 
     if marker_data:
         # get available AYON tag if any
@@ -439,7 +440,7 @@ def set_clip_data_marker(clip, data=None):
         marker.comment = json.dumps(tag_data)
     else:
         # update tag data with new data
-        marker = create_clip_data_marker(clip)
+        marker = create_segment_data_marker(segment)
         # add tag data to marker's comment
         marker.comment = json.dumps(data)
 
@@ -743,7 +744,6 @@ def get_clips_in_reels(project, selected=False):
                 track = version.tracks[-1]
                 for segment in track.segments:
                     segment_data = get_segment_attributes(segment)
-                    segment_data.pop("PySegment")
                     clip_data.update(segment_data)
 
                 output_clips.append(clip_data)
