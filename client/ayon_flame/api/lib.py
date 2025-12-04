@@ -365,7 +365,7 @@ def get_segment_data_marker(segment, with_marker=None):
         name = marker.name.get_value()
 
         if "{" not in comment:
-            continue
+            comment = "{}"
 
         if (name == MARKER_NAME) and (
                 color == COLOR_MAP[MARKER_COLOR]):
