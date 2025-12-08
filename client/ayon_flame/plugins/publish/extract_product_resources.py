@@ -5,9 +5,6 @@ from copy import deepcopy
 import pyblish.api
 
 from ayon_core.pipeline import publish
-from ayon_core.pipeline.colorspace import (
-    get_remapped_colorspace_from_native
-)
 from ayon_flame import api as ayfapi
 from ayon_flame.api import MediaInfoFile
 from ayon_core.pipeline.editorial import (
