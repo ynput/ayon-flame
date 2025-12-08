@@ -92,7 +92,8 @@ class FlamePostLaunch(PostLaunchHook):
         project_name = project_entity["name"]
         anatomy = Anatomy(project_name, project_entity=project_entity)
         bookmark_paths = [
-            os.path.join(str(root), project_name, "")  # for trailing '/' to match flame
+            # for trailing '/' to match flame
+            os.path.join(str(root), project_name, "")
             for root in anatomy.roots.values()
             if os.path.isdir(str(root))
         ]
