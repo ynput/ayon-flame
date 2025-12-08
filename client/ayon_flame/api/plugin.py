@@ -15,7 +15,7 @@ import ayon_api
 from ayon_core.lib import Logger, StringTemplate
 from ayon_core.pipeline.create import CreatorError
 from ayon_core.pipeline import LoaderPlugin, HiddenCreator
-from ayon_core.pipeline import Creator, get_representation_path
+from ayon_core.pipeline import Creator
 from ayon_core.pipeline.colorspace import get_remapped_colorspace_to_native
 from ayon_core.settings import get_current_project_settings
 
@@ -752,7 +752,7 @@ class ClipLoader(LoaderPlugin):
             flame.messages.show_in_dialog(*message_args)
 
         return opc
-    
+
     def _get_clip(self, name, clip_path):
         reel = self._get_reel()
         # with maintained openclip as opc
@@ -1018,7 +1018,9 @@ class OpenClipSolver:
                 out_tracks.append(tmp_xml_track)
 
         # sort versions
-        out_xml_versions_obj[:] = sorted(out_xml_versions_obj, key=lambda child: child.get("uid"))
+        out_xml_versions_obj[:] = sorted(
+            out_xml_versions_obj, key=lambda child: child.get("uid")
+        )
 
     def set_current_version(self, version_name: str) -> None:
         out_xml_versions_obj = self.out_clip_data.find('versions')
