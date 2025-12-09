@@ -399,6 +399,12 @@ class ExtractProductResources(publish.Extractor):
                 representation_data))
 
             if export_type == "Sequence Publish":
+                publish_clips = flame.find_by_name(
+                    f"{exporting_clip.name.get_value()}_publish",
+                    parent=exporting_clip.parent
+                )
+                for publish_clip in publish_clips:
+                    flame.delete(publish_clip)
                 # at the end remove the duplicated clip
                 flame.delete(exporting_clip)
 
