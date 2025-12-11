@@ -97,6 +97,14 @@ class MissingMediaPresetModel(BaseSettingsModel):
 
 
 class ExportPresetsMappingModel(BaseSettingsModel):
+    enabled: bool = SettingsField(
+        True,
+        title="Is enabled",
+        description=(
+            "If the preset is enabled, it will be used during the export "
+            "process."
+        ),
+    )
     name: str = SettingsField(
         ...,
         title="Name",
@@ -104,15 +112,6 @@ class ExportPresetsMappingModel(BaseSettingsModel):
             "Used to identify the preset. It can also be part of the "
             "output file name via the `outputName` anatomy template token. "
             "It serves as a unique representation name."
-        ),
-    )
-    active: bool = SettingsField(
-        True,
-        title="Is active",
-        section="Filtering properties",
-        description=(
-            "If the preset is active, it will be used during the export "
-            "process."
         ),
     )
     filter_path_regex: str = SettingsField(
@@ -220,12 +219,62 @@ class AdditionalRepresentationExportModel(BaseSettingsModel):
     )
 
 
+class ThumbnailPresetModel(BaseSettingsModel):
+    enabled: bool = SettingsField(
+        False,
+        title="Enabled"
+    )
+    ext: str = SettingsField(
+        "exr",
+        title="Output extension",
+        section="Output file properties",
+        description=(
+            "The output file extension for the published "
+            "representation."
+        ),
+    )
+    colorspace_out: str = SettingsField(
+        "ACES - ACEScg",
+        title="Output color (imageio)",
+        description=(
+            "Specifies the colorspace data to be stored in the "
+            "representation. This is used downstream in the publishing "
+            "process or by loading plugins."
+        ),
+    )
+    export_type: str = SettingsField(
+        "File Sequence",
+        title="Export clip type",
+        enum_resolver=lambda: ["Movie", "File Sequence", "Sequence Publish"],
+        description="The type of XML preset to be used for export.",
+        section="XML preset properties",
+    )
+    xml_preset_dir: str = SettingsField(
+        "",
+        title="XML preset directory",
+        description=(
+            "The absolute directory path where the XML preset is stored. "
+            "If left empty, built-in directories are used, either shared "
+            "or installed presets folder."
+        ),
+    )
+    xml_preset_file: str = SettingsField(
+        "Jpeg (8-bit).xml",
+        title="XML preset file (with ext)",
+        description="The name of the XML preset file with its extension.",
+    )
+
+
 class ExtractProductResourcesModel(BaseSettingsModel):
     _isGroup = True
 
     missing_media_link_export_preset: MissingMediaPresetModel = SettingsField(
         default_factory=MissingMediaPresetModel,
         title="Missing media link export presets"
+    )
+    thumbnail_preset: ThumbnailPresetModel = SettingsField(
+        default_factory=ThumbnailPresetModel,
+        title="Thumbnail generator preset"
     )
     additional_representation_export: AdditionalRepresentationExportModel = \
         SettingsField(
@@ -334,12 +383,22 @@ DEFAULT_PUBLISH_SETTINGS = {
             "xml_preset_dir": "",
             "parsed_comment_attrs": True,
         },
+        "thumbnail_preset": {
+            "enabled": True,
+            "ext": "jpg",
+            "xml_preset_file": "Jpeg (8-bit).xml",
+            "xml_preset_dir": "",
+            "export_type": "File Sequence",
+            "colorspace_out": "Output - sRGB",
+            "representation_add_range": False,
+            "representation_tags": ["thumbnail"],
+        },
         "additional_representation_export": {
             "keep_original_representation": False,
             "export_presets_mapping": [
                 {
+                    "enabled": False,
                     "name": "exr16fpdwaa",
-                    "active": True,
                     "export_type": "File Sequence",
                     "ext": "exr",
                     "xml_preset_file": "OpenEXR (16-bit fp DWAA).xml",

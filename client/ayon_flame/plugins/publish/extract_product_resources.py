@@ -26,32 +26,33 @@ class ExtractProductResources(publish.Extractor):
 
     settings_category = "flame"
 
-    # plugin defaults
-    keep_original_representation = False
-
-    default_presets = {
-        "thumbnail": {
-            "active": True,
-            "ext": "jpg",
-            "xml_preset_file": "Jpeg (8-bit).xml",
-            "xml_preset_dir": "",
-            "export_type": "File Sequence",
-            "parsed_comment_attrs": False,
-            "colorspace_out": "Output - sRGB",
-            "representation_add_range": False,
-            "representation_tags": ["thumbnail"],
-            "path_regex": ".*"
-        }
-    }
-
     # hide publisher during exporting
     hide_ui_on_process = True
 
     # settings
-    export_presets_mapping = []
+    missing_media_link_export_preset = None
+    additional_representation_export = None
+    thumbnail_preset = None
 
     def process(self, instance):
-        if not self.keep_original_representation:
+        self.missing_media_link_export_preset_process(instance)
+        self.thumbnail_preset_process(instance)
+        self.additional_representation_export_process(instance)
+
+    def missing_media_link_export_preset_process(self, instance):
+        pass
+
+    def thumbnail_preset_process(self, instance):
+        pass
+
+    def additional_representation_export_process(self, instance):
+        if not self.additional_representation_export:
+            self.log.debug("additional_representation_export is not set")
+            return
+
+        ad_repre_settings = self.additional_representation_export
+        export_presets_mapping_settings = ad_repre_settings["export_presets_mapping"]
+        if not ad_repre_settings["keep_original_representation"]:
             # remove previeous representation if not needed
             instance.data["representations"] = []
 
@@ -148,11 +149,11 @@ class ExtractProductResources(publish.Extractor):
         instance.context.data["cleanupFullPaths"].append(staging_dir)
 
         export_presets_mapping = {}
-        for preset_mapping in deepcopy(self.export_presets_mapping):
+        for preset_mapping in deepcopy(export_presets_mapping_settings):
             name = preset_mapping.pop("name")
             export_presets_mapping[name] = preset_mapping
 
-        # add default preset type for thumbnail and reviewable video
+        # add default preset type for thumbnail
         # update them with settings and override in case the same
         # are found in there
         _preset_keys = [k.split('_')[0] for k in export_presets_mapping]
