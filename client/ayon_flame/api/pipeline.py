@@ -1,29 +1,31 @@
 """
 Basic AYON integration
 """
-import os
 import contextlib
+import os
 from copy import deepcopy
-from pyblish import api as pyblish
+import flame
 
 from ayon_core.host import HostBase, ILoadHost, IPublishHost
-
 from ayon_core.lib import Logger
 from ayon_core.pipeline import (
-    register_loader_plugin_path,
-    register_creator_plugin_path,
-    deregister_loader_plugin_path,
-    deregister_creator_plugin_path,
     AYON_CONTAINER_ID,
+    deregister_creator_plugin_path,
+    deregister_loader_plugin_path,
+    register_creator_plugin_path,
+    register_loader_plugin_path,
 )
-from ayon_flame import FLAME_ADDON_ROOT
-from .lib import (
-    set_segment_data_marker,
-    maintained_segment_selection,
-    get_current_sequence,
-    reset_segment_selection
-)
+from pyblish import api as pyblish
 
+from ayon_flame import FLAME_ADDON_ROOT
+
+from .lib import (
+    get_current_sequence,
+    maintained_segment_selection,
+    reset_segment_selection,
+    set_clip_data_marker,
+    set_segment_data_marker,
+)
 
 PLUGINS_DIR = os.path.join(FLAME_ADDON_ROOT, "plugins")
 PUBLISH_PATH = os.path.join(PLUGINS_DIR, "publish")
@@ -153,14 +155,14 @@ def list_instances():
     pass
 
 
-def imprint(segment, data=None):
+def imprint(item, data=None):
     """
     Adding AYON data to Flame timeline segment.
 
     Also including publish attribute into tag.
 
     Arguments:
-        segment (flame.PySegment)): flame api object
+        item (flame.PySegment | flame.PyClip)): flame api object
         data (dict): Any data which needst to be imprinted
 
     Examples:
@@ -172,12 +174,18 @@ def imprint(segment, data=None):
     """
     data = data or {}
 
-    set_segment_data_marker(segment, data)
+    if isinstance(item, flame.PySegment):
+        set_segment_data_marker(item, data)
+    elif isinstance(item, flame.PyClip):
+        set_clip_data_marker(item, data)
+    else:
+        raise TypeError("Unsupported item type: {}".format(type(item)))
+
+
 
 
 @contextlib.contextmanager
 def maintained_selection():
-    import flame
     from .lib import CTX
 
     # check if segment is selected
