@@ -44,9 +44,59 @@ class CollectShotsModel(BaseSettingsModel):
     )
 
 
-class ExportPresetsMappingModel(BaseSettingsModel):
-    _layout = "expanded"
+class MissingMediaPresetModel(BaseSettingsModel):
 
+    ext: str = SettingsField(
+        "exr",
+        title="Output extension",
+        section="Output file properties",
+        description=(
+            "The output file extension for the published "
+            "representation."
+        ),
+    )
+    colorspace_out: str = SettingsField(
+        "ACES - ACEScg",
+        title="Output color (imageio)",
+        description=(
+            "Specifies the colorspace data to be stored in the "
+            "representation. This is used downstream in the publishing "
+            "process or by loading plugins."
+        ),
+    )
+    export_type: str = SettingsField(
+        "File Sequence",
+        title="Export clip type",
+        enum_resolver=lambda: ["Movie", "File Sequence", "Sequence Publish"],
+        description="The type of XML preset to be used for export.",
+        section="XML preset properties",
+    )
+    xml_preset_dir: str = SettingsField(
+        "",
+        title="XML preset directory",
+        description=(
+            "The absolute directory path where the XML preset is stored. "
+            "If left empty, built-in directories are used, either shared "
+            "or installed presets folder."
+        ),
+    )
+    xml_preset_file: str = SettingsField(
+        "OpenEXR (16-bit fp DWAA).xml",
+        title="XML preset file (with ext)",
+        description="The name of the XML preset file with its extension.",
+    )
+    parsed_comment_attrs: bool = SettingsField(
+        True,
+        title="Distribute parsed comment attributes to XML preset",
+        description=(
+            "If enabled, previously collected clip comment attributes "
+            "will be distributed to the XML preset. This can affect the "
+            "resulting resolution of the exported media."
+        ),
+    )
+
+
+class ExportPresetsMappingModel(BaseSettingsModel):
     name: str = SettingsField(
         ...,
         title="Name",
@@ -159,17 +209,29 @@ class ExportPresetsMappingModel(BaseSettingsModel):
     )
 
 
-class ExtractProductResourcesModel(BaseSettingsModel):
-    _isGroup = True
-
+class AdditionalRepresentationExportModel(BaseSettingsModel):
     keep_original_representation: bool = SettingsField(
         False,
         title="Publish clip's original media"
     )
     export_presets_mapping: list[ExportPresetsMappingModel] = SettingsField(
         default_factory=list,
-        title="Export presets mapping"
+        title="Additional representations export presets mapping"
     )
+
+
+class ExtractProductResourcesModel(BaseSettingsModel):
+    _isGroup = True
+
+    missing_media_link_export_preset: MissingMediaPresetModel = SettingsField(
+        default_factory=MissingMediaPresetModel,
+        title="Missing media link export presets"
+    )
+    additional_representation_export: AdditionalRepresentationExportModel = \
+        SettingsField(
+            default_factory=AdditionalRepresentationExportModel,
+            title="Additional representations export"
+        )
 
 
 class IntegrateBatchGroupModel(BaseSettingsModel):
@@ -264,24 +326,34 @@ DEFAULT_PUBLISH_SETTINGS = {
         "optional": True
     },
     "ExtractProductResources": {
-        "keep_original_representation": False,
-        "export_presets_mapping": [
-            {
-                "name": "exr16fpdwaa",
-                "active": True,
-                "export_type": "File Sequence",
-                "ext": "exr",
-                "xml_preset_file": "OpenEXR (16-bit fp DWAA).xml",
-                "colorspace_out": "ACES - ACEScg",
-                "xml_preset_dir": "",
-                "parsed_comment_attrs": True,
-                "representation_add_range": True,
-                "representation_tags": [],
-                "load_to_batch_group": True,
-                "batch_group_loader_name": "LoadClipBatch",
-                "filter_path_regex": ".*"
-            }
-        ]
+        "missing_media_link_export_preset": {
+            "export_type": "File Sequence",
+            "ext": "exr",
+            "xml_preset_file": "OpenEXR (16-bit fp DWAA).xml",
+            "colorspace_out": "ACES - ACEScg",
+            "xml_preset_dir": "",
+            "parsed_comment_attrs": True,
+        },
+        "additional_representation_export": {
+            "keep_original_representation": False,
+            "export_presets_mapping": [
+                {
+                    "name": "exr16fpdwaa",
+                    "active": True,
+                    "export_type": "File Sequence",
+                    "ext": "exr",
+                    "xml_preset_file": "OpenEXR (16-bit fp DWAA).xml",
+                    "colorspace_out": "ACES - ACEScg",
+                    "xml_preset_dir": "",
+                    "parsed_comment_attrs": True,
+                    "representation_add_range": True,
+                    "representation_tags": [],
+                    "load_to_batch_group": True,
+                    "batch_group_loader_name": "LoadClipBatch",
+                    "filter_path_regex": ".*"
+                }
+            ]
+        },
     },
     "IntegrateBatchGroup": {
         "enabled": False
