@@ -1,3 +1,9 @@
+# TODO:
+#   - [ ] abstracting clip processing part which is sharable for all
+#   - [ ] Implement missing_media_link_export_preset_process method
+#   - [ ] Implement thumbnail_preset_process method
+#   - [ ] refactor additional_representation_export_process method
+
 import os
 import re
 from copy import deepcopy
