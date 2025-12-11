@@ -43,7 +43,14 @@ class ExtractProductResources(publish.Extractor):
         pass
 
     def thumbnail_preset_process(self, instance):
-        pass
+        if (
+            not self.thumbnail_preset or
+            not self.thumbnail_preset["enabled"]
+        ):
+            self.log.debug("thumbnail_preset is set")
+            return
+        # TODO: add procedure for generating thumbnail refactore already
+        #   created code from `additional_representation_export_process`
 
     def additional_representation_export_process(self, instance):
         if not self.additional_representation_export:
@@ -51,7 +58,8 @@ class ExtractProductResources(publish.Extractor):
             return
 
         ad_repre_settings = self.additional_representation_export
-        export_presets_mapping_settings = ad_repre_settings["export_presets_mapping"]
+        export_presets_mapping_settings = ad_repre_settings[
+            "export_presets_mapping"]
         if not ad_repre_settings["keep_original_representation"]:
             # remove previeous representation if not needed
             instance.data["representations"] = []
