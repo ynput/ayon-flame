@@ -12,9 +12,12 @@ from ayon_core.pipeline.editorial import (
 )
 
 import flame
+from ayon_core.pipeline.colorspace import get_remapped_colorspace_from_native
 
-
-class ExtractProductResources(publish.Extractor):
+class ExtractProductResources(
+    publish.Extractor,
+    publish.ColormanagedPyblishPluginMixin
+):
     """
     Extractor for transcoding files from Flame clip
     """
@@ -214,7 +217,6 @@ class ExtractProductResources(publish.Extractor):
             export_type = preset_config["export_type"]
             repre_tags = preset_config["representation_tags"]
             parsed_comment_attrs = preset_config["parsed_comment_attrs"]
-            color_out = preset_config["colorspace_out"]
 
             self.log.info(
                 "Processing `{}` as `{}` to `{}` type...".format(
@@ -253,6 +255,18 @@ class ExtractProductResources(publish.Extractor):
                 exporting_clip.name.set_value("{}_{}".format(
                     folder_path, segment_name))
 
+            flame_colour = exporting_clip.get_colour_space()
+            self.log.debug(flame_colour)
+            context = instance.context
+            host_name = context.data["hostName"]
+            project_settings = context.data["project_settings"]
+            host_imageio_settings = project_settings["flame"]["imageio"]
+            imageio_colorspace = get_remapped_colorspace_from_native(
+                flame_colour,
+                host_name,
+                host_imageio_settings,
+            )
+            self.log.debug(imageio_colorspace)
             # add xml tags modifications
             modify_xml_data.update({
                 # enum position low start from 0
@@ -344,9 +358,6 @@ class ExtractProductResources(publish.Extractor):
                 "ext": extension,
                 "stagingDir": export_dir_path,
                 "tags": repre_tags,
-                "data": {
-                    "colorspace": color_out
-                },
                 "load_to_batch_group": preset_config.get(
                     "load_to_batch_group"),
                 "batch_group_loader_name": preset_config.get(
@@ -388,6 +399,12 @@ class ExtractProductResources(publish.Extractor):
                         repre_frame_start + source_duration_handles) - 1,
                     "fps": instance.data["fps"]
                 })
+
+            self.set_representation_colorspace(
+                representation_data,
+                instance.context,
+                colorspace=imageio_colorspace,
+            )
 
             instance.data["representations"].append(representation_data)
 
