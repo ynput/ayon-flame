@@ -22,8 +22,7 @@ class ExtractProductResources(
     publish.Extractor,
     publish.ColormanagedPyblishPluginMixin
 ):
-    """
-    Extractor for transcoding files from Flame clip
+    """Extractor for transcoding files from Flame clip
     """
 
     label = "Extract product resources"
@@ -53,7 +52,6 @@ class ExtractProductResources(
 
     def get_clip_data(self, instance):
         """Extract and prepare all clip-related data for export processing."""
-
         # flame objects
         segment = instance.data["item"]
         folder_path = instance.data["folderPath"]
@@ -69,8 +67,8 @@ class ExtractProductResources(
         # get media source first frame
         source_first_frame = instance.data["sourceFirstFrame"]
 
-        self.log.debug("_ frame_start: {}".format(frame_start))
-        self.log.debug("_ source_first_frame: {}".format(source_first_frame))
+        self.log.debug("_ frame_start: %s", frame_start)
+        self.log.debug("_ source_first_frame: %s", source_first_frame)
 
         # get timeline in/out of segment
         clip_in = instance.data["clipIn"]
@@ -128,17 +126,14 @@ class ExtractProductResources(
                 frame_start_handle = (
                     frame_start - handle_start) + retimed_handle_start
 
-        self.log.debug("_ frame_start_handle: {}".format(
-            frame_start_handle))
-        self.log.debug("_ repre_frame_start: {}".format(
-            repre_frame_start))
+        self.log.debug("_ frame_start_handle: %s", frame_start_handle)
+        self.log.debug("_ repre_frame_start: %s", repre_frame_start)
 
         # calculate duration with handles
         source_duration_handles = (
             source_end_handles - source_start_handles) + 1
 
-        self.log.debug("_ source_duration_handles: {}".format(
-            source_duration_handles))
+        self.log.debug("_ source_duration_handles: %s", source_duration_handles)
 
         # create staging dir path
         staging_dir = self.staging_dir(instance)
@@ -151,7 +146,7 @@ class ExtractProductResources(
 
         # set versiondata if any retime
         version_data = retimed_data.get("version_data")
-        self.log.debug("_ version_data: {}".format(version_data))
+        self.log.debug("_ version_data: %s", version_data)
 
         if version_data:
             instance.data["versionData"].update(version_data)
@@ -348,8 +343,7 @@ class ExtractProductResources(
             if "review" in repre_tags:
                 instance.data["families"].append("review")
 
-            self.log.info("Added representation: {}".format(
-                representation_data))
+            self.log.info("Added representation: %s", representation_data)
 
             if export_type == "Sequence Publish":
                 publish_clips = flame.find_by_name(
@@ -372,7 +366,7 @@ class ExtractProductResources(
         retimed_attributes = get_media_range_with_retimes(
             otio_clip, handle_start, handle_end)
         self.log.debug(
-            ">> retimed_attributes: {}".format(retimed_attributes))
+            ">> retimed_attributes: %s", retimed_attributes)
 
         r_media_in = int(retimed_attributes["mediaIn"])
         r_media_out = int(retimed_attributes["mediaOut"])
@@ -427,14 +421,11 @@ class ExtractProductResources(
         parsed_comment_attrs = preset_config["parsed_comment_attrs"]
 
         self.log.info(
-            "Processing `{}` as `{}` to `{}` type...".format(
-                preset_file, export_type, extension
-            )
+            "Processing `%s` as `%s` to `%s` type...", preset_file, export_type, extension
         )
 
         exporting_clip = None
-        name_pattern_xml = "<name>_{}.".format(
-            unique_name)
+        name_pattern_xml = f"<name>_{unique_name}."
 
         if export_type == "Sequence Publish":
             # change export clip to sequence
@@ -446,8 +437,7 @@ class ExtractProductResources(
 
             # change name pattern
             name_pattern_xml = (
-                "<segment name>_<shot name>_{}.").format(
-                    unique_name)
+                f"<segment name>_<shot name>_{unique_name}.")
 
             # only for h264 with baked retime
             in_mark = clip_in
@@ -460,8 +450,7 @@ class ExtractProductResources(
             in_mark = (source_start_handles - source_first_frame) + 1
             out_mark = in_mark + source_duration_handles
             exporting_clip = self.import_clip(clip_path)
-            exporting_clip.name.set_value("{}_{}".format(
-                folder_path, segment_name))
+            exporting_clip.name.set_value(f"{folder_path}_{segment_name}")
 
         flame_colour = exporting_clip.get_colour_space()
         self.log.debug(flame_colour)
@@ -487,16 +476,15 @@ class ExtractProductResources(
             # add any xml overrides collected form segment.comment
             modify_xml_data.update(instance.data["xml_overrides"])
 
-        self.log.debug("_ in_mark: {}".format(in_mark))
-        self.log.debug("_ out_mark: {}".format(out_mark))
+        self.log.debug("_ in_mark: %s", in_mark)
+        self.log.debug("_ out_mark: %s", out_mark)
 
         export_kwargs = {}
         # validate xml preset file is filled
         if preset_file == "":
             raise ValueError(
-                ("Check Settings for {} preset: "
-                    "`XML preset file` is not filled").format(
-                    unique_name)
+                f"Check Settings for {unique_name} preset: "
+                    "`XML preset file` is not filled"
             )
 
         # resolve xml preset dir if not filled
@@ -506,9 +494,8 @@ class ExtractProductResources(
 
             if not preset_dir:
                 raise ValueError(
-                    ("Check Settings for {} preset: "
-                        "`XML preset file` {} is not found").format(
-                        unique_name, preset_file)
+                    f"Check Settings for {unique_name} preset: "
+                        f"`XML preset file` {preset_file} is not found"
                 )
 
         # create preset path
@@ -526,9 +513,7 @@ class ExtractProductResources(
             thumb_frame_number = int(in_mark + (
                 (out_mark - in_mark + 1) / 2))
 
-            self.log.debug("__ thumb_frame_number: {}".format(
-                thumb_frame_number
-            ))
+            self.log.debug("__ thumb_frame_number: %s", thumb_frame_number)
 
             export_kwargs["thumb_frame_number"] = thumb_frame_number
         else:
@@ -558,9 +543,7 @@ class ExtractProductResources(
         filter_path_regex = preset_config.get("filter_path_regex")
 
         self.log.info(
-            "Preset `{}` is active `{}` with filter `{}`".format(
-                unique_name, activated_preset, filter_path_regex
-            )
+            "Preset `%s` is active `%s` with filter `%s`", unique_name, activated_preset, filter_path_regex
         )
 
         # skip if not activated presets
@@ -597,9 +580,7 @@ class ExtractProductResources(
             len(files_list) == 1
             # file is having extension as input
             and ext in os.path.splitext(files_list[0])[-1]
-        ):
-            return None, None
-        elif (
+        ) or (
             # more then one file in list
             len(files_list) >= 1
             # extension is correct
@@ -628,8 +609,7 @@ class ExtractProductResources(
 
         if not new_stage_dir:
             raise AssertionError(
-                "Files in `{}` are not correct! Check `{}`".format(
-                    files_list, stage_dir)
+                f"Files in `{files_list}` are not correct! Check `{stage_dir}`"
             )
 
         return new_stage_dir, new_files_list
@@ -659,25 +639,24 @@ class ExtractProductResources(
                         segment.hidden = True
 
     def import_clip(self, path):
-        """
-        Import clip from path
+        """Import clip from path
         """
         dir_path = os.path.dirname(path)
         media_info = MediaInfoFile(path, logger=self.log)
         file_pattern = media_info.file_pattern
-        self.log.debug("__ file_pattern: {}".format(file_pattern))
+        self.log.debug("__ file_pattern: %s", file_pattern)
 
         # rejoin the pattern to dir path
         new_path = os.path.join(dir_path, file_pattern)
 
         clips = flame.import_clips(new_path)
-        self.log.info("Clips [{}] imported from `{}`".format(clips, path))
+        self.log.info("Clips [%s] imported from `%s`", clips, path)
 
         if not clips:
-            self.log.warning("Path `{}` is not having any clips".format(path))
+            self.log.warning("Path `%s` is not having any clips", path)
             return None
-        elif len(clips) > 1:
+        if len(clips) > 1:
             self.log.warning(
-                "Path `{}` is containing more that one clip".format(path)
+                "Path `%s` is containing more that one clip", path
             )
         return clips[0]
