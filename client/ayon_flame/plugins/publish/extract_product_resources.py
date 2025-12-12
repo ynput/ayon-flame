@@ -50,12 +50,51 @@ class ExtractProductResources(
         self.thumbnail_preset_process(instance, clip_data)
         self.additional_representation_export_process(instance, clip_data)
 
-    def get_clip_data(self, instance):
-        """Extract and prepare all clip-related data for export processing."""
+    def get_clip_data(self, instance: pyblish.api.Instance) -> dict:
+        """Extract and prepare all clip-related data for export processing.
+
+        Args:
+            instance (Instance): Instance object.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing all extracted clip data
+                with at least these keys:
+                * `segment` (flame.Segment): The flame segment object.
+                * `folder_path` (str): Path to the folder.
+                * `segment_name` (str): Name of the segment.
+                * `clip_path` (Optional[str]): Path to the clip
+                    (None if not linked media).
+                * `sequence_clip` (flame.Clip): The flame sequence clip object.
+                * `s_track_name` (str): Parent track name of the segment.
+                * `frame_start` (int): Configured workfile frame start.
+                * `source_first_frame` (int): Media source first frame.
+                * `clip_in` (int): Timeline in point of segment.
+                * `clip_out` (int): Timeline out point of segment.
+                * `retimed_data` (dict): Dictionary of retimed attributes.
+                * `retimed_handle_start` (int): Retimed handle start value.
+                * `retimed_handle_end` (int): Retimed handle end value.
+                * `retimed_source_duration` (int): Retimed source duration.
+                * `retimed_speed` (float): Retimed speed factor.
+                * `handle_start` (int): Handle start value.
+                * `handle_end` (int): Handle end value.
+                * `handles` (int): Maximum of handle_start and handle_end.
+                * `include_handles` (bool): Whether to include handles.
+                * `retimed_handles` (bool): Whether handles are retimed.
+                * `source_start_handles` (int): Source start with handles.
+                * `source_end_handles` (int): Source end with handles.
+                * `frame_start_handle` (int): Frame start with handles applied.
+                * `repre_frame_start` (int): Representation frame start.
+                * `source_duration_handles` (int): Source duration including
+                    handles.
+                * `staging_dir` (str): Path to staging directory.
+                * `version_frame_start` (int): Version data frame start.
+
+        """
         # flame objects
         segment = instance.data["item"]
         folder_path = instance.data["folderPath"]
         segment_name = segment.name.get_value()
+        # clip_path will be None if not linked media
         clip_path = instance.data["path"]
         sequence_clip = instance.context.data["flameSequence"]
 
@@ -243,23 +282,19 @@ class ExtractProductResources(
 
         # Extract only needed data from clip_data dictionary
         clip_path = clip_data["clip_path"]
-        sequence_clip = clip_data["sequence_clip"]
-        segment_name = clip_data["segment_name"]
-        s_track_name = clip_data["s_track_name"]
-        clip_in = clip_data["clip_in"]
-        clip_out = clip_data["clip_out"]
-        handles = clip_data["handles"]
-        source_start_handles = clip_data["source_start_handles"]
-        source_first_frame = clip_data["source_first_frame"]
         source_duration_handles = clip_data["source_duration_handles"]
-        folder_path = clip_data["folder_path"]
         repre_frame_start = clip_data["repre_frame_start"]
         staging_dir = clip_data["staging_dir"]
 
         # loop all preset names and
         for preset_config in additional_export_presets:
             unique_name = preset_config["name"]
+            enabled = preset_config["enabled"]
 
+            if not enabled:
+                continue
+
+            # skipping based on clip name regex filtering
             if self._should_skip(preset_config, clip_path, unique_name):
                 continue
 
@@ -382,8 +417,14 @@ class ExtractProductResources(
             "speed": float(retimed_attributes["speed"])
         }
 
-    def _process_preset_export(self, instance, preset_config, clip_data,
-                                unique_name, staging_dir):
+    def _process_preset_export(
+        self,
+        instance,
+        preset_config,
+        clip_data,
+        unique_name,
+        staging_dir
+    ):
         """Process and export a single preset configuration.
 
         Args:
@@ -395,6 +436,9 @@ class ExtractProductResources(
 
         Returns:
             tuple: (export_dir_path, imageio_colorspace)
+
+        Raises:
+            ValueError: If the clip data is missing required keys
         """
         # Extract clip data
         clip_path = clip_data["clip_path"]
@@ -539,16 +583,11 @@ class ExtractProductResources(
 
     def _should_skip(self, preset_config, clip_path, unique_name):
         # get activating attributes
-        activated_preset = preset_config["active"]
         filter_path_regex = preset_config.get("filter_path_regex")
 
         self.log.info(
-            "Preset `%s` is active `%s` with filter `%s`", unique_name, activated_preset, filter_path_regex
+            "Preset `%s` with filter `%s`", unique_name, filter_path_regex
         )
-
-        # skip if not activated presets
-        if not activated_preset:
-            return True
 
         # exclude by regex filter if any
         if (
@@ -556,6 +595,7 @@ class ExtractProductResources(
             and not re.search(filter_path_regex, clip_path)
         ):
             return True
+        return None
 
     def _unfolds_nested_folders(self, stage_dir, files_list, ext):
         """Unfolds nested folders
