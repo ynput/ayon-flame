@@ -252,6 +252,8 @@ class ExtractProductResources(
             self, instance, clip_data, staging_dir) -> dict:
 
         unique_name = "missing_media_link"
+        extension = self.missing_media_link_export_preset["ext"]
+
         # Process preset export
         export_dir_path, imageio_colorspace = self._process_preset_export(
             instance,
@@ -260,13 +262,16 @@ class ExtractProductResources(
             unique_name,
             staging_dir,
         )
-        export_dir_p = Path(export_dir_path)
-        if not export_dir_p.exists():
-            raise ValueError(
-                f"Export directory does not exist: {export_dir_path}")
 
-        rendered_files = list(export_dir_p.iterdir())
-        clip_data["clip_path"] = rendered_files[0].as_posix()
+        repre_staging_dir, repre_files, repr_name = (
+            self._process_exported_files(
+                export_dir_path,
+                extension,
+                unique_name
+            )
+        )
+
+        clip_data["clip_path"] = repre_staging_dir / repre_files[0]
 
         return clip_data
 
@@ -307,6 +312,7 @@ class ExtractProductResources(
         for preset_config in additional_export_presets:
             unique_name = preset_config["name"]
             enabled = preset_config["enabled"]
+            extension = preset_config["ext"]
 
             if not enabled:
                 continue
@@ -319,15 +325,15 @@ class ExtractProductResources(
             export_dir_path, imageio_colorspace = self._process_preset_export(
                 instance, preset_config, clip_data, unique_name, staging_dir
             )
-            repre_staging_dir, repre_files, repr_name, extension = (
+            repre_staging_dir, repre_files, repr_name = (
                 self._process_exported_files(
-                    export_dir_path, preset_config, unique_name
+                    export_dir_path, extension, unique_name
                 )
             )
 
             # get preset attributes for representation
             export_type = preset_config["export_type"]
-            repre_tags = preset_config["representation_tags"]
+            repre_tags = preset_config.get("representation_tags", [])
 
             # create representation data
             representation_data = {
@@ -344,7 +350,13 @@ class ExtractProductResources(
             }
 
             # add frame range
-            if preset_config["representation_add_range"]:
+            representation_add_range = preset_config.get(
+                "representation_add_range", False)
+            if (
+                representation_add_range
+                and repre_frame_start is not None
+                and source_duration_handles is not None
+            ):
                 representation_data.update({
                     "frameStart": repre_frame_start,
                     "frameEnd": (
@@ -562,7 +574,7 @@ class ExtractProductResources(
 
         return export_dir_path, imageio_colorspace
 
-    def _process_exported_files(self, export_dir_path, preset_config, unique_name):
+    def _process_exported_files(self, export_dir_path, extension, unique_name):
         """Process exported files and prepare representation data.
 
         Args:
@@ -587,8 +599,6 @@ class ExtractProductResources(
         if not rendered_files:
             raise ValueError(
                 f"No files found in export directory: {export_dir_path}")
-
-        extension = preset_config["ext"]
 
         # make sure no nested folders inside
         n_stage_dir, n_files = self._unfolds_nested_folders(
@@ -625,7 +635,7 @@ class ExtractProductResources(
             self.log.debug("Unique name: %s", unique_name)
             repr_name = unique_name.split("_")[0]
 
-        return repre_staging_dir, repre_files, repr_name, extension
+        return repre_staging_dir, repre_files, repr_name
 
     def _should_skip(self, preset_config, clip_path, unique_name):
         # get activating attributes
