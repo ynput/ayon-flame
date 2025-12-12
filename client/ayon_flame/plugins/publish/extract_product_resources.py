@@ -319,58 +319,15 @@ class ExtractProductResources(
             export_dir_path, imageio_colorspace = self._process_preset_export(
                 instance, preset_config, clip_data, unique_name, staging_dir
             )
-            repre_staging_dir = export_dir_path
-            export_dir_p = Path(export_dir_path)
-            if not export_dir_p.exists():
-                raise ValueError(
-                    f"Export directory does not exist: {export_dir_path}")
-
-            rendered_files = list(export_dir_p.iterdir())
-
-            if not rendered_files:
-                raise ValueError(
-                    f"No files found in export directory: {export_dir_path}")
-
-            extension = preset_config["ext"]
-
-            # make sure no nested folders inside
-            n_stage_dir, n_files = self._unfolds_nested_folders(
-                export_dir_path, rendered_files, extension)
-
-            # fix representation in case of nested folders
-            if n_stage_dir:
-                repre_staging_dir = n_stage_dir
-            if n_files
-                rendered_files = n_files
-
-            repr_name = unique_name
-            # add files to representation but add
-            # imagesequence as list
-            if (
-                # first check if path in files is not mov extension
-                [
-                    f for f in rendered_files
-                    if f.suffix == ".mov"
-                ]
-                # then try if thumbnail is not in unique name
-                or repr_name == "thumbnail"
-            ):
-                repre_files = rendered_files.pop().name
-            else:
-                repre_files = [f.name for f in rendered_files]
+            repre_staging_dir, repre_files, repr_name, extension = (
+                self._process_exported_files(
+                    export_dir_path, preset_config, unique_name
+                )
+            )
 
             # get preset attributes for representation
             export_type = preset_config["export_type"]
             repre_tags = preset_config["representation_tags"]
-
-            # make sure only first segment is used if underscore in name
-            # HACK: `ftrackreview_withLUT` will result only in `ftrackreview`
-            if (
-                "thumbnail" in unique_name
-                or "ftrackreview" in unique_name
-            ):
-                self.log.debug("Unique name: %s", unique_name)
-                repr_name = unique_name.split("_")[0]
 
             # create representation data
             representation_data = {
@@ -604,6 +561,71 @@ class ExtractProductResources(
             export_dir_path, exporting_clip, preset_path, **export_kwargs)
 
         return export_dir_path, imageio_colorspace
+
+    def _process_exported_files(self, export_dir_path, preset_config, unique_name):
+        """Process exported files and prepare representation data.
+        
+        Args:
+            export_dir_path: Path to the export directory
+            preset_config: Preset configuration dictionary
+            unique_name: Unique name for the preset
+            
+        Returns:
+            tuple: (repre_staging_dir, repre_files, repr_name, extension)
+            
+        Raises:
+            ValueError: If export directory doesn't exist or contains no files
+        """
+        repre_staging_dir = export_dir_path
+        export_dir_p = Path(export_dir_path)
+        if not export_dir_p.exists():
+            raise ValueError(
+                f"Export directory does not exist: {export_dir_path}")
+
+        rendered_files = list(export_dir_p.iterdir())
+
+        if not rendered_files:
+            raise ValueError(
+                f"No files found in export directory: {export_dir_path}")
+
+        extension = preset_config["ext"]
+
+        # make sure no nested folders inside
+        n_stage_dir, n_files = self._unfolds_nested_folders(
+            export_dir_path, rendered_files, extension)
+
+        # fix representation in case of nested folders
+        if n_stage_dir:
+            repre_staging_dir = n_stage_dir
+        if n_files:
+            rendered_files = n_files
+
+        repr_name = unique_name
+        # add files to representation but add
+        # imagesequence as list
+        if (
+            # first check if path in files is not mov extension
+            [
+                f for f in rendered_files
+                if f.suffix == ".mov"
+            ]
+            # then try if thumbnail is not in unique name
+            or repr_name == "thumbnail"
+        ):
+            repre_files = rendered_files.pop().name
+        else:
+            repre_files = [f.name for f in rendered_files]
+
+        # make sure only first segment is used if underscore in name
+        # HACK: `ftrackreview_withLUT` will result only in `ftrackreview`
+        if (
+            "thumbnail" in unique_name
+            or "ftrackreview" in unique_name
+        ):
+            self.log.debug("Unique name: %s", unique_name)
+            repr_name = unique_name.split("_")[0]
+            
+        return repre_staging_dir, repre_files, repr_name, extension
 
     def _should_skip(self, preset_config, clip_path, unique_name):
         # get activating attributes
