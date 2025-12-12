@@ -45,7 +45,11 @@ class ExtractProductResources(
 
     def process(self, instance):
         clip_data = self.get_clip_data(instance)
-        self.missing_media_link_export_preset_process(instance, clip_data)
+        if not clip_data["clip_path"]:
+            # render missing media and add `clip_data["clip_path"]`
+            clip_data = self.missing_media_link_export_preset_process(
+                instance, clip_data)
+
         self.thumbnail_preset_process(instance, clip_data)
         self.additional_representation_export_process(instance, clip_data)
 
