@@ -270,6 +270,25 @@ class ExtractProductResources(
                 unique_name
             )
         )
+        # Extract only needed data from clip_data dictionary
+        source_duration_handles = clip_data["source_duration_handles"]
+        repre_frame_start = clip_data["repre_frame_start"]
+
+        # create representation data
+        representation_data = self._create_representation_data(
+            repr_name=repr_name,
+            repre_files=repre_files,
+            extension=extension,
+            repre_staging_dir=repre_staging_dir,
+            repre_tags=[],
+            preset_config=self.missing_media_link_export_preset,
+            repre_frame_start=repre_frame_start,
+            source_duration_handles=source_duration_handles,
+            instance=instance,
+            imageio_colorspace=imageio_colorspace,
+        )
+
+        instance.data["representations"].append(representation_data)
 
         clip_data["clip_path"] = repre_staging_dir / repre_files[0]
 
@@ -630,7 +649,7 @@ class ExtractProductResources(
         imageio_colorspace
     ):
         """Create representation data dictionary.
-        
+
         Args:
             repr_name (str): Representation name
             repre_files (list): List of representation files
@@ -642,7 +661,7 @@ class ExtractProductResources(
             source_duration_handles (int): Duration with handles
             instance: Pyblish instance
             imageio_colorspace (str): Colorspace name
-            
+
         Returns:
             dict: Representation data dictionary
         """
@@ -680,7 +699,7 @@ class ExtractProductResources(
             instance.context,
             colorspace=imageio_colorspace,
         )
-        
+
         return representation_data
 
     def _should_skip(self, preset_config, clip_path, unique_name):
