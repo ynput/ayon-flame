@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import re
+from pathlib import Path
 
 import flame
 import pyblish.api
@@ -331,7 +332,8 @@ class ExtractProductResources(
             }
 
             # collect all available content of export dir
-            files = os.listdir(export_dir_path)
+            export_dir_p = Path(export_dir_path)
+            files = [f.name for f in export_dir_p.iterdir()] if export_dir_p.exists() else []
 
             # make sure no nested folders inside
             n_stage_dir, n_files = self._unfolds_nested_folders(
@@ -348,7 +350,7 @@ class ExtractProductResources(
                 # first check if path in files is not mov extension
                 [
                     f for f in files
-                    if os.path.splitext(f)[-1] == ".mov"
+                    if Path(f).suffix == ".mov"
                 ]
                 # then try if thumbnail is not in unique name
                 or repr_name == "thumbnail"
@@ -543,9 +545,7 @@ class ExtractProductResources(
                 )
 
         # create preset path
-        preset_orig_xml_path = str(os.path.join(
-            preset_dir, preset_file
-        ))
+        preset_orig_xml_path = (Path(preset_dir) / preset_file).as_posix()
 
         # define kwargs based on preset type
         if "thumbnail" in unique_name:
@@ -570,10 +570,8 @@ class ExtractProductResources(
             preset_orig_xml_path, staging_dir, modify_xml_data)
 
         # get and make export dir paths
-        export_dir_path = str(os.path.join(
-            staging_dir, unique_name
-        ))
-        os.makedirs(export_dir_path)
+        export_dir_path = (Path(staging_dir) / unique_name).as_posix()
+        Path(export_dir_path).mkdir(parents=True, exist_ok=True)
 
         # export
         ayfapi.export_clip(
@@ -619,28 +617,27 @@ class ExtractProductResources(
             # only one file in list
             len(files_list) == 1
             # file is having extension as input
-            and ext in os.path.splitext(files_list[0])[-1]
+            and ext in Path(files_list[0]).suffix
         ) or (
             # more then one file in list
             len(files_list) >= 1
             # extension is correct
-            and ext in os.path.splitext(files_list[0])[-1]
+            and ext in Path(files_list[0]).suffix
             # test file exists
-            and os.path.exists(
-                os.path.join(stage_dir, files_list[0])
-            )
+            and (Path(stage_dir) / files_list[0]).exists()
         ):
             return None, None
 
         new_stage_dir = None
         new_files_list = []
         for file in files_list:
-            search_path = os.path.join(stage_dir, file)
-            if not os.path.isdir(search_path):
+            search_path = Path(stage_dir) / file
+            if not search_path.is_dir():
                 continue
             for root, _dirs, files in os.walk(search_path):
                 for _file in files:
-                    _fn, _ext = os.path.splitext(_file)
+                    file_path = Path(_file)
+                    _ext = file_path.suffix
                     if ext.lower() != _ext[1:].lower():
                         continue
                     new_files_list.append(_file)
@@ -681,13 +678,14 @@ class ExtractProductResources(
     def import_clip(self, path):
         """Import clip from path
         """
-        dir_path = os.path.dirname(path)
+        path_p = Path(path)
+        dir_path = path_p.parent
         media_info = MediaInfoFile(path, logger=self.log)
         file_pattern = media_info.file_pattern
         self.log.debug("__ file_pattern: %s", file_pattern)
 
         # rejoin the pattern to dir path
-        new_path = os.path.join(dir_path, file_pattern)
+        new_path = (dir_path / file_pattern).as_posix()
 
         clips = flame.import_clips(new_path)
         self.log.info("Clips [%s] imported from `%s`", clips, path)
