@@ -41,34 +41,16 @@ class ExtractProductResources(publish.Extractor):
     thumbnail_preset = None
 
     def process(self, instance):
-        self.missing_media_link_export_preset_process(instance)
-        self.thumbnail_preset_process(instance)
-        self.additional_representation_export_process(instance)
+        clip_data = self.get_clip_data(instance)
+        self.missing_media_link_export_preset_process(instance, clip_data)
+        self.thumbnail_preset_process(instance, clip_data)
+        self.additional_representation_export_process(instance, clip_data)
 
-    def missing_media_link_export_preset_process(self, instance):
-        pass
-
-    def thumbnail_preset_process(self, instance):
-        if (
-            not self.thumbnail_preset or
-            not self.thumbnail_preset["enabled"]
-        ):
-            self.log.debug("thumbnail_preset is set")
-            return
-        # TODO: add procedure for generating thumbnail refactore already
-        #   created code from `additional_representation_export_process`
-
-    def additional_representation_export_process(self, instance):
-        if not self.additional_representation_export:
-            self.log.debug("additional_representation_export is not set")
-            return
-
-        ad_repre_settings = self.additional_representation_export
-        export_presets_mapping_settings = ad_repre_settings[
-            "export_presets_mapping"]
-        if not ad_repre_settings["keep_original_representation"]:
-            # remove previeous representation if not needed
-            instance.data["representations"] = []
+    def get_clip_data(self, instance):
+        """Extract and prepare all clip-related data for export processing."""
+        ad_repre_settings = self.additional_representation_export or {}
+        export_presets_mapping_settings = ad_repre_settings.get(
+            "export_presets_mapping", [])
 
         # flame objects
         segment = instance.data["item"]
@@ -214,6 +196,77 @@ class ExtractProductResources(publish.Extractor):
         self.log.debug("_ version_data: {}".format(
             instance.data["versionData"]
         ))
+
+        # Return all extracted data as a dictionary
+        return {
+            "segment": segment,
+            "folder_path": folder_path,
+            "segment_name": segment_name,
+            "clip_path": clip_path,
+            "sequence_clip": sequence_clip,
+            "s_track_name": s_track_name,
+            "frame_start": frame_start,
+            "source_first_frame": source_first_frame,
+            "clip_in": clip_in,
+            "clip_out": clip_out,
+            "retimed_data": retimed_data,
+            "retimed_handle_start": retimed_handle_start,
+            "retimed_handle_end": retimed_handle_end,
+            "retimed_source_duration": retimed_source_duration,
+            "retimed_speed": retimed_speed,
+            "handle_start": handle_start,
+            "handle_end": handle_end,
+            "handles": handles,
+            "include_handles": include_handles,
+            "retimed_handles": retimed_handles,
+            "source_start_handles": source_start_handles,
+            "source_end_handles": source_end_handles,
+            "frame_start_handle": frame_start_handle,
+            "repre_frame_start": repre_frame_start,
+            "source_duration_handles": source_duration_handles,
+            "staging_dir": staging_dir,
+            "export_presets": export_presets,
+            "version_frame_start": version_frame_start,
+        }
+
+    def missing_media_link_export_preset_process(self, instance, clip_data):
+        pass
+
+    def thumbnail_preset_process(self, instance, clip_data):
+        if (
+            not self.thumbnail_preset or
+            not self.thumbnail_preset["enabled"]
+        ):
+            self.log.debug("thumbnail_preset is set")
+            return
+        # TODO: add procedure for generating thumbnail refactore already
+        #   created code from `additional_representation_export_process`
+
+    def additional_representation_export_process(self, instance, clip_data):
+        if not self.additional_representation_export:
+            self.log.debug("additional_representation_export is not set")
+            return
+
+        ad_repre_settings = self.additional_representation_export
+        if not ad_repre_settings["keep_original_representation"]:
+            # remove previeous representation if not needed
+            instance.data["representations"] = []
+
+        # Extract only needed data from clip_data dictionary
+        clip_path = clip_data["clip_path"]
+        export_presets = clip_data["export_presets"]
+        sequence_clip = clip_data["sequence_clip"]
+        segment_name = clip_data["segment_name"]
+        s_track_name = clip_data["s_track_name"]
+        clip_in = clip_data["clip_in"]
+        clip_out = clip_data["clip_out"]
+        handles = clip_data["handles"]
+        source_start_handles = clip_data["source_start_handles"]
+        source_first_frame = clip_data["source_first_frame"]
+        source_duration_handles = clip_data["source_duration_handles"]
+        folder_path = clip_data["folder_path"]
+        repre_frame_start = clip_data["repre_frame_start"]
+        staging_dir = clip_data["staging_dir"]
 
         # loop all preset names and
         for unique_name, preset_config in export_presets.items():
