@@ -564,15 +564,15 @@ class ExtractProductResources(
 
     def _process_exported_files(self, export_dir_path, preset_config, unique_name):
         """Process exported files and prepare representation data.
-        
+
         Args:
             export_dir_path: Path to the export directory
             preset_config: Preset configuration dictionary
             unique_name: Unique name for the preset
-            
+
         Returns:
             tuple: (repre_staging_dir, repre_files, repr_name, extension)
-            
+
         Raises:
             ValueError: If export directory doesn't exist or contains no files
         """
@@ -624,7 +624,7 @@ class ExtractProductResources(
         ):
             self.log.debug("Unique name: %s", unique_name)
             repr_name = unique_name.split("_")[0]
-            
+
         return repre_staging_dir, repre_files, repr_name, extension
 
     def _should_skip(self, preset_config, clip_path, unique_name):
