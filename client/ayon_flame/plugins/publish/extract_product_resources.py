@@ -336,38 +336,17 @@ class ExtractProductResources(
             repre_tags = preset_config.get("representation_tags", [])
 
             # create representation data
-            representation_data = {
-                "name": repr_name,
-                "files": repre_files,
-                "outputName": repr_name,
-                "ext": extension,
-                "stagingDir": repre_staging_dir,
-                "tags": repre_tags,
-                "load_to_batch_group": preset_config.get(
-                    "load_to_batch_group"),
-                "batch_group_loader_name": preset_config.get(
-                    "batch_group_loader_name") or None
-            }
-
-            # add frame range
-            representation_add_range = preset_config.get(
-                "representation_add_range", False)
-            if (
-                representation_add_range
-                and repre_frame_start is not None
-                and source_duration_handles is not None
-            ):
-                representation_data.update({
-                    "frameStart": repre_frame_start,
-                    "frameEnd": (
-                        repre_frame_start + source_duration_handles) - 1,
-                    "fps": instance.data["fps"]
-                })
-
-            self.set_representation_colorspace(
-                representation_data,
-                instance.context,
-                colorspace=imageio_colorspace,
+            representation_data = self._create_representation_data(
+                repr_name=repr_name,
+                repre_files=repre_files,
+                extension=extension,
+                repre_staging_dir=repre_staging_dir,
+                repre_tags=repre_tags,
+                preset_config=preset_config,
+                repre_frame_start=repre_frame_start,
+                source_duration_handles=source_duration_handles,
+                instance=instance,
+                imageio_colorspace=imageio_colorspace,
             )
 
             instance.data["representations"].append(representation_data)
@@ -636,6 +615,73 @@ class ExtractProductResources(
             repr_name = unique_name.split("_")[0]
 
         return repre_staging_dir, repre_files, repr_name
+
+    def _create_representation_data(
+        self,
+        repr_name,
+        repre_files,
+        extension,
+        repre_staging_dir,
+        repre_tags,
+        preset_config,
+        repre_frame_start,
+        source_duration_handles,
+        instance,
+        imageio_colorspace
+    ):
+        """Create representation data dictionary.
+        
+        Args:
+            repr_name (str): Representation name
+            repre_files (list): List of representation files
+            extension (str): File extension
+            repre_staging_dir (str): Staging directory path
+            repre_tags (list): List of tags
+            preset_config (dict): Preset configuration
+            repre_frame_start (int): Start frame number
+            source_duration_handles (int): Duration with handles
+            instance: Pyblish instance
+            imageio_colorspace (str): Colorspace name
+            
+        Returns:
+            dict: Representation data dictionary
+        """
+        # create representation data
+        representation_data = {
+            "name": repr_name,
+            "files": repre_files,
+            "outputName": repr_name,
+            "ext": extension,
+            "stagingDir": repre_staging_dir,
+            "tags": repre_tags,
+            "load_to_batch_group": preset_config.get(
+                "load_to_batch_group"),
+            "batch_group_loader_name": preset_config.get(
+                "batch_group_loader_name") or None
+        }
+
+        # add frame range
+        representation_add_range = preset_config.get(
+            "representation_add_range", False)
+        if (
+            representation_add_range
+            and repre_frame_start is not None
+            and source_duration_handles is not None
+        ):
+            representation_data.update({
+                "frameStart": repre_frame_start,
+                "frameEnd": (
+                    repre_frame_start + source_duration_handles) - 1,
+                "fps": instance.data["fps"]
+            })
+
+        self.set_representation_colorspace(
+            representation_data,
+            instance.context,
+            colorspace=imageio_colorspace,
+        )
+        
+        return representation_data
 
     def _should_skip(self, preset_config, clip_path, unique_name):
         # get activating attributes
