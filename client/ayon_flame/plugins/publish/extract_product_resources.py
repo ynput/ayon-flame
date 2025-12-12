@@ -37,19 +37,26 @@ class ExtractProductResources(
     hide_ui_on_process = True
 
     # settings
-    missing_media_link_export_preset: dict = {}
-    additional_representation_export: dict = {}
-    thumbnail_preset: dict = {}
+    missing_media_link_export_preset: dict
+    additional_representation_export: dict
+    thumbnail_preset: dict
 
     def process(self, instance):
+        # create staging dir path
+        staging_dir = self.staging_dir(instance)
+
+        # append staging dir for later cleanup
+        instance.context.data["cleanupFullPaths"].append(staging_dir)
+
         clip_data = self.get_clip_data(instance)
         if not clip_data["clip_path"]:
             # render missing media and add `clip_data["clip_path"]`
             clip_data = self.missing_media_link_export_preset_process(
-                instance, clip_data)
+                instance, clip_data, staging_dir)
 
-        self.thumbnail_preset_process(instance, clip_data)
-        self.additional_representation_export_process(instance, clip_data)
+        self.thumbnail_preset_process(instance, clip_data, staging_dir)
+        self.additional_representation_export_process(
+            instance, clip_data, staging_dir)
 
     def get_clip_data(self, instance: pyblish.api.Instance) -> dict:
         """Extract and prepare all clip-related data for export processing.
@@ -87,7 +94,6 @@ class ExtractProductResources(
                 * `repre_frame_start` (int): Representation frame start.
                 * `source_duration_handles` (int): Source duration including
                     handles.
-                * `staging_dir` (str): Path to staging directory.
                 * `version_frame_start` (int): Version data frame start.
 
         """
@@ -175,12 +181,6 @@ class ExtractProductResources(
 
         self.log.debug("_ source_duration_handles: %s", source_duration_handles)
 
-        # create staging dir path
-        staging_dir = self.staging_dir(instance)
-
-        # append staging dir for later cleanup
-        instance.context.data["cleanupFullPaths"].append(staging_dir)
-
         if not instance.data.get("versionData"):
             instance.data["versionData"] = {}
 
@@ -245,33 +245,50 @@ class ExtractProductResources(
             "frame_start_handle": frame_start_handle,
             "repre_frame_start": repre_frame_start,
             "source_duration_handles": source_duration_handles,
-            "staging_dir": staging_dir,
             "version_frame_start": version_frame_start,
         }
 
-    def missing_media_link_export_preset_process(self, instance, clip_data):
-        if not self.missing_media_link_export_preset:
-            raise publish.PublishError(
-                "Missing settings for 'missing_media_link_export_preset'")
+    def missing_media_link_export_preset_process(
+            self, instance, clip_data, staging_dir) -> dict:
 
-        # TODO: add procedure for generating thumbnail refactore already
-        #   created code from `additional_representation_export_process`
+        unique_name = "missing_media_link"
+        # Process preset export
+        export_dir_path, imageio_colorspace = self._process_preset_export(
+            instance,
+            self.missing_media_link_export_preset,
+            clip_data,
+            unique_name,
+            staging_dir,
+        )
+        export_dir_p = Path(export_dir_path)
+        if not export_dir_p.exists():
+            raise ValueError(
+                f"Export directory does not exist: {export_dir_path}")
 
-    def thumbnail_preset_process(self, instance, clip_data):
+        rendered_files = list(export_dir_p.iterdir())
+        clip_data["clip_path"] = rendered_files[0].as_posix()
+
+        return clip_data
+
+    def thumbnail_preset_process(
+            self, instance, clip_data, staging_dir):
         if (
-            not self.thumbnail_preset or
             not self.thumbnail_preset["enabled"]
         ):
             self.log.debug("thumbnail_preset is set")
             return
-        # TODO: add procedure for generating thumbnail refactore already
-        #   created code from `additional_representation_export_process`
+        unique_name = "thumbnail"
+        # Process preset export
+        export_dir_path, imageio_colorspace = self._process_preset_export(
+            instance,
+            self.missing_media_link_export_preset,
+            clip_data,
+            unique_name,
+            staging_dir,
+        )
 
-    def additional_representation_export_process(self, instance, clip_data):
-        if not self.additional_representation_export:
-            raise publish.PublishError(
-                "Missing settings for 'additional_representation_export'")
-
+    def additional_representation_export_process(
+            self, instance, clip_data, staging_dir):
         ad_repre_settings = self.additional_representation_export
         if not ad_repre_settings["keep_original_representation"]:
             # remove previeous representation if not needed
@@ -285,7 +302,6 @@ class ExtractProductResources(
         clip_path = clip_data["clip_path"]
         source_duration_handles = clip_data["source_duration_handles"]
         repre_frame_start = clip_data["repre_frame_start"]
-        staging_dir = clip_data["staging_dir"]
 
         # loop all preset names and
         for preset_config in additional_export_presets:
@@ -303,61 +319,72 @@ class ExtractProductResources(
             export_dir_path, imageio_colorspace = self._process_preset_export(
                 instance, preset_config, clip_data, unique_name, staging_dir
             )
+            repre_staging_dir = export_dir_path
+            export_dir_p = Path(export_dir_path)
+            if not export_dir_p.exists():
+                raise ValueError(
+                    f"Export directory does not exist: {export_dir_path}")
+
+            rendered_files = list(export_dir_p.iterdir())
+
+            if not rendered_files:
+                raise ValueError(
+                    f"No files found in export directory: {export_dir_path}")
+
+            extension = preset_config["ext"]
+
+            # make sure no nested folders inside
+            n_stage_dir, n_files = self._unfolds_nested_folders(
+                export_dir_path, rendered_files, extension)
+
+            # fix representation in case of nested folders
+            if n_stage_dir:
+                repre_staging_dir = n_stage_dir
+            if n_files
+                rendered_files = n_files
+
+            repr_name = unique_name
+            # add files to representation but add
+            # imagesequence as list
+            if (
+                # first check if path in files is not mov extension
+                [
+                    f for f in rendered_files
+                    if f.suffix == ".mov"
+                ]
+                # then try if thumbnail is not in unique name
+                or repr_name == "thumbnail"
+            ):
+                repre_files = rendered_files.pop().name
+            else:
+                repre_files = [f.name for f in rendered_files]
 
             # get preset attributes for representation
-            extension = preset_config["ext"]
             export_type = preset_config["export_type"]
             repre_tags = preset_config["representation_tags"]
 
-            repr_name = unique_name
             # make sure only first segment is used if underscore in name
             # HACK: `ftrackreview_withLUT` will result only in `ftrackreview`
             if (
                 "thumbnail" in unique_name
                 or "ftrackreview" in unique_name
             ):
+                self.log.debug("Unique name: %s", unique_name)
                 repr_name = unique_name.split("_")[0]
 
             # create representation data
             representation_data = {
                 "name": repr_name,
+                "files": repre_files,
                 "outputName": repr_name,
                 "ext": extension,
-                "stagingDir": export_dir_path,
+                "stagingDir": repre_staging_dir,
                 "tags": repre_tags,
                 "load_to_batch_group": preset_config.get(
                     "load_to_batch_group"),
                 "batch_group_loader_name": preset_config.get(
                     "batch_group_loader_name") or None
             }
-
-            # collect all available content of export dir
-            export_dir_p = Path(export_dir_path)
-            files = [f.name for f in export_dir_p.iterdir()] if export_dir_p.exists() else []
-
-            # make sure no nested folders inside
-            n_stage_dir, n_files = self._unfolds_nested_folders(
-                export_dir_path, files, extension)
-
-            # fix representation in case of nested folders
-            if n_stage_dir:
-                representation_data["stagingDir"] = n_stage_dir
-                files = n_files
-
-            # add files to representation but add
-            # imagesequence as list
-            if (
-                # first check if path in files is not mov extension
-                [
-                    f for f in files
-                    if Path(f).suffix == ".mov"
-                ]
-                # then try if thumbnail is not in unique name
-                or repr_name == "thumbnail"
-            ):
-                representation_data["files"] = files.pop()
-            else:
-                representation_data["files"] = files
 
             # add frame range
             if preset_config["representation_add_range"]:
@@ -463,7 +490,6 @@ class ExtractProductResources(
         preset_file = preset_config["xml_preset_file"]
         preset_dir = preset_config["xml_preset_dir"]
         export_type = preset_config["export_type"]
-        repre_tags = preset_config["representation_tags"]
         parsed_comment_attrs = preset_config["parsed_comment_attrs"]
 
         self.log.info(
@@ -600,7 +626,7 @@ class ExtractProductResources(
 
         Args:
             stage_dir (str): path string with directory
-            files_list (list): list of file names
+            files_list (list[Path]): list of file names
             ext (str): extension (jpg)[without dot]
 
         Raises:
@@ -617,21 +643,21 @@ class ExtractProductResources(
             # only one file in list
             len(files_list) == 1
             # file is having extension as input
-            and ext in Path(files_list[0]).suffix
+            and ext in files_list[0].suffix
         ) or (
             # more then one file in list
             len(files_list) >= 1
             # extension is correct
-            and ext in Path(files_list[0]).suffix
+            and ext in files_list[0].suffix
             # test file exists
-            and (Path(stage_dir) / files_list[0]).exists()
+            and (Path(stage_dir) / files_list[0].name).exists()
         ):
             return None, None
 
         new_stage_dir = None
-        new_files_list = []
+        new_files_list: list[Path] = []
         for file in files_list:
-            search_path = Path(stage_dir) / file
+            search_path = Path(stage_dir) / file.name
             if not search_path.is_dir():
                 continue
             for root, _dirs, files in os.walk(search_path):
@@ -640,7 +666,8 @@ class ExtractProductResources(
                     _ext = file_path.suffix
                     if ext.lower() != _ext[1:].lower():
                         continue
-                    new_files_list.append(_file)
+                    new_file_p = Path(root) / file_path.name
+                    new_files_list.append(new_file_p)
                     if not new_stage_dir:
                         new_stage_dir = root
 

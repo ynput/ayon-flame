@@ -17,6 +17,7 @@ class CollectPlate(pyblish.api.InstancePlugin):
         Args:
             instance (pyblish.Instance): The shot instance to update.
         """
+        clip_data = instance.data["clipData"]
         instance.data["families"].append("clip")
 
         # Adjust instance data from parent otio timeline.
@@ -54,11 +55,6 @@ class CollectPlate(pyblish.api.InstancePlugin):
         instance.data.update(
             edit_shared_data[parent_instance_id]
         )
-
-        segment_item = instance.data["item"]
-        sequence = ayfapi.get_current_sequence(ayfapi.CTX.selection)
-        with ayfapi.maintained_segment_selection(sequence):
-            clip_data = ayfapi.get_segment_attributes(segment_item)
 
         version_data = instance.data.setdefault("versionData", {})
         version_data["colorSpace"] = clip_data["colour_space"]
