@@ -1,24 +1,22 @@
 # TODO:
-#   - [ ] abstracting clip processing part which is sharable for all
+#   - [x] abstracting clip processing part which is sharable for all
 #   - [ ] Implement missing_media_link_export_preset_process method
 #   - [ ] Implement thumbnail_preset_process method
 #   - [ ] refactor additional_representation_export_process method
+#
+from __future__ import annotations
 
 import os
 import re
-from copy import deepcopy
-
-import pyblish.api
-
-from ayon_core.pipeline import publish
-from ayon_flame import api as ayfapi
-from ayon_flame.api import MediaInfoFile
-from ayon_core.pipeline.editorial import (
-    get_media_range_with_retimes
-)
 
 import flame
+import pyblish.api
+from ayon_core.pipeline import publish
 from ayon_core.pipeline.colorspace import get_remapped_colorspace_from_native
+from ayon_core.pipeline.editorial import get_media_range_with_retimes
+from ayon_flame import api as ayfapi
+from ayon_flame.api import MediaInfoFile
+
 
 class ExtractProductResources(
     publish.Extractor,
@@ -39,9 +37,9 @@ class ExtractProductResources(
     hide_ui_on_process = True
 
     # settings
-    missing_media_link_export_preset = None
-    additional_representation_export = None
-    thumbnail_preset = None
+    missing_media_link_export_preset: dict = {}
+    additional_representation_export: dict = {}
+    thumbnail_preset: dict = {}
 
     def process(self, instance):
         clip_data = self.get_clip_data(instance)
@@ -55,9 +53,6 @@ class ExtractProductResources(
 
     def get_clip_data(self, instance):
         """Extract and prepare all clip-related data for export processing."""
-        ad_repre_settings = self.additional_representation_export or {}
-        export_presets_mapping_settings = ad_repre_settings.get(
-            "export_presets_mapping", [])
 
         # flame objects
         segment = instance.data["item"]
@@ -151,22 +146,6 @@ class ExtractProductResources(
         # append staging dir for later cleanup
         instance.context.data["cleanupFullPaths"].append(staging_dir)
 
-        export_presets_mapping = {}
-        for preset_mapping in deepcopy(export_presets_mapping_settings):
-            name = preset_mapping.pop("name")
-            export_presets_mapping[name] = preset_mapping
-
-        # add default preset type for thumbnail
-        # update them with settings and override in case the same
-        # are found in there
-        _preset_keys = [k.split('_')[0] for k in export_presets_mapping]
-        export_presets = {
-            k: v
-            for k, v in deepcopy(self.default_presets).items()
-            if k not in _preset_keys
-        }
-        export_presets.update(export_presets_mapping)
-
         if not instance.data.get("versionData"):
             instance.data["versionData"] = {}
 
@@ -232,12 +211,16 @@ class ExtractProductResources(
             "repre_frame_start": repre_frame_start,
             "source_duration_handles": source_duration_handles,
             "staging_dir": staging_dir,
-            "export_presets": export_presets,
             "version_frame_start": version_frame_start,
         }
 
     def missing_media_link_export_preset_process(self, instance, clip_data):
-        pass
+        if not self.missing_media_link_export_preset:
+            raise publish.PublishError(
+                "Missing settings for 'missing_media_link_export_preset'")
+
+        # TODO: add procedure for generating thumbnail refactore already
+        #   created code from `additional_representation_export_process`
 
     def thumbnail_preset_process(self, instance, clip_data):
         if (
@@ -251,17 +234,20 @@ class ExtractProductResources(
 
     def additional_representation_export_process(self, instance, clip_data):
         if not self.additional_representation_export:
-            self.log.debug("additional_representation_export is not set")
-            return
+            raise publish.PublishError(
+                "Missing settings for 'additional_representation_export'")
 
         ad_repre_settings = self.additional_representation_export
         if not ad_repre_settings["keep_original_representation"]:
             # remove previeous representation if not needed
             instance.data["representations"] = []
 
+        ad_repre_settings = self.additional_representation_export
+        additional_export_presets: list[dict] = ad_repre_settings[
+            "export_presets_mapping"]
+
         # Extract only needed data from clip_data dictionary
         clip_path = clip_data["clip_path"]
-        export_presets = clip_data["export_presets"]
         sequence_clip = clip_data["sequence_clip"]
         segment_name = clip_data["segment_name"]
         s_track_name = clip_data["s_track_name"]
@@ -276,143 +262,21 @@ class ExtractProductResources(
         staging_dir = clip_data["staging_dir"]
 
         # loop all preset names and
-        for unique_name, preset_config in export_presets.items():
-            modify_xml_data = {}
+        for preset_config in additional_export_presets:
+            unique_name = preset_config["name"]
 
             if self._should_skip(preset_config, clip_path, unique_name):
                 continue
 
-            # get all presets attributes
+            # Process preset export
+            export_dir_path, imageio_colorspace = self._process_preset_export(
+                instance, preset_config, clip_data, unique_name, staging_dir
+            )
+
+            # get preset attributes for representation
             extension = preset_config["ext"]
-            preset_file = preset_config["xml_preset_file"]
-            preset_dir = preset_config["xml_preset_dir"]
             export_type = preset_config["export_type"]
             repre_tags = preset_config["representation_tags"]
-            parsed_comment_attrs = preset_config["parsed_comment_attrs"]
-
-            self.log.info(
-                "Processing `{}` as `{}` to `{}` type...".format(
-                    preset_file, export_type, extension
-                )
-            )
-
-            exporting_clip = None
-            name_pattern_xml = "<name>_{}.".format(
-                unique_name)
-
-            if export_type == "Sequence Publish":
-                # change export clip to sequence
-                exporting_clip = flame.duplicate(sequence_clip)
-
-                # only keep visible layer where instance segment is child
-                self.hide_others(
-                    exporting_clip, segment_name, s_track_name)
-
-                # change name pattern
-                name_pattern_xml = (
-                    "<segment name>_<shot name>_{}.").format(
-                        unique_name)
-
-                # only for h264 with baked retime
-                in_mark = clip_in
-                out_mark = clip_out + 1
-                modify_xml_data.update({
-                    "exportHandles": True,
-                    "nbHandles": handles
-                })
-            else:
-                in_mark = (source_start_handles - source_first_frame) + 1
-                out_mark = in_mark + source_duration_handles
-                exporting_clip = self.import_clip(clip_path)
-                exporting_clip.name.set_value("{}_{}".format(
-                    folder_path, segment_name))
-
-            flame_colour = exporting_clip.get_colour_space()
-            self.log.debug(flame_colour)
-            context = instance.context
-            host_name = context.data["hostName"]
-            project_settings = context.data["project_settings"]
-            host_imageio_settings = project_settings["flame"]["imageio"]
-            imageio_colorspace = get_remapped_colorspace_from_native(
-                flame_colour,
-                host_name,
-                host_imageio_settings,
-            )
-            self.log.debug(imageio_colorspace)
-            # add xml tags modifications
-            modify_xml_data.update({
-                # enum position low start from 0
-                "frameIndex": 0,
-                "startFrame": repre_frame_start,
-                "namePattern": name_pattern_xml
-            })
-
-            if parsed_comment_attrs:
-                # add any xml overrides collected form segment.comment
-                modify_xml_data.update(instance.data["xml_overrides"])
-
-            self.log.debug("_ in_mark: {}".format(in_mark))
-            self.log.debug("_ out_mark: {}".format(out_mark))
-
-            export_kwargs = {}
-            # validate xml preset file is filled
-            if preset_file == "":
-                raise ValueError(
-                    ("Check Settings for {} preset: "
-                        "`XML preset file` is not filled").format(
-                        unique_name)
-                )
-
-            # resolve xml preset dir if not filled
-            if preset_dir == "":
-                preset_dir = ayfapi.get_preset_path_by_xml_name(
-                    preset_file)
-
-                if not preset_dir:
-                    raise ValueError(
-                        ("Check Settings for {} preset: "
-                            "`XML preset file` {} is not found").format(
-                            unique_name, preset_file)
-                    )
-
-            # create preset path
-            preset_orig_xml_path = str(os.path.join(
-                preset_dir, preset_file
-            ))
-
-            # define kwargs based on preset type
-            if "thumbnail" in unique_name:
-                modify_xml_data.update({
-                    "video/posterFrame": True,
-                    "video/useFrameAsPoster": 1,
-                    "namePattern": "__thumbnail"
-                })
-                thumb_frame_number = int(in_mark + (
-                    (out_mark - in_mark + 1) / 2))
-
-                self.log.debug("__ thumb_frame_number: {}".format(
-                    thumb_frame_number
-                ))
-
-                export_kwargs["thumb_frame_number"] = thumb_frame_number
-            else:
-                export_kwargs.update({
-                    "in_mark": in_mark,
-                    "out_mark": out_mark
-                })
-
-            preset_path = ayfapi.modify_preset_file(
-                preset_orig_xml_path, staging_dir, modify_xml_data)
-
-            # get and make export dir paths
-            export_dir_path = str(os.path.join(
-                staging_dir, unique_name
-            ))
-            os.makedirs(export_dir_path)
-
-            # export
-            ayfapi.export_clip(
-                export_dir_path, exporting_clip, preset_path, **export_kwargs)
 
             repr_name = unique_name
             # make sure only first segment is used if underscore in name
@@ -523,6 +387,170 @@ class ExtractProductResources(
             ),
             "speed": float(retimed_attributes["speed"])
         }
+
+    def _process_preset_export(self, instance, preset_config, clip_data,
+                                unique_name, staging_dir):
+        """Process and export a single preset configuration.
+
+        Args:
+            instance: The publish instance
+            preset_config: Configuration for the preset
+            clip_data: Dictionary containing clip data
+            unique_name: Unique name for the preset
+            staging_dir: Staging directory path
+
+        Returns:
+            tuple: (export_dir_path, imageio_colorspace)
+        """
+        # Extract clip data
+        clip_path = clip_data["clip_path"]
+        sequence_clip = clip_data["sequence_clip"]
+        segment_name = clip_data["segment_name"]
+        s_track_name = clip_data["s_track_name"]
+        clip_in = clip_data["clip_in"]
+        clip_out = clip_data["clip_out"]
+        handles = clip_data["handles"]
+        source_start_handles = clip_data["source_start_handles"]
+        source_first_frame = clip_data["source_first_frame"]
+        source_duration_handles = clip_data["source_duration_handles"]
+        folder_path = clip_data["folder_path"]
+        repre_frame_start = clip_data["repre_frame_start"]
+
+        modify_xml_data = {}
+
+        # get all presets attributes
+        extension = preset_config["ext"]
+        preset_file = preset_config["xml_preset_file"]
+        preset_dir = preset_config["xml_preset_dir"]
+        export_type = preset_config["export_type"]
+        repre_tags = preset_config["representation_tags"]
+        parsed_comment_attrs = preset_config["parsed_comment_attrs"]
+
+        self.log.info(
+            "Processing `{}` as `{}` to `{}` type...".format(
+                preset_file, export_type, extension
+            )
+        )
+
+        exporting_clip = None
+        name_pattern_xml = "<name>_{}.".format(
+            unique_name)
+
+        if export_type == "Sequence Publish":
+            # change export clip to sequence
+            exporting_clip = flame.duplicate(sequence_clip)
+
+            # only keep visible layer where instance segment is child
+            self.hide_others(
+                exporting_clip, segment_name, s_track_name)
+
+            # change name pattern
+            name_pattern_xml = (
+                "<segment name>_<shot name>_{}.").format(
+                    unique_name)
+
+            # only for h264 with baked retime
+            in_mark = clip_in
+            out_mark = clip_out + 1
+            modify_xml_data.update({
+                "exportHandles": True,
+                "nbHandles": handles
+            })
+        else:
+            in_mark = (source_start_handles - source_first_frame) + 1
+            out_mark = in_mark + source_duration_handles
+            exporting_clip = self.import_clip(clip_path)
+            exporting_clip.name.set_value("{}_{}".format(
+                folder_path, segment_name))
+
+        flame_colour = exporting_clip.get_colour_space()
+        self.log.debug(flame_colour)
+        context = instance.context
+        host_name = context.data["hostName"]
+        project_settings = context.data["project_settings"]
+        host_imageio_settings = project_settings["flame"]["imageio"]
+        imageio_colorspace = get_remapped_colorspace_from_native(
+            flame_colour,
+            host_name,
+            host_imageio_settings,
+        )
+        self.log.debug(imageio_colorspace)
+        # add xml tags modifications
+        modify_xml_data.update({
+            # enum position low start from 0
+            "frameIndex": 0,
+            "startFrame": repre_frame_start,
+            "namePattern": name_pattern_xml
+        })
+
+        if parsed_comment_attrs:
+            # add any xml overrides collected form segment.comment
+            modify_xml_data.update(instance.data["xml_overrides"])
+
+        self.log.debug("_ in_mark: {}".format(in_mark))
+        self.log.debug("_ out_mark: {}".format(out_mark))
+
+        export_kwargs = {}
+        # validate xml preset file is filled
+        if preset_file == "":
+            raise ValueError(
+                ("Check Settings for {} preset: "
+                    "`XML preset file` is not filled").format(
+                    unique_name)
+            )
+
+        # resolve xml preset dir if not filled
+        if preset_dir == "":
+            preset_dir = ayfapi.get_preset_path_by_xml_name(
+                preset_file)
+
+            if not preset_dir:
+                raise ValueError(
+                    ("Check Settings for {} preset: "
+                        "`XML preset file` {} is not found").format(
+                        unique_name, preset_file)
+                )
+
+        # create preset path
+        preset_orig_xml_path = str(os.path.join(
+            preset_dir, preset_file
+        ))
+
+        # define kwargs based on preset type
+        if "thumbnail" in unique_name:
+            modify_xml_data.update({
+                "video/posterFrame": True,
+                "video/useFrameAsPoster": 1,
+                "namePattern": "__thumbnail"
+            })
+            thumb_frame_number = int(in_mark + (
+                (out_mark - in_mark + 1) / 2))
+
+            self.log.debug("__ thumb_frame_number: {}".format(
+                thumb_frame_number
+            ))
+
+            export_kwargs["thumb_frame_number"] = thumb_frame_number
+        else:
+            export_kwargs.update({
+                "in_mark": in_mark,
+                "out_mark": out_mark
+            })
+
+        preset_path = ayfapi.modify_preset_file(
+            preset_orig_xml_path, staging_dir, modify_xml_data)
+
+        # get and make export dir paths
+        export_dir_path = str(os.path.join(
+            staging_dir, unique_name
+        ))
+        os.makedirs(export_dir_path)
+
+        # export
+        ayfapi.export_clip(
+            export_dir_path, exporting_clip, preset_path, **export_kwargs)
+
+        return export_dir_path, imageio_colorspace
 
     def _should_skip(self, preset_config, clip_path, unique_name):
         # get activating attributes
