@@ -305,7 +305,7 @@ class ExtractProductResources(
         # Process preset export
         export_dir_path, imageio_colorspace = self._process_preset_export(
             instance,
-            self.missing_media_link_export_preset,
+            self.thumbnail_preset,
             clip_data,
             unique_name,
             staging_dir,
@@ -438,6 +438,7 @@ class ExtractProductResources(
         """
         # Extract clip data
         clip_path = clip_data["clip_path"]
+        segment = clip_data["segment"]
         sequence_clip = clip_data["sequence_clip"]
         segment_name = clip_data["segment_name"]
         s_track_name = clip_data["s_track_name"]
@@ -460,7 +461,8 @@ class ExtractProductResources(
         parsed_comment_attrs = preset_config["parsed_comment_attrs"]
 
         self.log.info(
-            "Processing `%s` as `%s` to `%s` type...", preset_file, export_type, extension
+            "Processing `%s` as `%s` to `%s` type...",
+            preset_file, export_type, extension
         )
 
         exporting_clip = None
@@ -488,21 +490,12 @@ class ExtractProductResources(
         else:
             in_mark = (source_start_handles - source_first_frame) + 1
             out_mark = in_mark + source_duration_handles
-            exporting_clip = self.import_clip(clip_path)
-            exporting_clip.name.set_value(f"{folder_path}_{segment_name}")
 
-        flame_colour = exporting_clip.get_colour_space()
-        self.log.debug(flame_colour)
-        context = instance.context
-        host_name = context.data["hostName"]
-        project_settings = context.data["project_settings"]
-        host_imageio_settings = project_settings["flame"]["imageio"]
-        imageio_colorspace = get_remapped_colorspace_from_native(
-            flame_colour,
-            host_name,
-            host_imageio_settings,
-        )
-        self.log.debug(imageio_colorspace)
+            exporting_clip = None
+            if clip_path:
+                exporting_clip = self.import_clip(clip_path)
+                exporting_clip.name.set_value(f"{folder_path}_{segment_name}")
+
         # add xml tags modifications
         modify_xml_data.update({
             # enum position low start from 0
@@ -566,11 +559,43 @@ class ExtractProductResources(
         export_dir_path = (Path(staging_dir) / unique_name).as_posix()
         Path(export_dir_path).mkdir(parents=True, exist_ok=True)
 
-        # export
-        ayfapi.export_clip(
-            export_dir_path, exporting_clip, preset_path, **export_kwargs)
+        if not exporting_clip:
+            exporting_clip = self.convert_unlinked_segment_to_clip(
+                segment, extension, preset_path, export_dir_path)
+        else:
+            # export
+            ayfapi.export_clip(
+                export_dir_path, exporting_clip, preset_path, **export_kwargs)
+
+        imageio_colorspace = self._get_imageio_colorspace(
+            exporting_clip, instance
+        )
 
         return export_dir_path, imageio_colorspace
+
+    def _get_imageio_colorspace(self, exporting_clip, instance):
+        """Get the imageio colorspace from the exporting clip.
+
+        Args:
+            exporting_clip: The flame clip object
+            instance: The publish instance
+
+        Returns:
+            str: The remapped colorspace name
+        """
+        flame_colour = exporting_clip.get_colour_space()
+        self.log.debug(flame_colour)
+        context = instance.context
+        host_name = context.data["hostName"]
+        project_settings = context.data["project_settings"]
+        host_imageio_settings = project_settings["flame"]["imageio"]
+        imageio_colorspace = get_remapped_colorspace_from_native(
+            flame_colour,
+            host_name,
+            host_imageio_settings,
+        )
+        self.log.debug(imageio_colorspace)
+        return imageio_colorspace
 
     def _process_exported_files(self, export_dir_path, extension, unique_name):
         """Process exported files and prepare representation data.
@@ -822,3 +847,38 @@ class ExtractProductResources(
                 "Path `%s` is containing more that one clip", path
             )
         return clips[0]
+
+
+    def convert_unlinked_segment_to_clip(self, segment, extension, preset_path, staging_dir):
+        """
+        Exports a managed segment to a temp file and imports it back as a PyClip.
+        """
+        path_p = Path(staging_dir)
+        path_p.mkdir(parents=True, exist_ok=True)
+
+        # Create a unique filename based on segment name
+        filename = f"{segment.name}_temp_conversion.{extension}"
+        export_path = path_p / filename
+
+        # 2. Configure the Exporter
+        exporter = flame.PyExporter()
+        exporter.foreground = True
+
+        # segment.selected = True
+        # Ensure nothing else is selected in the sequence?
+        # Ideally, you'd iterate the sequence and deselect others, but for brevity:
+
+        try:
+            exporter.export(
+                sources=[segment],
+                path=export_path.as_posix(),
+                preset_path=preset_path)
+
+            # 4. Import the file back as a PyClip
+            if export_path.exists():
+                new_clips = flame.import_clips(export_path)
+
+                return new_clips[0]
+
+        except publish.PublishError as e:
+            raise publish.PublishError(f"Export/Import failed: {e}") from e
