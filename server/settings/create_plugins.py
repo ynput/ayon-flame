@@ -168,6 +168,8 @@ DEFAULT_CREATE_SETTINGS = {
         "track": "{_track_}",
         "shot": "####",
         "vSyncOn": False,
+        "export_audio": False,
+        "sourceResolution": False,
         "workfileFrameStart": 1001,
         "handleStart": 5,
         "handleEnd": 5,
