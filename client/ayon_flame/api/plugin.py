@@ -260,7 +260,7 @@ class PublishableClip:
             "vSyncTrack") or self.driving_layer_default
         self.review_source = self.pre_create_data.get(
             "reviewableSource") or self.review_source_default
-        self.audio = self.pre_create_data.get("audio") or False
+        self.audio = self.pre_create_data.get("export_audio") or False
         self.include_handles = self.pre_create_data.get(
             "includeHandles") or self.include_handles_default
         self.retimed_handles = (
