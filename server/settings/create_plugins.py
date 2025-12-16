@@ -23,7 +23,10 @@ def create_shot_clip_overrides_enum() -> list[dict[str, str]]:
         {"value": "handleEnd", "label": "Handle end (tail)"},
         {"value": "includeHandles", "label": "Enable handles including"},
         {"value": "retimedHandles", "label": "Enable retimed handles"},
-        {"value": "retimedFramerange", "label": "Enable retimed shot frameranges"},
+        {
+            "value": "retimedFramerange",
+            "label": "Enable retimed shot frameranges"
+        },
     ]
 
 
