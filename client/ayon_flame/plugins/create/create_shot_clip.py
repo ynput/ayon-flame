@@ -622,7 +622,6 @@ OTIO file.
             if attr not in enabled_overrides
         }
 
-
     def create(self, product_name, instance_data, pre_create_data):
         # Ensure to include the default values for excluded attributes that
         # are marked not overridable in settings into the pre_create_data
