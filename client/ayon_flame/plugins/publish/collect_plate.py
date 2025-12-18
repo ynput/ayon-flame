@@ -1,6 +1,4 @@
 import pyblish
-
-import ayon_flame.api as ayfapi
 from ayon_flame.otio import utils
 
 
@@ -17,6 +15,14 @@ class CollectPlate(pyblish.api.InstancePlugin):
         Args:
             instance (pyblish.Instance): The shot instance to update.
         """
+        # Retrieve instance data from parent instance shot instance.
+        parent_instance_id = instance.data["parent_instance_id"]
+        edit_shared_data = instance.context.data["editorialSharedData"]
+
+        instance.data.update(
+            edit_shared_data[parent_instance_id]
+        )
+
         clip_data = instance.data["clipData"]
         instance.data["families"].append("clip")
 
@@ -48,13 +54,6 @@ class CollectPlate(pyblish.api.InstancePlugin):
         instance.data.pop("reviewableSource", None)
         instance.data.pop("review", None)
 
-        # Retrieve instance data from parent instance shot instance.
-        parent_instance_id = instance.data["parent_instance_id"]
-        edit_shared_data = instance.context.data["editorialSharedData"]
-
-        instance.data.update(
-            edit_shared_data[parent_instance_id]
-        )
 
         version_data = instance.data.setdefault("versionData", {})
         version_data["colorSpace"] = clip_data["colour_space"]
