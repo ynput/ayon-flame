@@ -208,6 +208,7 @@ class FlameShotInstanceCreator(_FlameInstanceCreator):
     """Shot product type creator class"""
     identifier = "io.ayon.creators.flame.shot"
     product_type = "shot"
+    product_base_type = "shot"
     label = "Editorial Shot"
 
     def get_instance_attr_defs(self):
@@ -310,6 +311,7 @@ class EditorialPlateInstanceCreator(_FlameInstanceClipCreatorBase):
     """Plate product type creator class"""
     identifier = "io.ayon.creators.flame.plate"
     product_type = "plate"
+    product_base_type = "plate"
     label = "Editorial Plate"
 
     def create(self, instance_data, _):
@@ -328,6 +330,7 @@ class EditorialAudioInstanceCreator(_FlameInstanceClipCreatorBase):
     """Audio product type creator class"""
     identifier = "io.ayon.creators.flame.audio"
     product_type = "audio"
+    product_base_type = "audio"
     label = "Editorial Audio"
 
 
@@ -337,6 +340,7 @@ class CreateShotClip(plugin.FlameCreator):
     identifier = "io.ayon.creators.flame.clip"
     label = "Create Publishable Clip"
     product_type = "editorial"
+    product_base_type = "editorial"
     icon = "film"
     defaults = ["Main"]
 
@@ -703,6 +707,7 @@ OTIO file.
                         {
                             "variant": "main",
                             "productType": "shot",
+                            "productBaseType": "shot",
                             "productName": "shotMain",
                             "creator_attributes": {
                                 "workfileFrameStart": workfileFrameStart,
@@ -763,6 +768,7 @@ OTIO file.
                 elif creator_id == audio_creator_id:
                     sub_instance_data["variant"] = "main"
                     sub_instance_data["productType"] = "audio"
+                    sub_instance_data["productBaseType"] = "audio"
                     sub_instance_data["productName"] = "audioMain"
 
                     parenting_data = shot_instances[shot_creator_id]
