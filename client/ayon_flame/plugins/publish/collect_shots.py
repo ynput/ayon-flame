@@ -25,6 +25,8 @@ class CollectShot(pyblish.api.InstancePlugin):
     families = ["shot"]
 
     SHARED_KEYS = (
+        "clipData",
+        "error_message",
         "folderPath",
         "fps",
         "handleStart",
