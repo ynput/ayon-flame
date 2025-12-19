@@ -18,10 +18,18 @@ class CollectPlate(pyblish.api.InstancePlugin):
         # Retrieve instance data from parent instance shot instance.
         parent_instance_id = instance.data["parent_instance_id"]
         edit_shared_data = instance.context.data["editorialSharedData"]
+        parent_shot_instance_data = edit_shared_data[parent_instance_id]
+        parent_shot_creator_attrs = parent_shot_instance_data[
+            "creator_attributes"]
 
         instance.data.update(
-            edit_shared_data[parent_instance_id]
+            parent_shot_instance_data
         )
+        # add also shot's creator attributes for missing linked media clips
+        # it needs frame range and clip ranges which are usually processed
+        # from collect_otio_frame_ranges but without clip link the
+        # otio_clip is missing reference with available frame ranges
+        instance.data["shotCreatorAttrs"] = parent_shot_creator_attrs
 
         clip_data = instance.data["clipData"]
         instance.data["families"].append("clip")

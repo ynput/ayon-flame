@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
+from pprint import pformat
 
 import flame
 import pyblish.api
@@ -97,6 +98,9 @@ class ExtractProductResources(
                 * `version_frame_start` (int): Version data frame start.
 
         """
+        shot_creator_attrs = instance.data["shotCreatorAttrs"]
+        self.log.debug("_ shot_creator_attrs: %s", pformat(shot_creator_attrs))
+
         # flame objects
         segment = instance.data["item"]
         folder_path = instance.data["folderPath"]
@@ -109,7 +113,8 @@ class ExtractProductResources(
         s_track_name = segment.parent.name.get_value()
 
         # get configured workfile frame start/end (handles excluded)
-        frame_start = instance.data["frameStart"]
+        frame_start = instance.data.get(
+            "frameStart", shot_creator_attrs["frameStart"])
         # get media source first frame
         source_first_frame = instance.data["sourceFirstFrame"]
 
@@ -117,8 +122,10 @@ class ExtractProductResources(
         self.log.debug("_ source_first_frame: %s", source_first_frame)
 
         # get timeline in/out of segment
-        clip_in = instance.data["clipIn"]
-        clip_out = instance.data["clipOut"]
+        clip_in = instance.data.get(
+            "clipIn", shot_creator_attrs["clipIn"])
+        clip_out = instance.data.get(
+            "clipOut", shot_creator_attrs["clipOut"])
 
         # get retimed attributres
         retimed_data = self._get_retimed_attributes(instance)
