@@ -324,7 +324,8 @@ class ExtractProductResources(
 
         instance.data["representations"].append(representation_data)
 
-        clip_data["clip_path"] = Path(repre_staging_dir) / repre_files[0]
+        clip_data["clip_path"] = (
+            Path(repre_staging_dir) / repre_files[0]).as_posix()
         clip_data["PyClip"] = exporting_clip
 
         return clip_data
@@ -427,8 +428,6 @@ class ExtractProductResources(
                 )
                 for publish_clip in publish_clips:
                     flame.delete(publish_clip)
-            # at the end remove the duplicated clip
-            flame.delete(exporting_clip)
 
     def _get_retimed_attributes(self, instance):
         handle_start = instance.data["handleStart"]
