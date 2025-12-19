@@ -79,7 +79,6 @@ class ExtractProductResources(
                 * `source_first_frame` (int): Media source first frame.
                 * `clip_in` (int): Timeline in point of segment.
                 * `clip_out` (int): Timeline out point of segment.
-                * `retimed_data` (dict): Dictionary of retimed attributes.
                 * `retimed_handle_start` (int): Retimed handle start value.
                 * `retimed_handle_end` (int): Retimed handle end value.
                 * `retimed_source_duration` (int): Retimed source duration.
@@ -127,25 +126,49 @@ class ExtractProductResources(
         clip_out = instance.data.get(
             "clipOut", shot_creator_attrs["clipOut"])
 
-        # get retimed attributres
-        retimed_data = self._get_retimed_attributes(instance)
-
-        # get individual keys
-        retimed_handle_start = retimed_data["handle_start"]
-        retimed_handle_end = retimed_data["handle_end"]
-        retimed_source_duration = retimed_data["source_duration"]
-        retimed_speed = retimed_data["speed"]
-
         # get handles value - take only the max from both
         handle_start = instance.data["handleStart"]
         handle_end = instance.data["handleEnd"]
         handles = max(handle_start, handle_end)
+
+        retimed_data = {}
+        if clip_path:
+            # media source is linked to clip so we do have avalable
+            # otio reference for media source frame range calculation
+
+            # get retimed attributres
+            retimed_data = self._get_retimed_attributes(instance)
+
+            # get individual keys
+            retimed_handle_start = retimed_data["handle_start"]
+            retimed_handle_end = retimed_data["handle_end"]
+            retimed_source_duration = retimed_data["source_duration"]
+            retimed_speed = retimed_data["speed"]
+            # get media source range with handles
+            source_start_handles = instance.data["sourceStartH"]
+            source_end_handles = instance.data["sourceEndH"]
+        else:
+            # media source is unlinked so we do not have avalable
+            # otio reference for media source frame range calculation
+            segment_data = ayfapi.get_segment_attributes(segment)
+            source_in = segment_data["source_in"]
+            source_out = segment_data["source_out"]
+            source_duration = source_out - source_in + 1
+            record_duration = segment_data["record_duration"]
+            # secondly check if any change of speed
+            retimed_speed = 1
+            if source_duration != record_duration:
+                speed = float(source_duration) / float(record_duration)
+                self.log.debug(f"_ calculated speed: {speed}")
+                retimed_speed *= speed
+            retimed_handle_start = handle_start * retimed_speed
+            retimed_handle_end = handle_end * retimed_speed
+            retimed_source_duration = source_duration * retimed_speed
+            source_start_handles = source_in - handle_start
+            source_end_handles = source_out - handle_end
+
         include_handles = instance.data.get("includeHandles")
         retimed_handles = instance.data.get("retimedHandles")
-
-        # get media source range with handles
-        source_start_handles = instance.data["sourceStartH"]
-        source_end_handles = instance.data["sourceEndH"]
 
         # retime if needed
         if retimed_speed != 1.0:
@@ -237,7 +260,6 @@ class ExtractProductResources(
             "source_first_frame": source_first_frame,
             "clip_in": clip_in,
             "clip_out": clip_out,
-            "retimed_data": retimed_data,
             "retimed_handle_start": retimed_handle_start,
             "retimed_handle_end": retimed_handle_end,
             "retimed_source_duration": retimed_source_duration,
@@ -856,30 +878,30 @@ class ExtractProductResources(
         return clips[0]
 
 
-    def convert_unlinked_segment_to_clip(self, segment, extension, preset_path, staging_dir):
+    def convert_unlinked_segment_to_clip(
+            self, segment, extension, preset_path, staging_dir):
         """
         Exports a managed segment to a temp file and imports it back as a PyClip.
         """
-        path_p = Path(staging_dir)
-        path_p.mkdir(parents=True, exist_ok=True)
+        if isinstance(preset_path, str):
+            preset_path = Path(preset_path)
 
         # Create a unique filename based on segment name
-        filename = f"{segment.name}_temp_conversion.{extension}"
-        export_path = path_p / filename
+        subdir_name = f"{segment.name.get_value()}_temp_conversion_{extension}"
+        export_path = Path(staging_dir) / subdir_name
 
         # 2. Configure the Exporter
         exporter = flame.PyExporter()
         exporter.foreground = True
+        exporter.export_between_marks = True
 
         # segment.selected = True
-        # Ensure nothing else is selected in the sequence?
-        # Ideally, you'd iterate the sequence and deselect others, but for brevity:
-
+        self.log.debug([segment, export_path.as_posix(), preset_path.as_posix()])
         try:
             exporter.export(
                 sources=[segment],
-                path=export_path.as_posix(),
-                preset_path=preset_path)
+                output_directory=export_path.as_posix(),
+                preset_path=preset_path.as_posix())
 
             # 4. Import the file back as a PyClip
             if export_path.exists():
