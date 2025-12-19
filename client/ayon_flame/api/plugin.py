@@ -11,7 +11,7 @@ from ayon_core.pipeline.create import CreatorError
 from ayon_core.pipeline import LoaderPlugin, HiddenCreator
 from ayon_core.pipeline import Creator
 from ayon_core.pipeline.colorspace import get_remapped_colorspace_to_native
-from ayon_core.settings import get_current_project_settings
+from ayon_core.pipeline.context_tools import get_current_project_settings
 
 from . import lib as flib
 
@@ -41,8 +41,10 @@ class FlameCreator(Creator):
 
     def __init__(self, *args, **kwargs):
         super(Creator, self).__init__(*args, **kwargs)
-        self.presets = get_current_project_settings()[
-            "flame"]["create"].get(self.__class__.__name__, {})
+        project_settings = self.create_context.get_current_project_settings()
+        self.presets = project_settings["flame"]["create"].get(
+            self.__class__.__name__, {}
+        )
 
     def create(self, product_name, instance_data, pre_create_data):
         """Prepare data for new instance creation.
@@ -258,7 +260,7 @@ class PublishableClip:
             "vSyncTrack") or self.driving_layer_default
         self.review_source = self.pre_create_data.get(
             "reviewableSource") or self.review_source_default
-        self.audio = self.pre_create_data.get("audio") or False
+        self.audio = self.pre_create_data.get("export_audio") or False
         self.include_handles = self.pre_create_data.get(
             "includeHandles") or self.include_handles_default
         self.retimed_handles = (
