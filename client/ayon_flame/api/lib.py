@@ -571,11 +571,14 @@ def get_segment_attributes(
         "tape_name": segment.tape_name,
         "source_name": segment.source_name,
         "PySegment": segment,
+        "error_message": "",
+        "segment_name": "",
+        "fpath": "",
     }
     # make sure even segments without proper name are handled as missing
     # this way they will be detected by Publisher Validator
     if not segment_name:
-        clip_data["segment_name"] = "Missing: Segment's Name"
+        clip_data["error_message"] = "Missing: Segment's Name"
         if segment not in validation_aggregator.failed_segments:
             validation_aggregator.failed_segments.append(segment)
     else:
@@ -586,7 +589,7 @@ def get_segment_attributes(
     if segment.file_path and segment_name:
         clip_data["fpath"] = segment.file_path
     else:
-        clip_data["segment_name"] = "Missing: Segment's File Path"
+        clip_data["error_message"] = "Missing: Segment's File Path"
         if segment not in validation_aggregator.failed_segments:
             validation_aggregator.failed_segments.append(segment)
 

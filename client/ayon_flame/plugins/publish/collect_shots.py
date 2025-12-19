@@ -25,6 +25,8 @@ class CollectShot(pyblish.api.InstancePlugin):
     families = ["shot"]
 
     SHARED_KEYS = (
+        "clipData",
+        "error_message",
         "folderPath",
         "fps",
         "handleStart",
@@ -41,6 +43,7 @@ class CollectShot(pyblish.api.InstancePlugin):
         "workfileFrameStart",
         "xml_overrides",
         "failing",
+        "creator_attributes",
     )
 
     # TODO: add to own plugin for Flame
@@ -116,6 +119,10 @@ class CollectShot(pyblish.api.InstancePlugin):
             validation_aggregator = ayfapi.ValidationAggregator()
             clip_data = ayfapi.get_segment_attributes(
                 segment_item, validation_aggregator=validation_aggregator)
+            if not clip_data:
+                raise PublishError(
+                    "Could not retrieve clip data from segment."
+                )
             clip_name = clip_data["segment_name"]
             self.log.debug(f"clip_name: {clip_name}")
 
@@ -151,6 +158,7 @@ class CollectShot(pyblish.api.InstancePlugin):
 
         instance.data.update({
             "item": segment_item,
+            "clipData": clip_data,
             "path": file_path,
             "failing": validation_aggregator.has_errors(),
             "sourceFirstFrame": int(first_frame),
