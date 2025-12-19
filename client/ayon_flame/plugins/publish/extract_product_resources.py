@@ -59,6 +59,10 @@ class ExtractProductResources(
         self.additional_representation_export_process(
             instance, clip_data, staging_dir)
 
+        # pformat output instance representations
+        self.log.info("Instance representations:")
+        self.log.info(pformat(instance.data["representations"]))
+
     def get_clip_data(self, instance: pyblish.api.Instance) -> dict:
         """Extract and prepare all clip-related data for export processing.
 
@@ -284,15 +288,16 @@ class ExtractProductResources(
         extension = self.missing_media_link_export_preset["ext"]
 
         # Process preset export
-        export_dir_path, imageio_colorspace = self._process_preset_export(
-            instance,
-            self.missing_media_link_export_preset,
-            clip_data,
-            unique_name,
-            staging_dir,
-        )
+        exporting_clip, export_dir_path, imageio_colorspace = \
+            self._process_preset_export(
+                instance,
+                self.missing_media_link_export_preset,
+                clip_data,
+                unique_name,
+                staging_dir,
+            )
 
-        repre_staging_dir, repre_files, repr_name = (
+        repre_staging_dir, repre_files, _ = (
             self._process_exported_files(
                 export_dir_path,
                 extension,
@@ -305,7 +310,7 @@ class ExtractProductResources(
 
         # create representation data
         representation_data = self._create_representation_data(
-            repr_name=repr_name,
+            repr_name=extension,
             repre_files=repre_files,
             extension=extension,
             repre_staging_dir=repre_staging_dir,
@@ -319,7 +324,8 @@ class ExtractProductResources(
 
         instance.data["representations"].append(representation_data)
 
-        clip_data["clip_path"] = repre_staging_dir / repre_files[0]
+        clip_data["clip_path"] = Path(repre_staging_dir) / repre_files[0]
+        clip_data["PyClip"] = exporting_clip
 
         return clip_data
 
@@ -332,24 +338,28 @@ class ExtractProductResources(
             return
         unique_name = "thumbnail"
         # Process preset export
-        export_dir_path, imageio_colorspace = self._process_preset_export(
-            instance,
-            self.thumbnail_preset,
-            clip_data,
-            unique_name,
-            staging_dir,
-        )
+        exporting_clip, export_dir_path, imageio_colorspace = \
+            self._process_preset_export(
+                instance,
+                self.thumbnail_preset,
+                clip_data,
+                unique_name,
+                staging_dir,
+            )
 
     def additional_representation_export_process(
             self, instance, clip_data, staging_dir):
         ad_repre_settings = self.additional_representation_export
-        if not ad_repre_settings["keep_original_representation"]:
-            # remove previeous representation if not needed
-            instance.data["representations"] = []
-
-        ad_repre_settings = self.additional_representation_export
         additional_export_presets: list[dict] = ad_repre_settings[
             "export_presets_mapping"]
+
+        if (
+            not ad_repre_settings["keep_original_representation"] and
+            any(preset for preset in additional_export_presets
+                if preset["enabled"])
+        ):
+            # remove previeous representation if not needed
+            instance.data["representations"] = []
 
         # Extract only needed data from clip_data dictionary
         clip_path = clip_data["clip_path"]
@@ -370,9 +380,14 @@ class ExtractProductResources(
                 continue
 
             # Process preset export
-            export_dir_path, imageio_colorspace = self._process_preset_export(
-                instance, preset_config, clip_data, unique_name, staging_dir
-            )
+            exporting_clip, export_dir_path, imageio_colorspace = \
+                self._process_preset_export(
+                    instance,
+                    preset_config,
+                    clip_data,
+                    unique_name,
+                    staging_dir
+                )
             repre_staging_dir, repre_files, repr_name = (
                 self._process_exported_files(
                     export_dir_path, extension, unique_name
@@ -412,8 +427,8 @@ class ExtractProductResources(
                 )
                 for publish_clip in publish_clips:
                     flame.delete(publish_clip)
-                # at the end remove the duplicated clip
-                flame.delete(exporting_clip)
+            # at the end remove the duplicated clip
+            flame.delete(exporting_clip)
 
     def _get_retimed_attributes(self, instance):
         handle_start = instance.data["handleStart"]
@@ -467,6 +482,7 @@ class ExtractProductResources(
         """
         # Extract clip data
         clip_path = clip_data["clip_path"]
+        clip_obj = clip_data.get("PyClip")
         segment = clip_data["segment"]
         sequence_clip = clip_data["sequence_clip"]
         segment_name = clip_data["segment_name"]
@@ -487,7 +503,7 @@ class ExtractProductResources(
         preset_file = preset_config["xml_preset_file"]
         preset_dir = preset_config["xml_preset_dir"]
         export_type = preset_config["export_type"]
-        parsed_comment_attrs = preset_config["parsed_comment_attrs"]
+        parsed_comment_attrs = preset_config.get("parsed_comment_attrs", [])
 
         self.log.info(
             "Processing `%s` as `%s` to `%s` type...",
@@ -522,7 +538,10 @@ class ExtractProductResources(
 
             exporting_clip = None
             if clip_path:
-                exporting_clip = self.import_clip(clip_path)
+                if not clip_obj:
+                    exporting_clip = self.import_clip(clip_path)
+                else:
+                    exporting_clip = clip_obj
                 exporting_clip.name.set_value(f"{folder_path}_{segment_name}")
 
         # add xml tags modifications
@@ -589,8 +608,9 @@ class ExtractProductResources(
         Path(export_dir_path).mkdir(parents=True, exist_ok=True)
 
         if not exporting_clip:
-            exporting_clip = self.convert_unlinked_segment_to_clip(
-                segment, extension, preset_path, export_dir_path)
+            exporting_clip, export_dir_path = \
+                self.convert_unlinked_segment_to_clip(
+                    segment, extension, preset_path, export_dir_path)
         else:
             # export
             ayfapi.export_clip(
@@ -600,7 +620,7 @@ class ExtractProductResources(
             exporting_clip, instance
         )
 
-        return export_dir_path, imageio_colorspace
+        return exporting_clip, export_dir_path, imageio_colorspace
 
     def _get_imageio_colorspace(self, exporting_clip, instance):
         """Get the imageio colorspace from the exporting clip.
@@ -877,11 +897,11 @@ class ExtractProductResources(
             )
         return clips[0]
 
-
     def convert_unlinked_segment_to_clip(
             self, segment, extension, preset_path, staging_dir):
         """
         Exports a managed segment to a temp file and imports it back as a PyClip.
+        Uses temporary reel duplication to handle unlinked media properly.
         """
         if isinstance(preset_path, str):
             preset_path = Path(preset_path)
@@ -890,24 +910,58 @@ class ExtractProductResources(
         subdir_name = f"{segment.name.get_value()}_temp_conversion_{extension}"
         export_path = Path(staging_dir) / subdir_name
 
-        # 2. Configure the Exporter
-        exporter = flame.PyExporter()
-        exporter.foreground = True
-        exporter.export_between_marks = True
-
-        # segment.selected = True
-        self.log.debug([segment, export_path.as_posix(), preset_path.as_posix()])
         try:
+            # Get or create a temporary library for rendering
+            workspace = flame.projects.current_project.current_workspace
+            desktop = workspace.desktop
+            temp_library = None
+
+            # Search for existing temp library
+            for library in workspace.libraries:
+                if library.name == "AYON_TEMP_EXPORT":
+                    temp_library = library
+                    break
+
+            if not temp_library:
+                # Create a temp library if it doesn't exist
+                temp_library = workspace.create_library("AYON_TEMP_EXPORT")
+                self.log.info("Created temporary library: AYON_TEMP_EXPORT")
+
+            # Duplicate/copy the segment to create a clip
+            segment.selected = True
+            desktop.destination = temp_library
+
+            # Use Flame's duplicate command to create a clip from the segment
+            # This will render the segment as necessary
+            segment.copy_to_media_panel(temp_library)
+
+            # Get the newly created clip from the library
+            new_clip = temp_library.clips[-1]
+            self.log.debug(f"Created temporary clip: {new_clip.name}")
+
+            # Configure and export using PyExporter
+            exporter = flame.PyExporter()
+            exporter.foreground = True
+            exporter.export_between_marks = False  # Export full clip
+
+            self.log.debug(f"Exporting clip to: {export_path.as_posix()}")
             exporter.export(
-                sources=[segment],
+                sources=new_clip,
                 output_directory=export_path.as_posix(),
                 preset_path=preset_path.as_posix())
 
-            # 4. Import the file back as a PyClip
+            #  Import the file back as a PyClip
             if export_path.exists():
-                new_clips = flame.import_clips(export_path)
+                imported_clips = flame.import_clips(export_path.as_posix())
 
-                return new_clips[0]
+                # Optional: Clean up temp clip
+                flame.delete(new_clip)
+                self.log.debug("Cleaned up temporary clip")
+
+                return imported_clips[0], export_path.as_posix()
+            else:
+                raise publish.PublishError(
+                    f"Export failed - path does not exist: {export_path}")
 
         except publish.PublishError as e:
             raise publish.PublishError(f"Export/Import failed: {e}") from e
