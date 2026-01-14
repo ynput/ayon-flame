@@ -1,6 +1,35 @@
 from ayon_server.settings import BaseSettingsModel, SettingsField
 
 
+def create_shot_clip_overrides_enum() -> list[dict[str, str]]:
+    return [
+        {"value": "hierarchy", "label": "Shot parent hierarchy"},
+        {"value": "useShotName", "label": "Use Shot Name"},
+        {"value": "clipRename", "label": "Rename Clips"},
+        {"value": "clipName", "label": "Clip name template"},
+        {"value": "segmentIndex", "label": "Accept segment order"},
+        {"value": "countFrom", "label": "Count sequence from"},
+        {"value": "countSteps", "label": "Stepping number"},
+        {"value": "folder", "label": "{folder}"},
+        {"value": "episode", "label": "{episode}"},
+        {"value": "sequence", "label": "{sequence}"},
+        {"value": "track", "label": "{track}"},
+        {"value": "shot", "label": "{shot}"},
+        {"value": "vSyncOn", "label": "Enable Vertical Sync"},
+        {"value": "export_audio", "label": "Include audio"},
+        {"value": "sourceResolution", "label": "Source resolution"},
+        {"value": "workfileFrameStart", "label": "Workfiles Start Frame"},
+        {"value": "handleStart", "label": "Handle start (head)"},
+        {"value": "handleEnd", "label": "Handle end (tail)"},
+        {"value": "includeHandles", "label": "Enable handles including"},
+        {"value": "retimedHandles", "label": "Enable retimed handles"},
+        {
+            "value": "retimedFramerange",
+            "label": "Enable retimed shot frameranges"
+        },
+    ]
+
+
 class CreateShotClipModel(BaseSettingsModel):
     hierarchy: str = SettingsField(
         "shot",
@@ -95,6 +124,15 @@ class CreateShotClipModel(BaseSettingsModel):
         True,
         title="Enable retimed shot frameranges"
     )
+    overrides: list[str] = SettingsField(
+        section="Exposed overrides",
+        title="Exposed Overrides",
+        description=(
+            "Expose the attribute in this list to the user when publishing."
+        ),
+        enum_resolver=create_shot_clip_overrides_enum,
+        default_factory=list,
+    )
 
 class CollectShotClipInstancesModels(BaseSettingsModel):
     collectSelectedInstance: bool = SettingsField(
@@ -133,12 +171,38 @@ DEFAULT_CREATE_SETTINGS = {
         "track": "{_track_}",
         "shot": "####",
         "vSyncOn": False,
+        "export_audio": False,
+        "sourceResolution": False,
         "workfileFrameStart": 1001,
         "handleStart": 5,
         "handleEnd": 5,
         "includeHandles": False,
         "retimedHandles": True,
-        "retimedFramerange": True
+        "retimedFramerange": True,
+        "overrides": [
+            # Expose all by default
+            "hierarchy",
+            "useShotName",
+            "clipRename",
+            "clipName",
+            "segmentIndex",
+            "countFrom",
+            "countSteps",
+            "folder",
+            "episode",
+            "sequence",
+            "track",
+            "shot",
+            "vSyncOn",
+            "export_audio",
+            "sourceResolution",
+            "workfileFrameStart",
+            "handleStart",
+            "handleEnd",
+            "includeHandles",
+            "retimedHandles",
+            "retimedFramerange",
+        ],
     },
     "CollectShotClip": {
         "collectSelectedInstance": False,

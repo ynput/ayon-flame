@@ -1,11 +1,11 @@
-import uuid
 from copy import deepcopy
+import uuid
+
+from ayon_core.pipeline.create import CreatorError, CreatedInstance
+from ayon_core.lib import BoolDef, EnumDef, TextDef, UILabelDef, NumberDef
 
 import ayon_flame.api as ayfapi
-import flame
-from ayon_core.lib import BoolDef, EnumDef, NumberDef, TextDef, UILabelDef
-from ayon_core.pipeline.create import CreatedInstance, CreatorError
-from ayon_flame.api import lib, pipeline, plugin
+from ayon_flame.api import plugin, lib, pipeline
 
 try:
     from ayon_core.pipeline.create import ParentFlags
@@ -213,6 +213,7 @@ class FlameShotInstanceCreator(_FlameInstanceCreator):
     """Shot product type creator class"""
     identifier = "io.ayon.creators.flame.editorial.shot"
     product_type = "shot"
+    product_base_type = "shot"
     label = "Editorial Shot"
 
     def get_instance_attr_defs(self):
@@ -315,6 +316,7 @@ class EditorialPlateInstanceCreator(_FlameInstanceClipCreatorBase):
     """Plate product type creator class"""
     identifier = "io.ayon.creators.flame.editorial.plate"
     product_type = "plate"
+    product_base_type = "plate"
     label = "Editorial Plate"
 
     def create(self, instance_data, _):
@@ -333,6 +335,7 @@ class EditorialAudioInstanceCreator(_FlameInstanceClipCreatorBase):
     """Audio product type creator class"""
     identifier = "io.ayon.creators.flame.editorial.audio"
     product_type = "audio"
+    product_base_type = "audio"
     label = "Editorial Audio"
 
 
@@ -342,6 +345,7 @@ class CreateShotClip(plugin.FlameEditorialCreator):
     identifier = "io.ayon.creators.flame.editorial.clip"
     label = "Create Publishable Clip"
     product_type = "editorial"
+    product_base_type = "editorial"
     icon = "film"
     defaults = ["Main"]
 
@@ -355,11 +359,36 @@ OTIO file.
 
     shot_instances = {}
 
+    # Pre-create attribute keys that can be hidden/shown via settings
+    overridable_attributes = {
+        "hierarchy",
+        "useShotName",
+        "clipRename",
+        "clipName",
+        "segmentIndex",
+        "countFrom",
+        "countSteps",
+        "folder",
+        "episode",
+        "sequence",
+        "track",
+        "shot",
+        "export_audio",
+        "sourceResolution",
+        "vSyncOn",
+        "vSyncTrack",
+        "workfileFrameStart",
+        "handleStart",
+        "handleEnd",
+        "includeHandles",
+        "retimedHandles",
+        "retimedFramerange",
+    }
+
     @classmethod
     def apply_settings(cls, project_settings):
-        # make sure this is sequence timeline context
-        if lib.CTX.context != "FlameMenuTimeline":
-            cls.enabled = False
+        # Disable if not in timeline context.
+        return lib.CTX.context == "FlameMenuTimeline"
 
     def get_pre_create_attr_defs(self):
 
@@ -384,8 +413,7 @@ OTIO file.
         # the inherited `Creator.apply_settings`
         presets = self.presets
 
-        return [
-
+        attr_defs = [
             BoolDef("use_selection",
                     label="Use only selected clip(s).",
                     tooltip=(
@@ -582,7 +610,35 @@ OTIO file.
             ),
         ]
 
+        disabled_attributes = self._get_disabled_attributes()
+        return [
+            attr_def for attr_def in attr_defs
+
+            # include only if enabled as overridable in settings when
+            # the attribute is overridable
+            if attr_def.key not in disabled_attributes
+        ]
+
+    def _get_disabled_attributes(self) -> set[str]:
+        """Return pre-create attribute definition keys that are not exposed
+        for editing to the user."""
+        # Filter out those that are not enabled based on the filter state
+        enabled_overrides: set[str] = set(self.presets["overrides"])
+        if "vSyncOn" in enabled_overrides or self.presets.get("vSyncOn"):
+            enabled_overrides.add("vSyncTrack")
+
+        return {
+            attr for attr in self.overridable_attributes
+            if attr not in enabled_overrides
+        }
+
     def create(self, product_name, instance_data, pre_create_data):
+        # Ensure to include the default values for excluded attributes that
+        # are marked not overridable in settings into the pre_create_data
+        for attr in self._get_disabled_attributes():
+            if attr in self.presets:
+                pre_create_data[attr] = self.presets[attr]
+
         super().create(
             product_name,
             instance_data,
@@ -714,6 +770,7 @@ OTIO file.
                         {
                             "variant": "main",
                             "productType": "shot",
+                            "productBaseType": "shot",
                             "productName": "shotMain",
                             "creator_attributes": {
                                 "workfileFrameStart": workfileFrameStart,
@@ -774,6 +831,7 @@ OTIO file.
                 elif creator_id == audio_creator_id:
                     sub_instance_data["variant"] = "main"
                     sub_instance_data["productType"] = "audio"
+                    sub_instance_data["productBaseType"] = "audio"
                     sub_instance_data["productName"] = "audioMain"
 
                     parenting_data = shot_instances[shot_creator_id]
@@ -936,7 +994,6 @@ OTIO file.
             "collectSelectedInstance"]
 
         selection = lib.CTX.selection or []
-
         current_sequence = lib.get_current_sequence(selection)
 
         # only get selected segments if user selected any
