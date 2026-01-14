@@ -19,9 +19,8 @@ Restrictions:
 import uuid
 from copy import deepcopy
 
-import flame
 from ayon_core.lib import BoolDef
-from ayon_core.pipeline.create import CreatedInstance, CreatorError
+from ayon_core.pipeline.create import CreatedInstance
 from ayon_flame.api import lib, pipeline, plugin
 
 # Used as a key by the creators in order to
