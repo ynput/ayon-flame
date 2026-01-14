@@ -388,7 +388,7 @@ OTIO file.
     @classmethod
     def apply_settings(cls, project_settings):
         # Disable if not in timeline context.
-        return lib.CTX.context == "FlameMenuTimeline"
+        cls.enabled = (lib.CTX.context == "FlameMenuTimeline")
 
     def get_pre_create_attr_defs(self):
 
