@@ -53,15 +53,19 @@ class ValidateProductAttributes(
     actions = [DeactivatePublishing]
 
     def detect_failing_instance(self, instance):
-        return instance.data.get("failing")
+        return instance.data.get("failing", False)
 
     def process(self, instance):
+        if not self.is_active(instance.data):
+            return
+
         if not self.detect_failing_instance(instance):
             return
 
         segment = instance.data["item"]
         otio_clip = instance.data["otioClip"]
         reference_name = otio_clip.media_reference.name
+        error = instance.data["failing"]
 
         msg = "Product is failing validation due following reason:"
         msg_html = self.get_description()
@@ -70,7 +74,8 @@ class ValidateProductAttributes(
         segment_name = segment.name.get_value()
         clip_msg = (
             f"Clip name: '{segment_name}' with shot name: '{shot_name}'\n"
-            f"Problem: '{reference_name}'"
+            f"Media reference: '{reference_name}'"
+            f"Problem: '{error}'"
         )
         msg += f"\n{clip_msg}"
 

@@ -152,7 +152,6 @@ class CollectShot(pyblish.api.InstancePlugin):
         instance.data.update({
             "item": segment_item,
             "path": file_path,
-            "failing": validation_aggregator.has_errors(),
             "sourceFirstFrame": int(first_frame),
             "workfileFrameStart": workfile_start,
             "flameAddTasks": self.add_tasks,
@@ -161,6 +160,14 @@ class CollectShot(pyblish.api.InstancePlugin):
                 for task in self.add_tasks
             },
         })
+
+        if validation_aggregator.has_errors():
+            formatted_error_msg = ";".join(
+                error_msg
+                for _, error_msg
+                in validation_aggregator.failed_segments
+            )
+            instance.data["failing"] = formatted_error_msg
 
         self._get_resolution_to_data(instance.data, instance.context)
         self._inject_editorial_shared_data(instance)
