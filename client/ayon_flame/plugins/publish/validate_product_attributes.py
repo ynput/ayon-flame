@@ -63,8 +63,6 @@ class ValidateProductAttributes(
             return
 
         segment = instance.data["item"]
-        otio_clip = instance.data["otioClip"]
-        reference_name = otio_clip.media_reference.name
         error = instance.data["failing"]
 
         msg = "Product is failing validation due following reason:"
@@ -74,7 +72,6 @@ class ValidateProductAttributes(
         segment_name = segment.name.get_value()
         clip_msg = (
             f"Clip name: '{segment_name}' with shot name: '{shot_name}'\n"
-            f"Media reference: '{reference_name}'"
             f"Problem: '{error}'"
         )
         msg += f"\n{clip_msg}"
