@@ -63,7 +63,7 @@ class FlameCreator(Creator):
         )
 
 
-class FlameEditorialCreator(Creator):
+class FlameEditorialCreator(FlameCreator):
     """Creator class wrapper for Editorial usage.
     """
 
