@@ -17,12 +17,6 @@ except ImportError:
 # retrieve the instances data into clip markers.
 _CONTENT_ID = "flame_sub_products"
 
-IDENTIFIER_MAPPING = {
-    "io.ayon.creators.flame.shot": "io.ayon.creators.flame.editorial.shot",
-    "io.ayon.creators.flame.plate": "io.ayon.creators.flame.editorial.plate",
-    "io.ayon.creators.flame.audio": "io.ayon.creators.flame.editorial.audio",
-}
-
 # Shot attributes
 CLIP_ATTR_DEFS = [
     EnumDef(
@@ -208,7 +202,7 @@ class _FlameInstanceCreator(plugin.HiddenFlameCreator):
 
 class FlameShotInstanceCreator(_FlameInstanceCreator):
     """Shot product type creator class"""
-    identifier = "io.ayon.creators.flame.editorial.shot"
+    identifier = "io.ayon.creators.flame.shot"
     product_type = "shot"
     product_base_type = "shot"
     label = "Editorial Shot"
@@ -311,7 +305,7 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
 
 class EditorialPlateInstanceCreator(_FlameInstanceClipCreatorBase):
     """Plate product type creator class"""
-    identifier = "io.ayon.creators.flame.editorial.plate"
+    identifier = "io.ayon.creators.flame.plate"
     product_type = "plate"
     product_base_type = "plate"
     label = "Editorial Plate"
@@ -330,7 +324,7 @@ class EditorialPlateInstanceCreator(_FlameInstanceClipCreatorBase):
 
 class EditorialAudioInstanceCreator(_FlameInstanceClipCreatorBase):
     """Audio product type creator class"""
-    identifier = "io.ayon.creators.flame.editorial.audio"
+    identifier = "io.ayon.creators.flame.audio"
     product_type = "audio"
     product_base_type = "audio"
     label = "Editorial Audio"
@@ -339,7 +333,7 @@ class EditorialAudioInstanceCreator(_FlameInstanceClipCreatorBase):
 class CreateShotClip(plugin.FlameEditorialCreator):
     """Publishable clip"""
 
-    identifier = "io.ayon.creators.flame.editorial.clip"
+    identifier = "io.ayon.creators.flame.clip"
     label = "Create Publishable Clip"
     product_type = "editorial"
     product_base_type = "editorial"
@@ -676,9 +670,9 @@ OTIO file.
         sorted_selected_segments.extend(unsorted_selected_segments)
 
         # detect enabled creators for review, plate and audio
-        shot_creator_id = "io.ayon.creators.flame.editorial.shot"
-        plate_creator_id = "io.ayon.creators.flame.editorial.plate"
-        audio_creator_id = "io.ayon.creators.flame.editorial.audio"
+        shot_creator_id = "io.ayon.creators.flame.shot"
+        plate_creator_id = "io.ayon.creators.flame.plate"
+        audio_creator_id = "io.ayon.creators.flame.audio"
         all_creators = {
             shot_creator_id: True,
             plate_creator_id: True,
@@ -932,7 +926,7 @@ OTIO file.
             ),
         })
 
-        shot_creator_id = "io.ayon.creators.flame.editorial.shot"
+        shot_creator_id = "io.ayon.creators.flame.shot"
         creator = self.create_context.creators[shot_creator_id]
         instance = creator.create(sub_instance_data, None)
         instance.transient_data["segment_item"] = segment
@@ -940,10 +934,10 @@ OTIO file.
         parenting_data = instance
 
         # Create plate/audio instance
-        sub_creators = ["io.ayon.creators.flame.editorial.plate"]
+        sub_creators = ["io.ayon.creators.flame.plate"]
         if instance_data["audio"]:
             sub_creators.append(
-                "io.ayon.creators.flame.editorial.audio"
+                "io.ayon.creators.flame.audio"
             )
 
         for sub_creator_id in sub_creators:
@@ -1019,21 +1013,8 @@ OTIO file.
                 continue
 
             for creator_id, data in marker_data[_CONTENT_ID].items():
-                # make sure older identifiers will also work
-                identifier = None
-                for key, value in IDENTIFIER_MAPPING.items():
-                    if key == creator_id:
-                        identifier = value
-                        break
-                    if value == creator_id:
-                        identifier = value
-                        break
-
-                if not identifier:
-                    continue
-
                 self._create_and_add_instance(
-                    data, identifier, segment, instances)
+                    data, creator_id, segment, instances)
 
         return instances
 
