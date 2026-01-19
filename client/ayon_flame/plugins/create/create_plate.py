@@ -38,15 +38,12 @@ class PlateCreator(plugin.FlameReelCreator):
     defaults = ["Main"]
 
     detailed_description = """
-Publishing clips/plate, audio for new shots to project
-or updating already created from Flame. Publishing will create
-OTIO file.
+Publishing clips/plate from Media panel.
 """
     @classmethod
     def apply_settings(cls, project_settings):
-        # make sure this is sequence timeline context
-        if lib.CTX.context != "FlameMenuUniversal":
-            cls.enabled = False
+        # Disable if not in menu context.
+        cls.enabled = (lib.CTX.context == "FlameMenuUniversal")
 
     def get_pre_create_attr_defs(self):
 
