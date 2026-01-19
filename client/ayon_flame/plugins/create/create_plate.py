@@ -39,8 +39,9 @@ class FlameReelPlateCreator(plugin.FlameCreator):
     detailed_description = """
 Publishing clips/plate from Media panel.
 """
-    @classmethod
+
     def apply_settings(cls, project_settings):
+        super().apply_settings(project_settings)
         # Disable if not in menu context.
         cls.enabled = (lib.CTX.context == "FlameMenuUniversal")
 

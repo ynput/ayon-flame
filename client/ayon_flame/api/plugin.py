@@ -55,7 +55,6 @@ class FlameCreator(Creator):
                 Those may affect how creator works.
         """
         instance_data["flame_context"] = flib.CTX.context
-
         selected = pre_create_data.get("use_selection", False)
         self.selected = flib.get_clips_in_reels(
             self.project,
@@ -78,6 +77,11 @@ class FlameEditorialCreator(FlameCreator):
         """
         super().create(product_name, instance_data, pre_create_data)
         self.sequence = flib.get_current_sequence(flib.CTX.selection)
+        selected = pre_create_data.get("use_selection", False)
+        self.selected = flib.get_sequence_segments(
+            self.sequence,
+            selected=selected,
+        )
 
 
 class PublishableClip:

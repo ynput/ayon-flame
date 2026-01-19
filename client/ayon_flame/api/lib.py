@@ -433,7 +433,7 @@ def set_clip_data_marker(clip, data=None):
     track = version.tracks[-1]
     segment = track.segments[-1]
 
-    segment_data = data["clip_data"].pop("PySegment", None)
+    segment_data = data.get("clip_data", {}).pop("PySegment", None)
     if segment_data and segment_data != segment:
         raise ValueError(
             "Ambiguous clip to set marker data to."

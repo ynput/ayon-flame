@@ -376,8 +376,8 @@ OTIO file.
         "retimedFramerange",
     }
 
-    @classmethod
     def apply_settings(cls, project_settings):
+        super().apply_settings(project_settings)
         # Disable if not in timeline context.
         cls.enabled = (lib.CTX.context == "FlameMenuTimeline")
 
