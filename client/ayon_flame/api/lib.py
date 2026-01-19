@@ -389,11 +389,11 @@ def get_clip_data_marker(clip, with_marker=None):
     Returns(with_marker=True):
         flame.PyMarker, dict
     """
-    version = clip.versions[-1]
-    track = version.tracks[-1]
-    segment = track.segments[-1]
-
-    return get_segment_data_marker(segment, with_marker)
+    segment = get_clip_segment(clip)
+    return get_segment_data_marker(
+        segment,
+        with_marker=with_marker
+    )
 
 
 def set_segment_data_marker(segment, data=None):
@@ -428,10 +428,7 @@ def set_clip_data_marker(clip, data=None):
         data (dict): json serializable data
     """
     data = data or dict()
-
-    version = clip.versions[-1]
-    track = version.tracks[-1]
-    segment = track.segments[-1]
+    segment = get_clip_segment(clip)
 
     segment_data = data.get("clip_data", {}).pop("PySegment", None)
     if segment_data and segment_data != segment:
@@ -747,9 +744,7 @@ def get_clips_in_reels(project, selected=False):
 
                     clip_data[attr] = val
 
-                version = clip.versions[-1]
-                track = version.tracks[-1]
-                clip_segment = track.segments[-1]
+                clip_segment = get_clip_segment(clip)
                 clip_segment_data = get_segment_attributes(clip_segment)
                 clip_data.update(clip_segment_data)
 
@@ -870,6 +865,14 @@ def maintained_temp_file_path(suffix=None):
 
 
 def get_clip_segment(flame_clip):
+    """Get the segment associated to a clip.
+
+    Args:
+        flame_clip (flame.PyClip): flame api object
+
+    Returns:
+        segment (Segment): Segment associated to the clip.
+    """
     name = flame_clip.name.get_value()
     version = flame_clip.versions[0]
     track = version.tracks[0]
