@@ -62,8 +62,8 @@ from .plugin import (
     PublishableClip,
     ClipLoader,
     OpenClipSolver,
+    FlameCreator,
     FlameEditorialCreator,
-    FlameReelCreator,
     HiddenFlameCreator,
 )
 from .workio import (
@@ -149,8 +149,8 @@ __all__ = [
     "PublishableClip",
     "ClipLoader",
     "OpenClipSolver",
+    "FlameCreator",
     "FlameEditorialCreator",
-    "FlameReelCreator",
     "HiddenFlameCreator",
 
     # workio
