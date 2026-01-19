@@ -202,10 +202,7 @@ class _FlameInstanceCreator(plugin.HiddenFlameCreator):
 
             pipeline.imprint(
                 segment_item,
-                data=  {
-                    _CONTENT_ID: instances_data,
-                    "clip_index": marker_data["clip_index"],
-                }
+                data=marker_data
             )
 
 

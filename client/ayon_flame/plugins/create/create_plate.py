@@ -96,12 +96,7 @@ Publishing clips/plate from Media panel.
             # set instance related data
             clip_index = str(uuid.uuid4())
             clip_instance_data = deepcopy(instance_data)
-            clip_instance_data.update(
-                {
-                    "clip_index": clip_index,
-                    "productName": product_name,
-                }
-            )
+            clip_instance_data["productName"] = product_name
 
             instance = CreatedInstance(
                 self.product_type,
@@ -116,8 +111,8 @@ Publishing clips/plate from Media panel.
             pipeline.imprint(
                 clip_item,
                 data={
-                    _CONTENT_ID: clip_instance_data,
-                    "clip_data": clip_data,
+                    _CONTENT_ID: {self.identifier: clip_instance_data},
+                    "clip_index": clip_index,
                 }
             )
 
@@ -129,7 +124,9 @@ Publishing clips/plate from Media panel.
             marker_data = lib.get_clip_data_marker(clip_item)
             if not marker_data:
                 continue
-            instance_data = marker_data.get(_CONTENT_ID)
+
+            content_data = marker_data.get(_CONTENT_ID, {})
+            instance_data = content_data.get(self.identifier, None)
             if not instance_data:
                 continue
 
@@ -141,9 +138,35 @@ Publishing clips/plate from Media panel.
             created_instance.transient_data["clip_item"] = clip_item
 
     def update_instances(self, update_list):
-        """Never called, update is handled via _FlameInstanceCreator."""
-        pass
+        """Store changes of existing instances so they can be recollected.
+
+        Args:
+            update_list(List[UpdateData]): Gets list of tuples. Each item
+                contain changed instance and it's changes.
+        """
+        for created_inst, _changes in update_list:
+            clip_item = created_inst.transient_data["clip_item"]
+            marker_data = lib.get_clip_data_marker(clip_item)
+
+            instances_data = marker_data[_CONTENT_ID]
+            instances_data[self.identifier] = created_inst.data_to_store()
+
+            pipeline.imprint(
+                clip_item,
+                data=marker_data
+            )
 
     def remove_instances(self, instances):
-        """Never called, update is handled via _FlameInstanceCreator."""
-        pass
+        """Remove instances."""
+        for instance in instances:
+            clip_item = instance.transient_data["clip_item"]
+            marker_data = lib.get_clip_data_marker(clip_item)
+
+            instances_data = marker_data.get(_CONTENT_ID, {})
+            instances_data.pop(self.identifier, None)
+            self._remove_instance_from_context(instance)
+
+            pipeline.imprint(
+                clip_item,
+                data=marker_data
+            )
