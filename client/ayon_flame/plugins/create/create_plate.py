@@ -31,6 +31,7 @@ class FlameReelPlateCreator(plugin.FlameCreator):
     """Reel/Media panel clip"""
     identifier = "io.ayon.creators.flame.reel.plate"
     product_type = "plate"
+    product_base_type = "plate"
     label = "Plate Reel Clip"
 
     icon = "film"
@@ -98,6 +99,7 @@ Publishing clips/plate from Media panel.
             clip_index = str(uuid.uuid4())
             clip_instance_data = deepcopy(instance_data)
             clip_instance_data["productName"] = product_name
+            clip_instance_data["clip_data"] = clip_data
 
             instance = CreatedInstance(
                 self.product_type,

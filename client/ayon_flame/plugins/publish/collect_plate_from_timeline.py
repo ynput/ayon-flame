@@ -22,7 +22,7 @@ class CollectTimelinePlate(pyblish.api.InstancePlugin):
             and instance.data["flame_context"] != "FlameMenuTimeline"
         ):
             # Plate instance could also come from Reel and Media panel clips.
-            self.log.debug("Current plate instance is not part of a Timeline.")
+            self.log.debug("Current plate instance is not part of a timeline.")
             return
 
         instance.data["families"].append("clip")

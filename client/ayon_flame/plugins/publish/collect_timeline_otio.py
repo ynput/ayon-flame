@@ -31,7 +31,7 @@ class CollecTimelineOTIO(pyblish.api.ContextPlugin):
         failed_segments = validation_aggregator.failed_segments
 
         # update context with timeline attributes
-        project = context.data["project"]
+        project = context.data["flameProject"]
         timeline_data = {
             "flameSequence": sequence,
             "failedSegments": failed_segments,
