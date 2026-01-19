@@ -431,12 +431,18 @@ def set_clip_data_marker(clip, data=None):
         data (dict): json serializable data
     """
     data = data or dict()
-    segment = data["clip_data"].pop("PySegment", None)
 
-    if not segment:
-        version = clip.versions[-1]
-        track = version.tracks[-1]
-        segment = track.segments[-1]
+    version = clip.versions[-1]
+    track = version.tracks[-1]
+    segment = track.segments[-1]
+
+    segment_data = data["clip_data"].pop("PySegment", None)
+    if segment_data and segment_data != segment:
+        raise ValueError(
+            "Ambiguous clip to set marker data to."
+            f"Provided clip refers to {segment}, while "
+            f"data points toward {segment_data}."
+        )
 
     marker_data = get_segment_data_marker(segment, True)
 
@@ -552,11 +558,9 @@ def get_sequence_segments(sequence, selected=False):
                     continue
                 if segment.hidden.get_value() is True:
                     continue
-                if (
-                    selected is True
-                    and segment.selected.get_value() is not True
-                ):
-                    continue
+                if selected and not segment.selected.get_value():
+                    continue  # not part of selection
+
                 # add it to original selection
                 segments.append(segment)
     return segments
@@ -723,11 +727,8 @@ def get_clips_in_reels(project, selected=False):
     for reel_group in project_desktop.reel_groups:
         for reel in reel_group.reels:
             for clip in reel.clips:
-                if (
-                    selected is True
-                    and clip.selected.get_value() is not True
-                ):
-                    continue
+                if selected and not clip.selected.get_value():
+                    continue  # not part of selection
 
                 clip_data = {
                     "PyClip": clip,
@@ -751,9 +752,9 @@ def get_clips_in_reels(project, selected=False):
 
                 version = clip.versions[-1]
                 track = version.tracks[-1]
-                for segment in track.segments:
-                    segment_data = get_segment_attributes(segment)
-                    clip_data.update(segment_data)
+                clip_segment = track.segments[-1]
+                clip_segment_data = get_segment_attributes(clip_segment)
+                clip_data.update(clip_segment_data)
 
                 output_clips.append(clip_data)
 

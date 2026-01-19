@@ -1,10 +1,10 @@
-"""Creator plugin for Flame Reel browser context.
+"""Creator plugin for Flame Reel browser (or media panel) context.
 
 This plugin allows users to create plates from selected items from within
 the Flame Reel browser context.
 
 Dev notes:
-    - code shouls be universal enought to be able to serve also `render` and
+    - code should be universal enought to be able to serve also `render` and
       `image` types
     - Add support for creating plates from multiple selected items
     - Implement error handling for invalid selections
@@ -13,8 +13,7 @@ Dev notes:
 Restrictions:
     - only need to be offered within Creator plugins if opened
       from Flame Reel browser context
-    - selected mode only supported so precreate validation needs to check
-      if selected items are valid for plate creation and raise if no selection
+    - selected mode only
 """
 import uuid
 from copy import deepcopy
@@ -28,8 +27,8 @@ from ayon_flame.api import lib, pipeline, plugin
 _CONTENT_ID = "flame_sub_products"
 
 
-class PlateCreator(plugin.FlameReelCreator):
-    """Publishable clip"""
+class FlameReelPlateCreator(plugin.FlameCreator):
+    """Reel/Media panel clip"""
     identifier = "io.ayon.creators.flame.reel.plate"
     product_type = "plate"
     label = "Plate Reel Clip"
@@ -46,16 +45,15 @@ Publishing clips/plate from Media panel.
         cls.enabled = (lib.CTX.context == "FlameMenuUniversal")
 
     def get_pre_create_attr_defs(self):
-
         return [
             BoolDef(
                 "use_selection",
                 label="Use only selected clip(s).",
                 tooltip=(
-                    "When enabled it restricts create process "
-                    "to selected clips."
+                    "Restricts creation to selected clips."
                 ),
-                default=True
+                default=True,
+                visible=False,
             ),
         ]
 
@@ -65,8 +63,8 @@ Publishing clips/plate from Media panel.
             instance_data,
             pre_create_data)
 
-        if len(self.selected) < 1:
-            return None
+        if not self.selected:
+            return  # No selection, nothing to do.
 
         self.log.info(self.selected)
         self.log.debug(f"Selected: {self.selected}")
