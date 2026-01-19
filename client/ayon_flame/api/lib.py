@@ -360,12 +360,9 @@ def get_segment_data_marker(segment, with_marker=None):
         flame.PyMarker, dict
     """
     for marker in segment.markers:
-        comment = marker.comment.get_value()
+        comment = marker.comment.get_value() or "{}"
         color = marker.colour.get_value()
         name = marker.name.get_value()
-
-        if "{" not in comment:
-            comment = "{}"
 
         if (name == MARKER_NAME) and (
                 color == COLOR_MAP[MARKER_COLOR]):
