@@ -6,19 +6,23 @@ from ayon_flame.otio import flame_export
 
 
 class CollecTimelineOTIO(pyblish.api.ContextPlugin):
-    """Inject the current working context into publish context"""
+    """Inject the current sequence data into publish context"""
 
     label = "Collect Timeline OTIO"
     order = pyblish.api.CollectorOrder - 0.491
 
     def process(self, context):
 
-        # main
-        project = ayfapi.get_current_project()
+        # update context with current sequence/timeline attributes
         sequence = ayfapi.get_current_sequence(ayfapi.CTX.selection)
-        segments = ayfapi.get_sequence_segments(sequence)
+        if sequence is None:
+            # No sequence currently opened in Flame.
+            # This means all publish instances comes from reel/media panel.
+            self.log.debug("No current Flame sequence found.")
+            return
 
-        # adding otio timeline to context
+        # validate segment from current sequence
+        segments = ayfapi.get_sequence_segments(sequence)
         validation_aggregator = ayfapi.ValidationAggregator()
         with ayfapi.maintained_segment_selection(sequence):
             otio_timeline = flame_export.create_otio_timeline(
@@ -26,9 +30,9 @@ class CollecTimelineOTIO(pyblish.api.ContextPlugin):
 
         failed_segments = validation_aggregator.failed_segments
 
-        # update context with main project attributes
+        # update context with timeline attributes
+        project = context.data["project"]
         timeline_data = {
-            "flameProject": project,
             "flameSequence": sequence,
             "failedSegments": failed_segments,
             "otioTimeline": otio_timeline,
