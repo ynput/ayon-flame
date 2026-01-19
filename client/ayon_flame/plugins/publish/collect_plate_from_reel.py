@@ -1,6 +1,10 @@
 import pyblish
+from pprint import pformat
 
-import ayon_flame.api as ayfapi
+import opentimelineio as otio
+
+from ayon_flame.otio import flame_export
+from ayon_flame.api import lib
 
 
 class CollectReelPlate(pyblish.api.InstancePlugin):
@@ -23,39 +27,48 @@ class CollectReelPlate(pyblish.api.InstancePlugin):
 
         instance.data["families"].append("clip")
 
-        # Build otio timeline and otio clip from clip item.
-        instance.data["otioClip"] = otio_clip
+        clip_data = instance.data["clip_data"]
+        version_data = instance.data.setdefault("versionData", {})
+        version_data["colorSpace"] = clip_data["colour_space"]
 
-        SHARED_KEYS = (
-            "folderPath",
-            "fps",
-            "handleStart",
-            "handleEnd",
-            "item",
-            "resolutionWidth",
-            "resolutionHeight",
-            "retimedHandles",
-            "retimedFramerange",
-            "path",
-            "pixelAspect",
-            "sourceFirstFrame",
-            "versionData",
-            "workfileFrameStart",
-            "xml_overrides",
-            "failing",
+        instance_clip_data = {
+            "clipIn": clip_data["record_in"],
+            "clipOut": clip_data["record_out"],
+            "colorspace": clip_data["colour_space"],
+            "fps": clip_data["fps"],
+            "frameStart": clip_data["record_in"],
+            "frameEnd": clip_data["record_out"],
+            "handleStart": 0,
+            "handleEnd": 0,
+            "item": instance.data["transientData"]["clip_item"],
+            "path": clip_data["fpath"],
+            "resolutionWidth": clip_data["width"],
+            "resolutionHeight": clip_data["height"],
+            "sourceFirstFrame": clip_data["source_in"],
+            "xml_overrides": {},
+        }
+
+        # Build otio timeline and otio clip from clip item.
+        flame_export.OtioExportCTX.set_fps(instance_clip_data["fps"])
+
+        clip_data["PySegment"] = lib.get_clip_segment(
+            instance_clip_data["item"]
         )
+        otio_clip = flame_export.create_otio_clip(clip_data)
+        otio_timeline = otio.schema.Timeline(
+            tracks=[otio.schema.Track(children=[otio_clip])]
+        )
+
+        instance_clip_data.update({
+            "otioClip": otio_clip,
+            "otioTimeline": otio_timeline,
+        })
+
+        self.log.debug(f">>> Clip data: {pformat(instance_clip_data)}")
+        instance.data.update(instance_clip_data)
 
         # TODO solve reviewable options
         #review_switch = instance.data["creator_attributes"].get(
         #    "review")
         #if review_switch is True:
         #    instance.data["families"].append("review")
-
-        segment_item = instance.data["item"]
-        sequence = ayfapi.get_current_sequence(ayfapi.CTX.selection)
-        with ayfapi.maintained_segment_selection(sequence):
-            clip_data = ayfapi.get_segment_attributes(segment_item)
-
-        version_data = instance.data.setdefault("versionData", {})
-        version_data["colorSpace"] = clip_data["colour_space"]
-        instance.data["colorspace"] = clip_data["colour_space"]

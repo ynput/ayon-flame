@@ -1,6 +1,8 @@
 import pyblish.api
 from pprint import pformat
 
+import opentimelineio as otio
+
 import ayon_flame.api as ayfapi
 from ayon_flame.otio import flame_export
 
@@ -18,6 +20,7 @@ class CollecTimelineOTIO(pyblish.api.ContextPlugin):
         if sequence is None:
             # No sequence currently opened in Flame.
             # This means all publish instances comes from reel/media panel.
+            context.data["otioTimeline"] = otio.schema.Timeline()
             self.log.debug("No current Flame sequence found.")
             return
 

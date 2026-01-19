@@ -124,6 +124,8 @@ Publishing clips/plate from Media panel.
         clips = lib.get_clips_in_reels(self.project)
         for clip_data in clips:
             clip_item = clip_data.pop("PyClip")
+            clip_data.pop("PySegment")  # non-serializable
+
             marker_data = lib.get_clip_data_marker(clip_item)
             if not marker_data:
                 continue
