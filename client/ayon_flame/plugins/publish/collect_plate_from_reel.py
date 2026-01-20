@@ -25,7 +25,10 @@ class CollectReelPlate(pyblish.api.InstancePlugin):
             self.log.debug("Current plate instance is part of a timeline.")
             return
 
+        # Adjust instance families
         instance.data["families"].append("clip")
+        if instance.data["creator_attributes"].get("review"):
+            instance.data["families"].append("review")
 
         clip_data = instance.data["clip_data"]
         version_data = instance.data.setdefault("versionData", {})
@@ -66,9 +69,3 @@ class CollectReelPlate(pyblish.api.InstancePlugin):
 
         self.log.debug(f">>> Clip data: {pformat(instance_clip_data)}")
         instance.data.update(instance_clip_data)
-
-        # TODO solve reviewable options
-        #review_switch = instance.data["creator_attributes"].get(
-        #    "review")
-        #if review_switch is True:
-        #    instance.data["families"].append("review")

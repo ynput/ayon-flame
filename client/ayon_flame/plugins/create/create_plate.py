@@ -57,6 +57,22 @@ Publishing clips/plate from Media panel.
                 default=True,
                 visible=False,
             ),
+            BoolDef(
+                "review",
+                label="Review",
+                tooltip="Switch to reviewable instance",
+                default=False,
+            ),
+        ]
+
+    def get_attr_defs_for_instance(self, instance):
+        return [
+            BoolDef(
+                "review",
+                label="Review",
+                tooltip="Switch to reviewable instance",
+                default=instance.creator_attributes.get("review", False),
+            )
         ]
 
     def create(self, product_name, instance_data, pre_create_data):
@@ -89,6 +105,9 @@ Publishing clips/plate from Media panel.
 
         instance_data.update(pre_create_data)
         instance_data["task"] = None
+        instance_data["creator_attributes"] = {
+            "review": pre_create_data.get("review", False)
+        }
 
         for clip_data in self.selected:
             clip_name = clip_data["name"]
