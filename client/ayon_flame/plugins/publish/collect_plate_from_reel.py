@@ -54,14 +54,16 @@ class CollectReelPlate(pyblish.api.InstancePlugin):
         # Build otio timeline and otio clip from clip item.
         flame_export.OtioExportCTX.set_fps(instance_clip_data["fps"])
 
-        clip_data["PySegment"] = lib.get_clip_segment(
+        # Cannot use instance data as PySegment is not serializable.
+        clip_data_duplicate = clip_data.copy()
+        clip_data_duplicate["PySegment"] = lib.get_clip_segment(
             instance_clip_data["item"]
         )
-        otio_clip = flame_export.create_otio_clip(clip_data)
+
+        otio_clip = flame_export.create_otio_clip(clip_data_duplicate)
         otio_timeline = otio.schema.Timeline(
             tracks=[otio.schema.Track(children=[otio_clip])]
         )
-
         instance_clip_data.update({
             "otioClip": otio_clip,
             "otioTimeline": otio_timeline,
