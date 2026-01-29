@@ -171,7 +171,7 @@ class ExtractProductResources(
             source_start_handles = instance.data["sourceStartH"]
             source_end_handles = instance.data["sourceEndH"]
         else:
-            # media source is unlinked so we do not have avalable
+            # media source is unlinked, so we do not have available
             # otio reference for media source frame range calculation
             segment_data = ayfapi.get_segment_attributes(segment)
             source_in = segment_data["source_in"]
