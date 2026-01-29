@@ -5,7 +5,6 @@ from pprint import pformat
 from typing import Any
 
 import ayon_flame.api as ayfapi
-import pyblish.api
 from ayon_core.lib import StringTemplate
 from ayon_core.pipeline import publish
 from ayon_core.pipeline.workfile import get_workdir
@@ -56,7 +55,7 @@ class ExtractBatchgroup(publish.Extractor):
         self.log.debug(f"Batch group temp folder: {staging_dir}")
         bgroup.save_setup(staging_dir)
         # get bgroup folder and asci batch file and convert all into json
-        json_file_name = f"{batchgroup_name}.json"
+        _ = f"{batchgroup_name}.json"
         json_output = {}
         batchgroup_folder = Path(staging_dir) / batchgroup_name
         if batchgroup_folder.is_dir():
