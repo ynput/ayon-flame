@@ -577,10 +577,7 @@ def get_segment_attributes(
     if not segment_name:
         clip_data["segment_name"] = "Missing: Segment's Name"
         if segment not in validation_aggregator.failed_segments:
-            validation_aggregator.failed_segments.append((
-                segment,
-                clip_data["segment_name"],
-            ))
+            validation_aggregator.failed_segments.append(segment)
     else:
         clip_data["segment_name"] = segment_name
 
@@ -591,10 +588,7 @@ def get_segment_attributes(
     else:
         clip_data["segment_name"] = "Missing: Segment's File Path"
         if segment not in validation_aggregator.failed_segments:
-            validation_aggregator.failed_segments.append((
-                segment,
-                clip_data["segment_name"],
-            ))
+            validation_aggregator.failed_segments.append(segment)
 
     # head and tail with forward compatibility
     if segment.head:

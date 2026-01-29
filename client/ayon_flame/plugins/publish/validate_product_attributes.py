@@ -63,7 +63,8 @@ class ValidateProductAttributes(
             return
 
         segment = instance.data["item"]
-        error = instance.data["failing"]
+        otio_clip = instance.data["otioClip"]
+        error = otio_clip.media_reference.name
 
         msg = "Product is failing validation due following reason:"
         msg_html = self.get_description()
