@@ -1,30 +1,28 @@
-# TODO:
-#   - [x] abstracting clip processing part which is sharable for all
-#   - [ ] Implement missing_media_link_export_preset_process method
-#   - [ ] Implement thumbnail_preset_process method
-#   - [ ] refactor additional_representation_export_process method
-#
 from __future__ import annotations
 
 import os
 import re
+
+import pyblish.api
 from pathlib import Path
 from pprint import pformat
 
-import flame
-import pyblish.api
 from ayon_core.pipeline import publish
-from ayon_core.pipeline.colorspace import get_remapped_colorspace_from_native
-from ayon_core.pipeline.editorial import get_media_range_with_retimes
 from ayon_flame import api as ayfapi
 from ayon_flame.api import MediaInfoFile
+from ayon_core.pipeline.editorial import (
+    get_media_range_with_retimes
+)
 
+import flame
+from ayon_core.pipeline.colorspace import get_remapped_colorspace_from_native
 
 class ExtractProductResources(
     publish.Extractor,
     publish.ColormanagedPyblishPluginMixin
 ):
-    """Extractor for transcoding files from Flame clip
+    """
+    Extractor for transcoding files from Flame clip
     """
 
     label = "Extract product resources"
@@ -33,6 +31,24 @@ class ExtractProductResources(
     hosts = ["flame"]
 
     settings_category = "flame"
+
+    # plugin defaults
+    keep_original_representation = False
+
+    default_presets = {
+        "thumbnail": {
+            "active": True,
+            "ext": "jpg",
+            "xml_preset_file": "Jpeg (8-bit).xml",
+            "xml_preset_dir": "",
+            "export_type": "File Sequence",
+            "parsed_comment_attrs": False,
+            "colorspace_out": "Output - sRGB",
+            "representation_add_range": False,
+            "representation_tags": ["thumbnail"],
+            "path_regex": ".*"
+        }
+    }
 
     # hide publisher during exporting
     hide_ui_on_process = True
@@ -102,7 +118,10 @@ class ExtractProductResources(
 
         """
         shot_creator_attrs = instance.data["shotCreatorAttrs"]
-        self.log.debug("_ shot_creator_attrs: %s", pformat(shot_creator_attrs))
+        self.log.debug(
+            "_ shot_creator_attrs: %s",
+            pformat(shot_creator_attrs)
+        )
 
         # flame objects
         segment = instance.data["item"]
@@ -110,7 +129,7 @@ class ExtractProductResources(
         segment_name = segment.name.get_value()
         # clip_path will be None if not linked media
         clip_path = instance.data["path"]
-        sequence_clip = instance.context.data["flameSequence"]
+        sequence_clip = instance.context.data.get("flameSequence")
 
         # segment's parent track name
         s_track_name = segment.parent.name.get_value()
@@ -174,6 +193,10 @@ class ExtractProductResources(
         include_handles = instance.data.get("includeHandles")
         retimed_handles = instance.data.get("retimedHandles")
 
+        # get media source range with handles
+        source_start_handles = instance.data["sourceStartH"]
+        source_end_handles = instance.data["sourceEndH"]
+
         # retime if needed
         if retimed_speed != 1.0:
             if retimed_handles:
@@ -213,7 +236,10 @@ class ExtractProductResources(
         source_duration_handles = (
             source_end_handles - source_start_handles) + 1
 
-        self.log.debug("_ source_duration_handles: %s", source_duration_handles)
+        self.log.debug(
+            "_ source_duration_handles: %s",
+            source_duration_handles
+        )
 
         if not instance.data.get("versionData"):
             instance.data["versionData"] = {}
@@ -428,6 +454,8 @@ class ExtractProductResources(
                 )
                 for publish_clip in publish_clips:
                     flame.delete(publish_clip)
+                # at the end remove the duplicated clip
+                flame.delete(exporting_clip)
 
     def _get_retimed_attributes(self, instance):
         handle_start = instance.data["handleStart"]
@@ -777,11 +805,16 @@ class ExtractProductResources(
 
     def _should_skip(self, preset_config, clip_path, unique_name):
         # get activating attributes
+        activated_preset = preset_config["active"]
         filter_path_regex = preset_config.get("filter_path_regex")
 
         self.log.info(
             "Preset `%s` with filter `%s`", unique_name, filter_path_regex
         )
+
+        # skip if not activated presets
+        if not activated_preset:
+            return True
 
         # exclude by regex filter if any
         if (
@@ -789,7 +822,8 @@ class ExtractProductResources(
             and not re.search(filter_path_regex, clip_path)
         ):
             return True
-        return None
+
+        return False
 
     def _unfolds_nested_folders(self, stage_dir, files_list, ext):
         """Unfolds nested folders
@@ -899,7 +933,7 @@ class ExtractProductResources(
     def convert_unlinked_segment_to_clip(
             self, segment, extension, preset_path, staging_dir):
         """
-        Exports a managed segment to a temp file and imports it back as a PyClip.
+        Exports a segment to a temp file then import it back as a PyClip.
         Uses temporary reel duplication to handle unlinked media properly.
         """
         if isinstance(preset_path, str):
