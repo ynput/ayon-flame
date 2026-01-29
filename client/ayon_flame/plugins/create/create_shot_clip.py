@@ -208,6 +208,7 @@ class FlameShotInstanceCreator(_FlameInstanceCreator):
     """Shot product type creator class"""
     identifier = "io.ayon.creators.flame.shot"
     product_type = "shot"
+    product_base_type = "shot"
     label = "Editorial Shot"
 
     def get_instance_attr_defs(self):
@@ -310,6 +311,7 @@ class EditorialPlateInstanceCreator(_FlameInstanceClipCreatorBase):
     """Plate product type creator class"""
     identifier = "io.ayon.creators.flame.plate"
     product_type = "plate"
+    product_base_type = "plate"
     label = "Editorial Plate"
 
     def create(self, instance_data, _):
@@ -328,6 +330,7 @@ class EditorialAudioInstanceCreator(_FlameInstanceClipCreatorBase):
     """Audio product type creator class"""
     identifier = "io.ayon.creators.flame.audio"
     product_type = "audio"
+    product_base_type = "audio"
     label = "Editorial Audio"
 
 
@@ -344,6 +347,7 @@ class CreateShotClip(plugin.FlameCreator):
     identifier = "io.ayon.creators.flame.clip"
     label = "Create Publishable Clip"
     product_type = "editorial"
+    product_base_type = "editorial"
     icon = "film"
     defaults = ["Main"]
 
@@ -356,6 +360,32 @@ OTIO file.
     create_allow_thumbnail = False
 
     shot_instances = {}
+
+    # Pre-create attribute keys that can be hidden/shown via settings
+    overridable_attributes = {
+        "hierarchy",
+        "useShotName",
+        "clipRename",
+        "clipName",
+        "segmentIndex",
+        "countFrom",
+        "countSteps",
+        "folder",
+        "episode",
+        "sequence",
+        "track",
+        "shot",
+        "export_audio",
+        "sourceResolution",
+        "vSyncOn",
+        "vSyncTrack",
+        "workfileFrameStart",
+        "handleStart",
+        "handleEnd",
+        "includeHandles",
+        "retimedHandles",
+        "retimedFramerange",
+    }
 
     def get_pre_create_attr_defs(self):
 
@@ -379,8 +409,7 @@ OTIO file.
         # Project settings might be applied to this creator via
         # the inherited `Creator.apply_settings`
 
-        return [
-
+        attr_defs = [
             BoolDef("use_selection",
                     label="Use only selected clip(s).",
                     tooltip=(
@@ -583,7 +612,35 @@ OTIO file.
             ),
         ]
 
+        disabled_attributes = self._get_disabled_attributes()
+        return [
+            attr_def for attr_def in attr_defs
+
+            # include only if enabled as overridable in settings when
+            # the attribute is overridable
+            if attr_def.key not in disabled_attributes
+        ]
+
+    def _get_disabled_attributes(self) -> set[str]:
+        """Return pre-create attribute definition keys that are not exposed
+        for editing to the user."""
+        # Filter out those that are not enabled based on the filter state
+        enabled_overrides: set[str] = set(self.presets["overrides"])
+        if "vSyncOn" in enabled_overrides or self.presets.get("vSyncOn"):
+            enabled_overrides.add("vSyncTrack")
+
+        return {
+            attr for attr in self.overridable_attributes
+            if attr not in enabled_overrides
+        }
+
     def create(self, product_name, instance_data, pre_create_data):
+        # Ensure to include the default values for excluded attributes that
+        # are marked not overridable in settings into the pre_create_data
+        for attr in self._get_disabled_attributes():
+            if attr in self.presets:
+                pre_create_data[attr] = self.presets[attr]
+
         super().create(
             product_name,
             instance_data,
@@ -722,6 +779,7 @@ OTIO file.
                         {
                             "variant": "main",
                             "productType": "shot",
+                            "productBaseType": "shot",
                             "productName": "shotMain",
                             "creator_attributes": {
                                 "workfileFrameStart": workfileFrameStart,
@@ -782,6 +840,7 @@ OTIO file.
                 elif creator_id == audio_creator_id:
                     sub_instance_data["variant"] = "main"
                     sub_instance_data["productType"] = "audio"
+                    sub_instance_data["productBaseType"] = "audio"
                     sub_instance_data["productName"] = "audioMain"
 
                     parenting_data = shot_instances[shot_creator_id]

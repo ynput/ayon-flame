@@ -214,14 +214,40 @@ class IntegrateBatchGroupModel(BaseSettingsModel):
     )
 
 
+class OptionalValidatorModel(BaseSettingsModel):
+    enabled: bool = SettingsField(
+        False,
+        title="Enabled"
+    )
+    optional: bool = SettingsField(
+        False,
+        title="Optional"
+    )
+    active: bool = SettingsField(
+        False,
+        title="Active"
+    )
+
+
 class PublishPluginsModel(BaseSettingsModel):
     CollectShot: CollectShotsModel = SettingsField(
         default_factory=CollectShotsModel,
         title="Collect Shot instances"
     )
+
     CollectBatchgroup: CollectBatchgroupModel = SettingsField(
         default_factory=CollectBatchgroupModel,
         title="Collect Batchgroup instances"
+    )
+
+    ValidateProductAttributes: OptionalValidatorModel = SettingsField(
+        default_factory=OptionalValidatorModel,
+        title="Validate Product Attributes"
+    )
+
+    ValidateSegments: OptionalValidatorModel = SettingsField(
+        default_factory=OptionalValidatorModel,
+        title="Validate Segments"
     )
 
     ExtractProductResources: ExtractProductResourcesModel = SettingsField(
@@ -301,6 +327,16 @@ DEFAULT_PUBLISH_SETTINGS = {
             "task_name": "compositing",
             "task_type": "Compositing",
         }
+    },
+    "ValidateProductAttributes": {
+        "enabled": True,
+        "active": True,
+        "optional": True
+    },
+    "ValidateSegments": {
+        "enabled": False,
+        "active": False,
+        "optional": True
     },
     "ExtractProductResources": {
         "keep_original_representation": False,
