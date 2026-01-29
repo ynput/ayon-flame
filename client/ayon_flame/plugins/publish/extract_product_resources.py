@@ -137,7 +137,7 @@ class ExtractProductResources(
 
         retimed_data = {}
         if clip_path:
-            # media source is linked to clip so we do have avalable
+            # media source is linked to a clip, so we do have available
             # otio reference for media source frame range calculation
 
             # get retimed attributres
