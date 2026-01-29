@@ -36,6 +36,7 @@ class CTX:
     app_framework = None
     flame_apps = []
     selection = None
+    context = None
 
 
 @dataclass
@@ -343,9 +344,10 @@ def get_metadata(project_name, _log=None):
     return policy_wiretap.process(project_name)
 
 
+
+
 def get_segment_data_marker(segment, with_marker=None):
-    """
-    Get AYON track item tag created by creator or loader plugin.
+    """Get AYON track item tag created by creator or loader plugin.
 
     Attributes:
         segment (flame.PySegment): flame api object
@@ -358,7 +360,7 @@ def get_segment_data_marker(segment, with_marker=None):
         flame.PyMarker, dict
     """
     for marker in segment.markers:
-        comment = marker.comment.get_value()
+        comment = marker.comment.get_value() or "{}"
         color = marker.colour.get_value()
         name = marker.name.get_value()
 
@@ -368,19 +370,73 @@ def get_segment_data_marker(segment, with_marker=None):
                 return json.loads(comment)
             else:
                 return marker, json.loads(comment)
+    return None
+
+
+def get_clip_data_marker(clip, with_marker=None):
+    """Get data marker from inside of reel clip.
+
+    Wrapper for get_segment_data_marker. Clip has actually also markers
+    but it is different object type.
+
+    Attributes:
+        clip (flame.PyClip): flame api object
+        with_marker (bool)[optional]: if true it will return also marker object
+
+    Returns:
+        dict: AYON tag data
+
+    Returns(with_marker=True):
+        flame.PyMarker, dict
+    """
+    segment = get_clip_segment(clip)
+    return get_segment_data_marker(
+        segment,
+        with_marker=with_marker
+    )
 
 
 def set_segment_data_marker(segment, data=None):
-    """
-    Set AYON track item tag to input segment.
+    """Set AYON track item tag to input segment.
 
     Attributes:
         segment (flame.PySegment): flame api object
-
-    Returns:
-        dict: json loaded data
     """
     data = data or dict()
+
+    marker_data = get_segment_data_marker(segment, True)
+
+    if marker_data:
+        # get available AYON tag if any
+        marker, tag_data = marker_data
+        # update tag data with new data
+        tag_data.update(data)
+        # update marker with tag data
+        marker.comment = json.dumps(tag_data)
+    else:
+        # update tag data with new data
+        marker = create_segment_data_marker(segment)
+        # add tag data to marker's comment
+        marker.comment = json.dumps(data)
+
+
+def set_clip_data_marker(clip, data=None):
+    """Set AYON track item tag to input clip.
+
+    Attributes:
+        clip (flame.PyClip): flame api object
+        data (dict): json serializable data
+    """
+    data = data or dict()
+    segment = get_clip_segment(clip)
+
+    segment_data = data.get("clip_data", {}).pop("PySegment", None)
+    if segment_data and segment_data != segment:
+        raise ValueError(
+            "Ambiguous clip to set marker data to."
+            f"Provided clip refers to {segment}, while "
+            f"data points toward {segment_data}."
+        )
 
     marker_data = get_segment_data_marker(segment, True)
 
@@ -431,7 +487,7 @@ def get_publish_attribute(segment):
 
 
 def create_segment_data_marker(segment):
-    """ Create AYON marker on a segment.
+    """Create AYON marker on a segment.
 
     Attributes:
         segment (flame.PySegment): flame api object
@@ -445,6 +501,32 @@ def create_segment_data_marker(segment):
     start_frame = int(segment.record_in.relative_frame) + int(duration / 2)
     # create marker
     marker = segment.create_marker(start_frame)
+    # set marker name
+    marker.name = MARKER_NAME
+    # set duration
+    marker.duration = MARKER_DURATION
+    # set colour
+    marker.colour = COLOR_MAP[MARKER_COLOR]  # Red
+
+    return marker
+
+
+def create_clip_data_marker(clip):
+    """Create AYON marker on a clip.
+
+    Attributes:
+        clip (flame.PyClip): flame api object
+
+    Returns:
+        flame.PyMarker: flame api object
+    """
+    # get duration of segment
+    duration = clip.duration.frame
+    print(duration)
+    # calculate start frame of the new marker
+    start_frame = int(clip.start_frame) + int(duration / 2)
+    # create marker
+    marker = clip.create_marker(start_frame)
     # set marker name
     marker.name = MARKER_NAME
     # set duration
@@ -470,11 +552,9 @@ def get_sequence_segments(sequence, selected=False):
                     continue
                 if segment.hidden.get_value() is True:
                     continue
-                if (
-                    selected is True
-                    and segment.selected.get_value() is not True
-                ):
-                    continue
+                if selected and not segment.selected.get_value():
+                    continue  # not part of selection
+
                 # add it to original selection
                 segments.append(segment)
     return segments
@@ -634,13 +714,16 @@ def get_segment_attributes(
     return clip_data
 
 
-def get_clips_in_reels(project):
+def get_clips_in_reels(project, selected=False):
     output_clips = []
     project_desktop = project.current_workspace.desktop
 
     for reel_group in project_desktop.reel_groups:
         for reel in reel_group.reels:
             for clip in reel.clips:
+                if selected and not clip.selected.get_value():
+                    continue  # not part of selection
+
                 clip_data = {
                     "PyClip": clip,
                     "fps": float(str(clip.frame_rate)[:-4])
@@ -653,13 +736,17 @@ def get_clips_in_reels(project):
 
                 for attr in attrs:
                     val = getattr(clip, attr)
+
+                    # make sure PyAttribute is converted to value
+                    func = getattr(val, "get_value", None)
+                    if func:
+                        val = func()
+
                     clip_data[attr] = val
 
-                version = clip.versions[-1]
-                track = version.tracks[-1]
-                for segment in track.segments:
-                    segment_data = get_segment_attributes(segment)
-                    clip_data.update(segment_data)
+                clip_segment = get_clip_segment(clip)
+                clip_segment_data = get_segment_attributes(clip_segment)
+                clip_data.update(clip_segment_data)
 
                 output_clips.append(clip_data)
 
@@ -778,6 +865,14 @@ def maintained_temp_file_path(suffix=None):
 
 
 def get_clip_segment(flame_clip):
+    """Get the segment associated to a clip.
+
+    Args:
+        flame_clip (flame.PyClip): flame api object
+
+    Returns:
+        segment (Segment): Segment associated to the clip.
+    """
     name = flame_clip.name.get_value()
     version = flame_clip.versions[0]
     track = version.tracks[0]
