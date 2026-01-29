@@ -48,7 +48,7 @@ class ValidateProductAttributes(
     settings_category = "flame"
 
     optional = True
-    active = True
+    active = False
 
     actions = [DeactivatePublishing]
 
@@ -56,6 +56,9 @@ class ValidateProductAttributes(
         return instance.data.get("failing")
 
     def process(self, instance):
+        if not self.is_active(instance.data):
+            return
+
         if not self.detect_failing_instance(instance):
             return
 
