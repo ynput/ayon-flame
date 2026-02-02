@@ -1,6 +1,5 @@
 import pyblish
 
-import ayon_flame.api as ayfapi
 from ayon_flame.otio import utils
 
 

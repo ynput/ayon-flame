@@ -33,7 +33,7 @@ class _ActOnFailedSegments(pyblish.api.Action):
         raise NotImplementedError(f"TBD: {segment}")
 
 
-class ShowSegmentsRed(_ActOnFailedSegments)
+class ShowSegmentsRed(_ActOnFailedSegments):
     label = "Show Segments with Red Colour"
 
     def act_on_segment(self, segment):
