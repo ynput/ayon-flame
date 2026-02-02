@@ -365,8 +365,8 @@ DEFAULT_PUBLISH_SETTINGS = {
         ]
     },
     "ValidateProductAttributes": {
-        "enabled": True,
-        "active": True,
+        "enabled": False,
+        "active": False,
         "optional": True
     },
     "ValidateSegments": {

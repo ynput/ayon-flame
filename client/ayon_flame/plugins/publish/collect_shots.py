@@ -26,6 +26,7 @@ class CollectShot(pyblish.api.InstancePlugin):
 
     SHARED_KEYS = (
         "clipData",
+        "failing",
         "folderPath",
         "fps",
         "handleStart",
@@ -41,7 +42,6 @@ class CollectShot(pyblish.api.InstancePlugin):
         "versionData",
         "workfileFrameStart",
         "xml_overrides",
-        "failing",
     )
 
     # TODO: add to own plugin for Flame
@@ -140,6 +140,10 @@ class CollectShot(pyblish.api.InstancePlugin):
                 creator_attrs["handleStart"],
                 creator_attrs["handleEnd"]
             )
+            failed_message = None
+
+        else:
+            failed_message = clip_data["segment_name"]
 
         # Make sure there is not None and negative number
         head = abs(head or 0)
@@ -158,7 +162,7 @@ class CollectShot(pyblish.api.InstancePlugin):
             "item": segment_item,
             "clipData": clip_data,
             "path": file_path,
-            "failing": validation_aggregator.has_errors(),
+            "failing": failed_message,
             "sourceFirstFrame": int(first_frame),
             "workfileFrameStart": workfile_start,
             "flameAddTasks": self.add_tasks,

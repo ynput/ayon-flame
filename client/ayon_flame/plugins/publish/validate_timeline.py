@@ -8,59 +8,52 @@ from ayon_core.pipeline.publish import (
 )
 
 
-class ShowSegmentsRed(pyblish.api.Action):
+class _ActOnFailedSegments(pyblish.api.Action):
+    label = "Act on Failed Segments"
+    icon = "files-o"
+    on = "failed"
 
+    def process(self, context, plugin):
+        failed_segments = context.data["failedSegments"]
+
+        if not failed_segments:
+            return
+
+        sequence = ayfapi.get_current_sequence(ayfapi.CTX.selection)
+        with ayfapi.maintained_segment_selection(sequence):
+            for segment in failed_segments:
+                shot_name = segment.shot_name.get_value()
+                segment_name = segment.name.get_value()
+                self.act_on_segment(segment)
+                clip_msg = (
+                    f"Clip name: {segment_name} with shot name: {shot_name}")
+                self.log.info(clip_msg)
+
+    def act_on_segment(self, segment):
+        raise NotImplementedError(f"TBD: {segment}")
+
+
+class ShowSegmentsRed(_ActOnFailedSegments)
     label = "Show Segments with Red Colour"
-    icon = "files-o"
-    on = "failed"
 
-    def process(self, context, plugin):
-        failed_segments = context.data["failedSegments"]
-
-        if not failed_segments:
-            return
-
-        sequence = ayfapi.get_current_sequence(ayfapi.CTX.selection)
-        with ayfapi.maintained_segment_selection(sequence):
-            for segment in failed_segments:
-                shot_name = segment.shot_name.get_value()
-                segment_name = segment.name.get_value()
-                segment.colour = (1.0, 0.0, 0.0)
-                clip_msg = (
-                    f"Clip name: {segment_name} with shot name: {shot_name}")
-                self.log.info(clip_msg)
+    def act_on_segment(self, segment):
+        segment.colour = (1.0, 0.0, 0.0)
 
 
-class HideSegments(pyblish.api.Action):
-
+class HideSegments(_ActOnFailedSegments):
     label = "Hide Failing Segments"
-    icon = "files-o"
-    on = "failed"
 
-    def process(self, context, plugin):
-        failed_segments = context.data["failedSegments"]
-
-        if not failed_segments:
-            return
-
-        sequence = ayfapi.get_current_sequence(ayfapi.CTX.selection)
-        with ayfapi.maintained_segment_selection(sequence):
-            for segment in failed_segments:
-                shot_name = segment.shot_name.get_value()
-                segment_name = segment.name.get_value()
-                segment.hidden = True
-                clip_msg = (
-                    f"Clip name: {segment_name} with shot name: {shot_name}")
-                self.log.info(clip_msg)
+    def act_on_segment(self, segment):
+        segment.hidden = True
 
 
 class ValidateSegments(
     OptionalPyblishPluginMixin,
     pyblish.api.ContextPlugin
 ):
-    """Validate segments attributes."""
+    """Validate timeline segments attributes."""
 
-    label = "Validate Segments"
+    label = "Validate Timeline Segments"
     order = pyblish.api.ValidatorOrder
     settings_category = "flame"
 
@@ -70,8 +63,7 @@ class ValidateSegments(
     actions = [ShowSegmentsRed, HideSegments]
 
     def process(self, context):
-        failed_segments = context.data["failedSegments"]
-
+        failed_segments = context.data.get("failedSegments")
         if not failed_segments:
             return
 
