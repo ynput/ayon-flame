@@ -63,7 +63,7 @@ class ExtractProductResources(
         folder_path = instance.data["folderPath"]
         segment_name = segment.name.get_value()
         clip_path = instance.data["path"]
-        sequence_clip = instance.context.data["flameSequence"]
+        sequence_clip = instance.context.data.get("flameSequence")
 
         # segment's parent track name
         s_track_name = segment.parent.name.get_value()
@@ -229,6 +229,12 @@ class ExtractProductResources(
                 unique_name)
 
             if export_type == "Sequence Publish":
+                if sequence_clip is None:
+                    raise ValueError(
+                        "Cannot apply export preset to current instance: "
+                        "Sequence Publish export on a non-sequence instance."
+                    )
+
                 # change export clip to sequence
                 exporting_clip = flame.duplicate(sequence_clip)
 

@@ -4,11 +4,11 @@ import ayon_flame.api as ayfapi
 from ayon_flame.otio import utils
 
 
-class CollectPlate(pyblish.api.InstancePlugin):
-    """Collect new plates."""
+class CollectTimelinePlate(pyblish.api.InstancePlugin):
+    """Collect new plates from Timeline."""
 
     order = order = pyblish.api.CollectorOrder - 0.48
-    label = "Collect Plate"
+    label = "Collect Plate from Timeline"
     hosts = ["flame"]
     families = ["plate"]
 
@@ -17,11 +17,19 @@ class CollectPlate(pyblish.api.InstancePlugin):
         Args:
             instance (pyblish.Instance): The shot instance to update.
         """
+        if (
+            instance.data.get("flame_context")
+            and instance.data["flame_context"] != "FlameMenuTimeline"
+        ):
+            # Plate instance could also come from Reel and Media panel clips.
+            self.log.debug("Current plate instance is not part of a timeline.")
+            return
+
         instance.data["families"].append("clip")
 
         # Adjust instance data from parent otio timeline.
         otio_timeline = instance.context.data["otioTimeline"]
-        otio_clip, marker = utils.get_marker_from_clip_index(
+        otio_clip, _ = utils.get_marker_from_clip_index(
             otio_timeline, instance.data["clip_index"]
         )
         if not otio_clip:

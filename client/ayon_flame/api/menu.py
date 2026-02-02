@@ -27,9 +27,14 @@ default_flame_export_presets = {
 }
 
 
-def callback_selection(selection, function):
+def callback_selection(
+    selection,
+    function,
+    context,
+):
     import ayon_flame.api as ayfapi
     ayfapi.CTX.selection = selection
+    ayfapi.CTX.context = context
     print("Hook Selection: \n\t{}".format(
         pformat({
             index: (type(item), item.name)
@@ -132,18 +137,10 @@ class FlameMenuProjectConnect(_FlameMenuApp):
 
         menu = deepcopy(self.menu)
 
-        # menu['actions'].append({
-        #     "name": "Workfiles...",
-        #     "execute": lambda x: self.tools_helper.show_workfiles()
-        # })
         menu['actions'].append({
             "name": "1 - Load...",
             "execute": lambda x: self.tools_helper.show_loader()
         })
-        # menu['actions'].append({
-        #     "name": "Manage...",
-        #     "execute": lambda x: self.tools_helper.show_scene_inventory()
-        # })
         menu['actions'].append({
             "name": "2 - Library...",
             "execute": lambda x: self.tools_helper.show_library_loader()
@@ -191,9 +188,11 @@ class FlameMenuTimeline(_FlameMenuApp):
             {
                 "name": "1 - Create...",
                 "execute": lambda x: callback_selection(
-                    x, host_tools.show_publisher(
+                    x,
+                    host_tools.show_publisher(
                         tab="create", parent=_get_main_window()
-                    )
+                    ),
+                    context="FlameMenuTimeline"
                 ),
             }
         )
@@ -201,9 +200,11 @@ class FlameMenuTimeline(_FlameMenuApp):
             {
                 "name": "2 - Publish...",
                 "execute": lambda x: callback_selection(
-                    x, host_tools.show_publisher(
+                    x,
+                    host_tools.show_publisher(
                         tab="publish", parent=_get_main_window()
-                    )
+                    ),
+                    context="FlameMenuTimeline"
                 ),
             }
         )
@@ -257,18 +258,40 @@ class FlameMenuUniversal(_FlameMenuApp):
             return []
 
         menu = deepcopy(self.menu)
-
+        menu['actions'].append(
+            {
+                "name": "1 - Create...",
+                "execute": lambda x: callback_selection(
+                    x,
+                    host_tools.show_publisher(
+                        tab="create", parent=_get_main_window()
+                    ),
+                    context="FlameMenuUniversal"
+                ),
+            }
+        )
+        menu["actions"].append(
+            {
+                "name": "2 - Publish...",
+                "execute": lambda x: callback_selection(
+                    x,
+                    host_tools.show_publisher(
+                        tab="publish", parent=_get_main_window()
+                    ),
+                    context="FlameMenuUniversal"
+                ),
+            }
+        )
         menu['actions'].append({
-            "name": "1 - Load...",
+            "name": "3 - Load...",
             "execute": lambda x: callback_selection(
-                x, self.tools_helper.show_loader)
+                x,
+                self.tools_helper.show_loader,
+                context="FlameMenuUniversal"
+            )
         })
-        # menu['actions'].append({
-        #     "name": "Manage...",
-        #     "execute": lambda x: self.tools_helper.show_scene_inventory()
-        # })
         menu['actions'].append({
-            "name": "2 - Library...",
+            "name": "4 - Library...",
             "execute": lambda x: self.tools_helper.show_library_loader()
         })
 
