@@ -76,7 +76,7 @@ class FlamePostLaunch(PostLaunchHook):
                     for bookmark in section["Bookmarks"]
                     if bookmark["Path"] not in bookmark_paths
                 ]
-                # insert directly after the default "Project Home" bookmark 
+                # insert directly after the default "Project Home" bookmark
                 section["Bookmarks"] = (
                     filtered_bookmarks[:1]   # default Project Home bookmark
                     + bookmarks               # project root bookmarks
