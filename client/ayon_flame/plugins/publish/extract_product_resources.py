@@ -117,12 +117,6 @@ class ExtractProductResources(
                 * `version_frame_start` (int): Version data frame start.
 
         """
-        shot_creator_attrs = instance.data["shotCreatorAttrs"]
-        self.log.debug(
-            "_ shot_creator_attrs: %s",
-            pformat(shot_creator_attrs)
-        )
-
         # flame objects
         segment = instance.data["item"]
         folder_path = instance.data["folderPath"]
@@ -135,8 +129,7 @@ class ExtractProductResources(
         s_track_name = segment.parent.name.get_value()
 
         # get configured workfile frame start/end (handles excluded)
-        frame_start = instance.data.get(
-            "frameStart", shot_creator_attrs["frameStart"])
+        frame_start = instance.data["frameStart"]
         # get media source first frame
         source_first_frame = instance.data["sourceFirstFrame"]
 
@@ -144,10 +137,8 @@ class ExtractProductResources(
         self.log.debug("_ source_first_frame: %s", source_first_frame)
 
         # get timeline in/out of segment
-        clip_in = instance.data.get(
-            "clipIn", shot_creator_attrs["clipIn"])
-        clip_out = instance.data.get(
-            "clipOut", shot_creator_attrs["clipOut"])
+        clip_in = instance.data["clipIn"]
+        clip_out = instance.data["clipOut"]
 
         # get handles value - take only the max from both
         handle_start = instance.data["handleStart"]
@@ -193,16 +184,12 @@ class ExtractProductResources(
         include_handles = instance.data.get("includeHandles")
         retimed_handles = instance.data.get("retimedHandles")
 
-        # get media source range with handles
-        source_start_handles = instance.data["sourceStartH"]
-        source_end_handles = instance.data["sourceEndH"]
-
         # retime if needed
         if retimed_speed != 1.0:
             if retimed_handles:
                 # handles are retimed
                 source_start_handles = (
-                    instance.data["sourceStart"] - retimed_handle_start)
+                    source_start_handles - retimed_handle_start)
                 source_end_handles = (
                     source_start_handles
                     + (retimed_source_duration - 1)

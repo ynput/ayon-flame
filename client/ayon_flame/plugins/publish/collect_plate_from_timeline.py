@@ -1,3 +1,5 @@
+from pprint import pformat
+
 import pyblish
 
 from ayon_flame.otio import utils
@@ -69,3 +71,5 @@ class CollectTimelinePlate(pyblish.api.InstancePlugin):
 
         instance.data["shotDurationFromSource"] = instance.data.get(
             "retimedFramerange")
+
+        self.log.debug(f"__ inst_data: {pformat(instance.data)}")
