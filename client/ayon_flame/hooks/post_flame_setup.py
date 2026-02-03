@@ -72,13 +72,14 @@ class FlamePostLaunch(PostLaunchHook):
             )
         for section in data["DlBookmark"]["Sections"]:
             if section["Section"] == "Project":
-                for bookmark in deepcopy(section["Bookmarks"]):
-                    if bookmark["Path"] in bookmark_paths:
-                        section["Bookmarks"].remove(bookmark)
+                filtered_bookmarks = [
+                    bookmark
+                    for bookmark in section["Bookmarks"]
+                    if bookmark["Path"] not in bookmark_paths
+                ]
                 # insert directly after the default "Project Home" bookmark
-                section["Bookmarks"] = section[
-                    "Bookmarks"
-                ][:1] + bookmarks + section["Bookmarks"][1:]
+                filtered_bookmarks.insert(1, bookmarks)
+                section["Bookmarks"] = filtered_bookmarks
                 break
         os.makedirs(os.path.dirname(bookmarks_path), exist_ok=True)
         with open(bookmarks_path, "w") as bookmark_file:
