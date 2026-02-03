@@ -100,7 +100,14 @@ class ExtractProductResources(
 
         """
         # flame objects
-        segment = instance.data["item"]
+        item = instance.data["item"]
+        if isinstance(item, flame.PySegment):
+            segment = item
+        elif isinstance(item, flame.PyClip):
+            segment = ayfapi.lib.get_clip_segment(item)
+        else:
+            raise ValueError(f"Unsupported item: {item}.")
+
         folder_path = instance.data["folderPath"]
         segment_name = segment.name.get_value()
         # clip_path will be None if not linked media
@@ -681,15 +688,7 @@ class ExtractProductResources(
         repr_name = unique_name
         # add files to representation but add
         # imagesequence as list
-        if (
-            # first check if path in files is not mov extension
-            [
-                f for f in rendered_files
-                if f.suffix == ".mov"
-            ]
-            # then try if thumbnail is not in unique name
-            or repr_name == "thumbnail"
-        ):
+        if len(rendered_files) == 1:
             repre_files = rendered_files.pop().name
         else:
             repre_files = [f.name for f in rendered_files]
@@ -774,7 +773,7 @@ class ExtractProductResources(
 
     def _should_skip(self, preset_config, clip_path, unique_name):
         # get activating attributes
-        activated_preset = preset_config["active"]
+        activated_preset = preset_config.get("enabled", False)
         filter_path_regex = preset_config.get("filter_path_regex")
 
         self.log.info(
@@ -922,9 +921,10 @@ class ExtractProductResources(
             for library in workspace.libraries:
                 if library.name == "AYON_TEMP_EXPORT":
                     temp_library = library
+                    self.log.info("Found temporary library: AYON_TEMP_EXPORT")
                     break
 
-            if not temp_library:
+            else:
                 # Create a temp library if it doesn't exist
                 temp_library = workspace.create_library("AYON_TEMP_EXPORT")
                 self.log.info("Created temporary library: AYON_TEMP_EXPORT")
