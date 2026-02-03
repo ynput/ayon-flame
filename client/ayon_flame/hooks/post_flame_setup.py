@@ -79,8 +79,8 @@ class FlamePostLaunch(PostLaunchHook):
                 # insert directly after the default "Project Home" bookmark 
                 section["Bookmarks"] = (
                     filtered_bookmarks[:1]   # default Project Home bookmark
-                    + bookmarks               # project root bookmarks 
-                    + filtered_bookmarks[1:]  # remaining pre-existing bookmarks
+                    + bookmarks               # project root bookmarks
+                    + filtered_bookmarks[1:]  # remaining preexisting bookmarks
                 )
         os.makedirs(os.path.dirname(bookmarks_path), exist_ok=True)
         with open(bookmarks_path, "w") as bookmark_file:
