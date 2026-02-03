@@ -32,24 +32,6 @@ class ExtractProductResources(
 
     settings_category = "flame"
 
-    # plugin defaults
-    keep_original_representation = False
-
-    default_presets = {
-        "thumbnail": {
-            "active": True,
-            "ext": "jpg",
-            "xml_preset_file": "Jpeg (8-bit).xml",
-            "xml_preset_dir": "",
-            "export_type": "File Sequence",
-            "parsed_comment_attrs": False,
-            "colorspace_out": "Output - sRGB",
-            "representation_add_range": False,
-            "representation_tags": ["thumbnail"],
-            "path_regex": ".*"
-        }
-    }
-
     # hide publisher during exporting
     hide_ui_on_process = True
 
@@ -348,7 +330,7 @@ class ExtractProductResources(
         if (
             not self.thumbnail_preset["enabled"]
         ):
-            self.log.debug("thumbnail_preset is set")
+            self.log.debug("No thumbnail_preset is set")
             return
         unique_name = "thumbnail"
         # Process preset export

@@ -94,7 +94,15 @@ class MissingMediaPresetModel(BaseSettingsModel):
             "resulting resolution of the exported media."
         ),
     )
-
+    representation_add_range: bool = SettingsField(
+        True,
+        title="Add range to representation name",
+        description=(
+            "Adds frame range-related attributes to the publishing "
+            "representation data for downstream use in the publishing process."
+        ),
+        section="Representation properties",
+    )
 
 class ExportPresetsMappingModel(BaseSettingsModel):
     enabled: bool = SettingsField(
@@ -382,6 +390,7 @@ DEFAULT_PUBLISH_SETTINGS = {
             "colorspace_out": "ACES - ACEScg",
             "xml_preset_dir": "",
             "parsed_comment_attrs": True,
+            "representation_add_range": True,
         },
         "thumbnail_preset": {
             "enabled": True,
@@ -390,7 +399,6 @@ DEFAULT_PUBLISH_SETTINGS = {
             "xml_preset_dir": "",
             "export_type": "File Sequence",
             "colorspace_out": "Output - sRGB",
-            "representation_add_range": False,
             "representation_tags": ["thumbnail"],
         },
         "additional_representation_export": {
