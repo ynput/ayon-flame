@@ -652,7 +652,7 @@ class ClipLoader(LoaderPlugin):
         representation_name = context["representation"]["name"]
         project_name = context["project"]["name"]
 
-        repre_context = copy.deepcopy(
+        repre_context = deepcopy(
             context["representation"]["context"]
         )
         if not repre_context.get("output"):
@@ -709,7 +709,7 @@ class ClipLoader(LoaderPlugin):
          ):
              version_id = repre_entity["versionId"]
              repres_by_version_id[version_id] = repre_entity
-        
+
         for version in all_versions:
             representation = repres_by_version_id[version["id"]]
 
