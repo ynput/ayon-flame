@@ -698,18 +698,26 @@ class ClipLoader(LoaderPlugin):
                 task_ids=[version_entity["taskId"]],
             )
 
+        repres_by_version_id = {
+            version["id"]: None
+            for version in all_versions
+        }
+        for repre_entity in ayon_api.get_representations(
+             project_name,
+             representation_names={representation_name},
+             version_ids=set(repres_by_version_id),
+         ):
+             version_id = repre_entity["versionId"]
+             repres_by_version_id[version_id] = repre_entity
+        
         for version in all_versions:
-            representation = ayon_api.get_representation_by_name(
-                project_name,
-                representation_name,
-                version_id=version["id"],
-            )
+            representation = repres_by_version_id[version["id"]]
 
             version_context = deepcopy(context)
             version_context["version"] = version
             version_context["representation"] = representation
 
-            version_name = f"v{version['version']:03}"
+            version_name = version["name"]
             colorspace = self.get_colorspace(version_context)
 
             layer_rename_template = self.layer_rename_template
@@ -760,16 +768,16 @@ class ClipLoader(LoaderPlugin):
     def _get_clip(self, name, clip_path):
         reel = self._get_reel()
         # with maintained openclip as opc
-        matching_clip = [cl for cl in reel.clips
-                         if cl.name.get_value().startswith(name)]
-        if matching_clip:
-            return matching_clip.pop()
-        else:
-            created_clips = flame.import_clips(str(clip_path), reel)
-            return created_clips.pop()
+        for cl in reel.clips:
+            if cl.name.get_value().startswith(name):
+                return cl
+
+        created_clips = flame.import_clips(str(clip_path), reel)
+        return created_clips.pop()
 
     def _get_reel(self):
         raise NotImplementedError()
+
 
 class OpenClipSolver:
 
@@ -1027,14 +1035,14 @@ class OpenClipSolver:
         )
 
     def set_current_version(self, version_name: str) -> None:
-        out_xml_versions_obj = self.out_clip_data.find('versions')
-        out_xml_versions_obj.set('currentVersion', version_name)
+        out_xml_versions_obj = self.out_clip_data.find("versions")
+        out_xml_versions_obj.set("currentVersion", version_name)
 
         for out_xml_track in self.out_clip_data.iter("track"):
-            out_feeds = out_xml_track.find('feeds')
+            out_feeds = out_xml_track.find("feeds")
             for feed in out_feeds.iter("feed"):
                 if feed.get("vuid") == version_name:
-                    out_feeds.set('currentVersion', version_name)
+                    out_feeds.set("currentVersion", version_name)
                     break
 
     def write(self):
