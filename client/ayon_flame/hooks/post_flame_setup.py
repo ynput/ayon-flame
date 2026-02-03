@@ -55,6 +55,7 @@ class FlamePostLaunch(PostLaunchHook):
                     ]
                 }
             }
+
         bookmarks = []
         for path in bookmark_paths:
             name = path.rstrip(os.path.sep)
@@ -69,6 +70,7 @@ class FlamePostLaunch(PostLaunchHook):
                     "Visibility": "Global"
                 }
             )
+
         for section in data["DlBookmark"]["Sections"]:
             if section["Section"] == "Project":
                 filtered_bookmarks = [
@@ -82,6 +84,7 @@ class FlamePostLaunch(PostLaunchHook):
                     + bookmarks               # project root bookmarks
                     + filtered_bookmarks[1:]  # remaining preexisting bookmarks
                 )
+
         os.makedirs(os.path.dirname(bookmarks_path), exist_ok=True)
         with open(bookmarks_path, "w") as bookmark_file:
             json.dump(data, bookmark_file, ensure_ascii=True, indent=4)
