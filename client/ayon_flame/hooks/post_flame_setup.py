@@ -76,10 +76,12 @@ class FlamePostLaunch(PostLaunchHook):
                     for bookmark in section["Bookmarks"]
                     if bookmark["Path"] not in bookmark_paths
                 ]
-                # insert directly after the default "Project Home" bookmark
-                filtered_bookmarks.insert(1, bookmarks)
-                section["Bookmarks"] = filtered_bookmarks
-                break
+                # insert directly after the default "Project Home" bookmark 
+                section["Bookmarks"] = (
+                    filtered_bookmarks[:1]   # default Project Home bookmark
+                    + bookmarks               # project root bookmarks 
+                    + filtered_bookmarks[1:]  # remaining pre-existing bookmarks
+                )
         os.makedirs(os.path.dirname(bookmarks_path), exist_ok=True)
         with open(bookmarks_path, "w") as bookmark_file:
             json.dump(data, bookmark_file, ensure_ascii=True, indent=4)
