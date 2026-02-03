@@ -184,7 +184,7 @@ class FlamePostLaunch(PostLaunchHook):
 
         try:
             project_root = self._get_projects_root(
-                bookmark_settings["flame_projects_root"]
+                bookmark_settings["flame_projects_root"]["variants"]
             )
         except BaseProjectRootException as error:
             self.log.error("Unable to create bookmarks")

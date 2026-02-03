@@ -1,8 +1,10 @@
 from pydantic import validator
 
+from ayon_server.exceptions import BadRequestException
 from ayon_server.settings import (
     SettingsField, BaseSettingsModel, ensure_unique_names
 )
+
 
 class MultiplatformStrList(BaseSettingsModel):
     windows: list[str] = SettingsField(default_factory=list, title="Windows")
@@ -12,6 +14,7 @@ class MultiplatformStrList(BaseSettingsModel):
 
 class AppVariant(BaseSettingsModel):
     name: str = SettingsField("", title="Name")
+    label: str = SettingsField("", title="Label")
     project_path: MultiplatformStrList = SettingsField(
         default_factory=MultiplatformStrList,
         title="Path to Projects Folder",
@@ -43,16 +46,6 @@ class BookmarkItem(BaseSettingsModel):
     )
     path_template: str = SettingsField("", title="Path Template", min_length=1)
 
-    @validator("name")
-    def validate_unique_name(cls, value):
-        ensure_unique_names(value)
-        return value
-
-    @validator("bookmark_label")
-    def validate_unique_label(cls, value):
-        ensure_unique_names(value)
-        return value
-
 
 class BookmarksModel(BaseSettingsModel):
     enabled: bool = SettingsField(default=True, title="Enable Bookmarks")
@@ -67,6 +60,27 @@ class BookmarksModel(BaseSettingsModel):
         description="Available template fields are 'root' and 'project' only",
     )
 
+    @validator("bookmark_paths")
+    def validate_unique_name(cls, value):
+        ensure_unique_names(value)
+        return value
+
+    @validator("bookmark_paths")
+    def validate_unique_label(cls, value):
+        bookmark_labels = []
+        for obj in value:
+            if not hasattr(obj, "bookmark_label"):
+                raise BadRequestException(
+                    "Object without bookmark_label provided"
+                )
+            if obj.bookmark_label not in bookmark_labels:
+                bookmark_labels.append(obj.bookmark_label)
+            else:
+                raise BadRequestException(
+                    f"Duplicate bookmark_label '{obj.bookmark_label}'"
+                )
+        return value
+
 
 DEFAULT_BOOKMARK_SETTINGS = {
     "enabled": True,
@@ -74,6 +88,7 @@ DEFAULT_BOOKMARK_SETTINGS = {
         "variants": [
             {
                 "name": "",
+                "label": "Default",
                 "project_path": {
                     "windows": [],
                     "linux": ["/opt/Autodesk/project"],
