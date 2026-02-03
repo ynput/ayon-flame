@@ -652,12 +652,14 @@ class ClipLoader(LoaderPlugin):
         representation_name = context["representation"]["name"]
         project_name = context["project"]["name"]
 
-        if not context["representation"]["context"].get("output"):
-            self.clip_name_template = self.clip_name_template.replace(
-                "output", "representation"
-            )
+        repre_context = copy.deepcopy(
+            context["representation"]["context"]
+        )
+        if not repre_context.get("output"):
+            repre_context["output"] = repre_context["representation"]
+
         clip_name = StringTemplate(self.clip_name_template).format(
-            self._get_formatting_data(context, options)
+            repre_context
         )
 
         # create workfile path
