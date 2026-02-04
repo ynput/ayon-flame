@@ -1,6 +1,7 @@
+from pprint import pformat
+
 import pyblish
 
-import ayon_flame.api as ayfapi
 from ayon_flame.otio import utils
 
 
@@ -63,14 +64,12 @@ class CollectTimelinePlate(pyblish.api.InstancePlugin):
             edit_shared_data[parent_instance_id]
         )
 
-        segment_item = instance.data["item"]
-        sequence = ayfapi.get_current_sequence(ayfapi.CTX.selection)
-        with ayfapi.maintained_segment_selection(sequence):
-            clip_data = ayfapi.get_segment_attributes(segment_item)
-
+        clip_data = instance.data["clipData"]
         version_data = instance.data.setdefault("versionData", {})
         version_data["colorSpace"] = clip_data["colour_space"]
         instance.data["colorspace"] = clip_data["colour_space"]
 
         instance.data["shotDurationFromSource"] = instance.data.get(
             "retimedFramerange")
+
+        self.log.debug(f"__ inst_data: {pformat(instance.data)}")

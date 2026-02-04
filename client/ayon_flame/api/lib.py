@@ -651,6 +651,8 @@ def get_segment_attributes(
         "tape_name": segment.tape_name,
         "source_name": segment.source_name,
         "PySegment": segment,
+        "segment_name": "",
+        "fpath": "",
     }
     # make sure even segments without proper name are handled as missing
     # this way they will be detected by Publisher Validator
