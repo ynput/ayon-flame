@@ -387,7 +387,7 @@ def create_otio_clip(clip_data):
     media_timecode_start = None
     tw_data = None
     media_fps = OtioExportCTX.get_fps()  # fallback from timeline
-    if "fpath" in clip_data:
+    if clip_data.get("fpath"):
         file_path = clip_data["fpath"]
 
         # calculate source in

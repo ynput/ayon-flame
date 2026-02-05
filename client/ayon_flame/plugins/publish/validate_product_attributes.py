@@ -48,33 +48,37 @@ class ValidateProductAttributes(
     settings_category = "flame"
 
     optional = True
-    active = True
+    active = False
 
     actions = [DeactivatePublishing]
 
-    def detect_failing_instance(self, instance):
-        return instance.data.get("failing")
-
     def process(self, instance):
-        if not self.detect_failing_instance(instance):
+        if not self.is_active(instance.data):
+            self.log.info("Validation is disabled.")
             return
 
-        segment = instance.data["item"]
-        otio_clip = instance.data["otioClip"]
-        reference_name = otio_clip.media_reference.name
+        if not instance.data.get("item"):
+            self.log.info("Nothing to validate, no associated item.")
+            return
 
-        msg = "Product is failing validation due following reason:"
-        msg_html = self.get_description()
+        if not instance.data.get("failing"):
+            self.log.info("No validation error flagged.")
+            return
 
-        shot_name = segment.shot_name.get_value()
-        segment_name = segment.name.get_value()
+        # clip or segment
+        item = instance.data["item"]
+        shot_name = item.shot_name.get_value()
+        segment_name = item.name.get_value()
+        error = instance.data["failing"]
+
         clip_msg = (
             f"Clip name: '{segment_name}' with shot name: '{shot_name}'\n"
-            f"Problem: '{reference_name}'"
+            f"Problem: '{error}'"
         )
-        msg += f"\n{clip_msg}"
 
-        msg_html += f"{clip_msg}"
+        msg = "Product is failing validation due following reason:"
+        msg += f"\n{clip_msg}"
+        msg_html = self.get_description() + f"{clip_msg}"
 
         raise PublishValidationError(
             title="Failing Product Validation",
