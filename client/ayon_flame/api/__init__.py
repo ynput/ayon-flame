@@ -16,7 +16,9 @@ from .lib import (
     get_current_sequence,
     create_segment_data_marker,
     get_segment_data_marker,
+    get_clip_data_marker,
     set_segment_data_marker,
+    set_clip_data_marker,
     set_publish_attribute,
     get_publish_attribute,
     get_sequence_segments,
@@ -61,6 +63,7 @@ from .plugin import (
     ClipLoader,
     OpenClipSolver,
     FlameCreator,
+    FlameEditorialCreator,
     HiddenFlameCreator,
 )
 from .workio import (
@@ -97,7 +100,9 @@ __all__ = [
     "get_current_sequence",
     "create_segment_data_marker",
     "get_segment_data_marker",
+    "get_clip_data_marker",
     "set_segment_data_marker",
+    "set_clip_data_marker",
     "set_publish_attribute",
     "get_publish_attribute",
     "get_sequence_segments",
@@ -145,6 +150,7 @@ __all__ = [
     "ClipLoader",
     "OpenClipSolver",
     "FlameCreator",
+    "FlameEditorialCreator",
     "HiddenFlameCreator",
 
     # workio

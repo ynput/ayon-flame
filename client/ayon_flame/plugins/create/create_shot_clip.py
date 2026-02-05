@@ -1,11 +1,11 @@
 from copy import deepcopy
 import uuid
 
-import ayon_flame.api as ayfapi
-from ayon_flame.api import plugin, lib, pipeline
-
 from ayon_core.pipeline.create import CreatorError, CreatedInstance
 from ayon_core.lib import BoolDef, EnumDef, TextDef, UILabelDef, NumberDef
+
+import ayon_flame.api as ayfapi
+from ayon_flame.api import plugin, lib, pipeline
 
 try:
     from ayon_core.pipeline.create import ParentFlags
@@ -16,7 +16,6 @@ except ImportError:
 # Used as a key by the creators in order to
 # retrieve the instances data into clip markers.
 _CONTENT_ID = "flame_sub_products"
-
 
 # Shot attributes
 CLIP_ATTR_DEFS = [
@@ -197,10 +196,7 @@ class _FlameInstanceCreator(plugin.HiddenFlameCreator):
 
             pipeline.imprint(
                 segment_item,
-                data=  {
-                    _CONTENT_ID: instances_data,
-                    "clip_index": marker_data["clip_index"],
-                }
+                data=marker_data
             )
 
 
@@ -341,7 +337,7 @@ class EditorialBatchgroupInstanceCreator(_FlameInstanceClipCreatorBase):
     label = "Editorial Batchgroup"
 
 
-class CreateShotClip(plugin.FlameCreator):
+class CreateShotClip(plugin.FlameEditorialCreator):
     """Publishable clip"""
 
     identifier = "io.ayon.creators.flame.clip"
@@ -386,6 +382,11 @@ OTIO file.
         "retimedHandles",
         "retimedFramerange",
     }
+
+    def apply_settings(cls, project_settings):
+        super().apply_settings(project_settings)
+        # Disable if not in timeline context.
+        cls.enabled = (lib.CTX.context == "FlameMenuTimeline")
 
     def get_pre_create_attr_defs(self):
 
@@ -1023,7 +1024,9 @@ OTIO file.
         restrict_to_selection = create_settings[
             "collectSelectedInstance"]
 
-        current_sequence = lib.get_current_sequence(lib.CTX.selection)
+        selection = lib.CTX.selection or []
+        current_sequence = lib.get_current_sequence(selection)
+
         # only get selected segments if user selected any
         # and settings are enabled
         segments = lib.get_sequence_segments(

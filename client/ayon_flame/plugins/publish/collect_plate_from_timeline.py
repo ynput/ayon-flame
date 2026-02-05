@@ -1,14 +1,15 @@
+from pprint import pformat
+
 import pyblish
 
-import ayon_flame.api as ayfapi
 from ayon_flame.otio import utils
 
 
-class CollectPlate(pyblish.api.InstancePlugin):
-    """Collect new plates."""
+class CollectTimelinePlate(pyblish.api.InstancePlugin):
+    """Collect new plates from Timeline."""
 
     order = order = pyblish.api.CollectorOrder - 0.48
-    label = "Collect Plate"
+    label = "Collect Plate from Timeline"
     hosts = ["flame"]
     families = ["plate"]
 
@@ -17,11 +18,19 @@ class CollectPlate(pyblish.api.InstancePlugin):
         Args:
             instance (pyblish.Instance): The shot instance to update.
         """
+        if (
+            instance.data.get("flame_context")
+            and instance.data["flame_context"] != "FlameMenuTimeline"
+        ):
+            # Plate instance could also come from Reel and Media panel clips.
+            self.log.debug("Current plate instance is not part of a timeline.")
+            return
+
         instance.data["families"].append("clip")
 
         # Adjust instance data from parent otio timeline.
         otio_timeline = instance.context.data["otioTimeline"]
-        otio_clip, marker = utils.get_marker_from_clip_index(
+        otio_clip, _ = utils.get_marker_from_clip_index(
             otio_timeline, instance.data["clip_index"]
         )
         if not otio_clip:
@@ -55,14 +64,12 @@ class CollectPlate(pyblish.api.InstancePlugin):
             edit_shared_data[parent_instance_id]
         )
 
-        segment_item = instance.data["item"]
-        sequence = ayfapi.get_current_sequence(ayfapi.CTX.selection)
-        with ayfapi.maintained_segment_selection(sequence):
-            clip_data = ayfapi.get_segment_attributes(segment_item)
-
+        clip_data = instance.data["clipData"]
         version_data = instance.data.setdefault("versionData", {})
         version_data["colorSpace"] = clip_data["colour_space"]
         instance.data["colorspace"] = clip_data["colour_space"]
 
         instance.data["shotDurationFromSource"] = instance.data.get(
             "retimedFramerange")
+
+        self.log.debug(f"__ inst_data: {pformat(instance.data)}")
