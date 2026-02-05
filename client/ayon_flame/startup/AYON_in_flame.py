@@ -108,9 +108,13 @@ all menu objects as flame_apps.
 
 try:
     import flame  # noqa
-    app_initialized(parent=None)
 except ImportError:
     print("!!!! not able to import flame module !!!!")
+
+try:
+    app_initialized(parent=None)
+except Exception as error:
+    print(f"!!!! not able to initialize the app: {error} !!!!")
 
 
 def rescan_hooks():

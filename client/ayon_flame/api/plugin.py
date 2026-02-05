@@ -41,10 +41,9 @@ class FlameCreator(Creator):
 
     def __init__(self, *args, **kwargs):
         super(Creator, self).__init__(*args, **kwargs)
-        project_settings = self.create_context.get_current_project_settings()
-        self.presets = project_settings["flame"]["create"].get(
-            self.__class__.__name__, {}
-        )
+        self.presets = get_current_project_settings()[
+            "flame"]["create"].get(self.__class__.__name__, {})
+        self.project = flib.get_current_project()
 
     def create(self, product_name, instance_data, pre_create_data):
         """Prepare data for new instance creation.
@@ -55,14 +54,33 @@ class FlameCreator(Creator):
             pre_create_data(dict): Data based on pre creation attributes.
                 Those may affect how creator works.
         """
-        # adding basic current context resolve objects
-        self.project = flib.get_current_project()
-        self.sequence = flib.get_current_sequence(flib.CTX.selection)
+        instance_data["flame_context"] = flib.CTX.context
+        selected = pre_create_data.get("use_selection", False)
+        self.selected = flib.get_clips_in_reels(
+            self.project,
+            selected=selected
+        )
 
+
+class FlameEditorialCreator(FlameCreator):
+    """Creator class wrapper for Editorial usage.
+    """
+
+    def create(self, product_name, instance_data, pre_create_data):
+        """Prepare data for new instance creation.
+
+        Args:
+            product_name(str): Product name of created instance.
+            instance_data(dict): Base data for instance.
+            pre_create_data(dict): Data based on pre creation attributes.
+                Those may affect how creator works.
+        """
+        super().create(product_name, instance_data, pre_create_data)
+        self.sequence = flib.get_current_sequence(flib.CTX.selection)
         selected = pre_create_data.get("use_selection", False)
         self.selected = flib.get_sequence_segments(
             self.sequence,
-            selected=selected
+            selected=selected,
         )
 
 
