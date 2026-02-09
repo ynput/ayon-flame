@@ -3,6 +3,9 @@ import copy
 from collections import OrderedDict
 from pprint import pformat
 import pyblish
+
+import ayon_api
+
 import ayon_flame.api as ayfapi
 import ayon_core.pipeline as op_pipeline
 from ayon_core.pipeline.workfile import get_workdir
@@ -90,6 +93,10 @@ class IntegrateBatchGroup(pyblish.api.InstancePlugin):
             loader.__name__: loader
             for loader in op_pipeline.discover_loader_plugins()
         }
+        self.log.debug(
+            "__ loaders_by_name: %s",
+            pformat(loaders_by_name)
+        )
 
         # get all published representations
         published_representations = instance.data["published_representations"]
@@ -114,19 +121,23 @@ class IntegrateBatchGroup(pyblish.api.InstancePlugin):
             if repr_data.get("load_to_batch_group")
         }
 
-        self.log.debug("__ loader_name_by_repre_id: {}".format(pformat(
-            loader_name_by_repre_id)))
+        self.log.debug(
+            "__ loader_name_by_repre_id: %s",
+            pformat(loader_name_by_repre_id)
+        )
 
         # get representation context from the repre_id
         repre_contexts = op_pipeline.load.get_repres_contexts(
             loader_name_by_repre_id.keys())
 
-        self.log.debug("__ repre_contexts: {}".format(pformat(
-            repre_contexts)))
+        self.log.debug(
+            "__ repre_contexts: %s",
+            pformat(repre_contexts)
+        )
 
         # loop all returned repres from repre_context dict
         for repre_id, repre_context in repre_contexts.items():
-            self.log.debug("__ repre_id: {}".format(repre_id))
+            self.log.debug("__ repre_id: %s", repre_id)
             # get loader name by representation id
             loader_name = (
                 loader_name_by_repre_id[repre_id]["loader"]
@@ -148,20 +159,17 @@ class IntegrateBatchGroup(pyblish.api.InstancePlugin):
                         })
                 except op_pipeline.load.IncompatibleLoaderError as msg:
                     self.log.error(
-                        "Check allowed representations for Loader `{}` "
-                        "in settings > error: {}".format(
-                            loader_plugin.__name__, msg))
+                        "Check allowed representations for Loader `%s` "
+                        "in settings > error: %s", loader_plugin.__name__, msg)
                     self.log.error(
-                        "Representaton context >>{}<< is not compatible "
-                        "with loader `{}`".format(
-                            pformat(repre_context), loader_plugin.__name__
-                        )
+                        "Representaton context >>%s<< is not compatible "
+                        "with loader `%s`", pformat(repre_context),
+                        loader_plugin.__name__
                     )
             else:
                 self.log.warning(
                     "Something got wrong and there is not Loader found for "
-                    "following data: {}".format(
-                        pformat(loader_name_by_repre_id))
+                    "following data: %s", pformat(loader_name_by_repre_id)
                 )
 
     def _get_batch_group(self, instance, task_data):
@@ -325,7 +333,11 @@ class IntegrateBatchGroup(pyblish.api.InstancePlugin):
     def _get_shot_task_dir_path(self, instance, task_data):
         project_entity = instance.data["projectEntity"]
         folder_entity = instance.data["folderEntity"]
-        task_entity = instance.data["taskEntity"]
+        task_entity = ayon_api.get_task_by_name(
+            project_entity["name"],
+            folder_entity["id"],
+            task_data["name"],
+        )
         anatomy = instance.context.data["anatomy"]
         project_settings = instance.context.data["project_settings"]
 
