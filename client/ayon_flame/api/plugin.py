@@ -767,8 +767,20 @@ class ClipLoader(LoaderPlugin):
         else:
             opc.name = clip_name
 
-        if message_args:
-            flame.messages.show_in_dialog(*message_args)
+        if not version_entity["taskId"]:
+            flame.messages.show_in_dialog(
+                "Import Warning",
+                (
+                    "Version doesn't have set task."
+                    "\nUnable to import any other versions alongside"
+                    " the current selection."
+                    "\nThis may result in unordered versions within the"
+                    " clip. Deleting the clip and reloading it will resolve"
+                    " this issue."
+                ),
+                "warning",
+                ["OK"],
+            )
 
         return opc
 
