@@ -697,17 +697,6 @@ class ClipLoader(LoaderPlugin):
         rename_clip = clip_solver.out_clip_data is None
         message_args = None
         if not version_entity["taskId"]:
-            message_args = (
-                "Import Warning",
-                "It looks like the task entity for this version has been "
-                "removed from the database.\n"
-                "Unable to import any other versions alongside the current "
-                "selection.\nThis may result in unordered versions within the"
-                " clip. Deleting the clip and reloading it will resolve this "
-                "issue.",
-                "warning",
-                ["OK"],
-            )
             all_versions = [version_entity]
         else:
             all_versions = ayon_api.get_versions(
