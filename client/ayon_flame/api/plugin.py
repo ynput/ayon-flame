@@ -695,7 +695,6 @@ class ClipLoader(LoaderPlugin):
             openclip_path, self.layer_rename_patterns
         )
         rename_clip = clip_solver.out_clip_data is None
-        message_args = None
         if not version_entity["taskId"]:
             all_versions = [version_entity]
         else:
