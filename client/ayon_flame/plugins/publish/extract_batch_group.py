@@ -136,7 +136,7 @@ class ExtractBatchgroup(publish.Extractor):
                 "Creating new batch group: %s",
                 batchgroup_name
             )
-            update_batch_group = None,
+            update_batch_group = None
 
         else:
             self.log.info(
