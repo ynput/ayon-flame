@@ -79,6 +79,7 @@ class FlamePostLaunch(PostLaunchHook):
             }
 
         bookmarks = []
+        all_bookmark_paths = set()
         for label, path in bookmark_paths.items():
             bookmarks.append(
                 {
@@ -87,13 +88,14 @@ class FlamePostLaunch(PostLaunchHook):
                     "Visibility": "Global"
                 }
             )
+            all_bookmark_paths.add(path)
 
         for section in data["DlBookmark"]["Sections"]:
             if section["Section"] == "Project":
                 filtered_bookmarks = [
                     bookmark
                     for bookmark in section["Bookmarks"]
-                    if bookmark["Path"] not in bookmark_paths
+                    if bookmark["Path"] not in all_bookmark_paths
                 ]
                 # insert directly after the default "Project Home" bookmark
                 section["Bookmarks"] = (
