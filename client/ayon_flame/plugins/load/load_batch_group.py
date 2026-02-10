@@ -57,8 +57,9 @@ class LoadBatchgroup(LoaderPlugin):
         folder_path, batch_file_name = self._extract_in_temp_dir(path)
         full_path = os.path.join(folder_path, batch_file_name)
 
-        desktop = flame.project.current_project.current_workspace.desktop
-        new_batch_group = desktop.import_batch_group(full_path)
+        # TODO: replace current batch group content.
+        # should change this.
+        flame.batch.load_setup(full_path)
 
         #TODO: contenerize
 
