@@ -166,8 +166,8 @@ def save_as_consolidated_json(bgroup, filepath, temporary_folder):
     """ Export provided batch group as a consolidated json file.
     """
     expected_bgroup_folder = pathlib.Path(temporary_folder)
-    bgroup_file = expected_bgroup_folder / f"{str(bgroup.name)}.batch"
-    bgroup.export_batch_group(str(bgroup_file))
+    bgroup_file = expected_bgroup_folder / f"{bgroup.name}.batch"
+    bgroup.save_setup(str(bgroup_file))
 
     if not expected_bgroup_folder.is_dir():
         raise RuntimeError(

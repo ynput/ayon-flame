@@ -28,6 +28,13 @@ class LoadBatchgroup(LoaderPlugin):
         temp_dir = tempfile.mkdtemp()
         batch_file = None
         for relative_file, content in data.items():
+            # create sub-folder if needed
+            parent_dir = os.path.dirname(relative_file)
+            expected_parent_dir = os.path.join(temp_dir, parent_dir)
+            if parent_dir and not os.path.exists(expected_parent_dir):
+                os.makedirs(expected_parent_dir)
+
+            # "extract" file content
             file_path = os.path.join(temp_dir, relative_file)
             with open(file_path, "w") as file_handler:
                 file_handler.write(content)
