@@ -18,61 +18,49 @@ class ExtractBatchgroup(publish.Extractor):
     families = ["batchgroup"]
 
     def process(self, instance):
+        """ Prepare the relevant batchgroup for the product but NOT
+        creating any representation for it just yet. TODO detail over here.
+        """
 
         folder_path = instance.data["folderPath"]
-        attach_to_task = instance.data["attachToTask"]
-        output_node_properties = instance.data["outputNodeProperties"]
-
         batchgroup_name = folder_path.replace("/", "_")
 
-        # update task in anatomy data
-        task_anatomy_data = self._get_anatomy_data_with_current_task(
-            instance, attach_to_task)
-
-        task_workdir = self._get_shot_task_dir_path(
-            instance, task_anatomy_data)
-        self.log.debug(f"__ task_workdir: {task_workdir}")
-
-        # create or get already created batch group
+        # Create or Get batch group to update.
         bgroup = self._get_batch_group(instance, batchgroup_name)
 
-        write_pref_data = self._get_write_node_prefs(
-            task_workdir,
-            task_anatomy_data,
-            output_node_properties,
+        # Add batch group predefined content from settings.
+        write_pref_data = self._get_write_node_prefs(instance)
+        self._add_nodes_to_batch_with_links(
+            bgroup,
+            write_pref_data
         )
 
-        # add batch group content
-        all_batch_nodes = self._add_nodes_to_batch_with_links(
-            bgroup, write_pref_data)
-
-        for name, node in all_batch_nodes.items():
-            self.log.debug(f"name: {name}, dir: {dir(node)}")
-            self.log.debug(f"__ node.attributes: {node.attributes}")
+        # Add batchgroup within the instance
+        # so it can be re-worked by other plugins.
+        instance.data["extracted_batchgroup"] = bgroup
 
         # save bgroup into a temp folder
-        staging_dir = self.staging_dir(instance)
-        self.log.debug(f"Batch group temp folder: {staging_dir}")
-        bgroup.save_setup(staging_dir)
+#        staging_dir = self.staging_dir(instance)
+#        self.log.debug(f"Batch group temp folder: {staging_dir}")
+#        bgroup.save_setup(staging_dir)
         # get bgroup folder and asci batch file and convert all into json
-        _ = f"{batchgroup_name}.json"
-        json_output = {}
-        batchgroup_folder = Path(staging_dir) / batchgroup_name
-        if batchgroup_folder.is_dir():
-            for file_path in batchgroup_folder.rglob("*"):
-                if file_path.is_file():
-                    relative_path = file_path.relative_to(batchgroup_folder)
-                    try:
-                        content = file_path.read_text(encoding="utf-8")
-                        json_output[str(relative_path)] = content
-                    except Exception as e:
-                        self.log.warning(
-                            f"Could not read file {file_path} as text: {e}")
-        else:
-            self.log.warning(
-                f"Batch group folder not found: {batchgroup_folder}"
-            )
-        # add json bgroup representation to instance data
+#        _ = f"{batchgroup_name}.json"
+#        json_output = {}
+#        batchgroup_folder = Path(staging_dir) / batchgroup_name
+#        if batchgroup_folder.is_dir():
+#            for file_path in batchgroup_folder.rglob("*"):
+#                if file_path.is_file():
+#                    relative_path = file_path.relative_to(batchgroup_folder)
+#                    try:
+#                        content = file_path.read_text(encoding="utf-8")
+#                        json_output[str(relative_path)] = content
+#                    except Exception as e:
+#                        self.log.warning(
+#                            f"Could not read file {file_path} as text: {e}")
+#        else:
+#            self.log.warning(
+#                f"Batch group folder not found: {batchgroup_folder}"
+#            )
 
     def _add_nodes_to_batch_with_links(
         self,
@@ -104,9 +92,19 @@ class ExtractBatchgroup(publish.Extractor):
             }
         ]
 
-        # add nodes into batch group
-        return ayfapi.create_batch_group_content(
-            batch_nodes, batch_links, batch_group)
+        batch_nodes = ayfapi.create_batch_group_content(
+            batch_nodes,
+            batch_links,
+            batch_group
+        )
+        for name, node in batch_nodes.items():
+            self.log.debug(
+                "Added batch node name: %s, dir: %s",
+                name, dir(node)
+            )
+            self.log.debug("__ node.attributes: %r", node.attributes)
+
+        return batch_nodes
 
     def _get_batch_group(self, instance, batchgroup_name):
         frame_start = instance.data["frameStart"]
@@ -116,41 +114,35 @@ class ExtractBatchgroup(publish.Extractor):
         frame_duration = (frame_end - frame_start) + 1
 
         batch_data = {
-            "schematic_reels": [
-                "AYON_LoadedReel"
-            ],
+            "schematic_reels": ["AYON_LoadedReel"],
             "handleStart": handle_start,
             "handleEnd": handle_end
         }
-        self.log.debug(f"__ batch_data: {pformat(batch_data)}")
+        self.log.debug("__ batch_data %s", pformat(batch_data))
 
         # check if the batch group already exists
         bgroup = ayfapi.get_batch_group_from_desktop(batchgroup_name)
-
         if not bgroup:
             self.log.info(
-                "Creating new batch group: {}".format(batchgroup_name))
-            # create batch with utils
-            bgroup = ayfapi.create_batch_group(
-                batchgroup_name,
-                frame_start,
-                frame_duration,
-                **batch_data
+                "Creating new batch group: %s",
+                batchgroup_name
             )
+            update_batch_group = None,
 
         else:
             self.log.info(
-                "Updating batch group: {}".format(batchgroup_name))
-            # update already created batch group
-            bgroup = ayfapi.create_batch_group(
-                batchgroup_name,
-                frame_start,
-                frame_duration,
-                update_batch_group=bgroup,
-                **batch_data
+                "Updating batch group: %s",
+                batchgroup_name
             )
+            update_batch_group = bgroup
 
-        return bgroup
+        return ayfapi.create_batch_group(
+            batchgroup_name,
+            frame_start,
+            frame_duration,
+            update_batch_group=update_batch_group,
+            **batch_data
+        )
 
     @staticmethod
     def _get_anatomy_data_with_current_task(instance, task_data):
@@ -175,11 +167,24 @@ class ExtractBatchgroup(publish.Extractor):
 
     def _get_write_node_prefs(
         self,
-        task_workdir,
-        task_anatomy_data,
-        output_node_properties,
+        instance,
     ):
 
+        # update task in anatomy data
+        task_anatomy_data = self._get_anatomy_data_with_current_task(
+            instance,
+            instance.data["attachToTask"]
+        )
+
+        task_workdir = self._get_shot_task_dir_path(
+            instance,
+            task_anatomy_data
+        )
+        self.log.debug(f"__ task_workdir: {task_workdir}")
+
+        # TODO: this function should be simplified with a better
+        # settings management and only one StringTemplate usage.
+        output_node_properties = instance.data["outputNodeProperties"]
         render_dir_path = Path(task_workdir) / "render" / "flame"
 
         # need to make sure the order of keys is correct

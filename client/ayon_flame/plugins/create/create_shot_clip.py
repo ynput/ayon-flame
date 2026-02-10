@@ -560,7 +560,7 @@ OTIO file.
             ),
             BoolDef(
                 "export_batchgroup",
-                label="Include batchgroup",
+                label="Create/Update batchgroup",
                 tooltip="Also generate batchgroup product for the shot",
                 default=self.presets.get("export_batchgroup", False),
             ),
