@@ -49,30 +49,31 @@ class CollectBatchgroup(pyblish.api.InstancePlugin):
         )
 
         # Adjust instance data from parent otio timeline.
-        otio_timeline = instance.context.data["otioTimeline"]
-        otio_clip, _ = utils.get_marker_from_clip_index(
-            otio_timeline, instance.data["clip_index"]
-        )
-        if not otio_clip:
-            raise PublishError(
-                f"Could not retrieve otioClip for shot {instance}"
-            )
+#        otio_timeline = instance.context.data["otioTimeline"]
+#        otio_clip, _ = utils.get_marker_from_clip_index(
+#            otio_timeline, instance.data["clip_index"]
+#        )
+#        if not otio_clip:
+#            raise PublishError(
+#                f"Could not retrieve otioClip for shot {instance}"
+#            )
 
-        instance.data["otioClip"] = otio_clip
+#        instance.data["otioClip"] = otio_clip
 
-        clip_src = instance.data["otioClip"].source_range
-        clip_src_in = clip_src.start_time.to_frames()
-        clip_src_out = clip_src_in + clip_src.duration.to_frames()
+#        clip_src = instance.data["otioClip"].source_range
+#        clip_src_in = clip_src.start_time.to_frames()
+#        clip_src_out = clip_src_in + clip_src.duration.to_frames()
         instance.data.update({
-            "clipInH": clip_src_in,
-            "clipOutH": clip_src_out,
-            "families": ["batchgroup", "clip"],
-            "taskName": self.attach_to_task["task_name"],
+#            "clipInH": clip_src_in,
+#            "clipOutH": clip_src_out,
+            "families": ["batchgroup"],
+#            "taskName": self.attach_to_task["task_name"],
             "attachToTask": self.attach_to_task,
             "outputNodeProperties": self.output_node_properties,
         })
         self.log.info(
-            f"Collected batchgroup workfile products for shot {instance}"
+            "Collected batchgroup workfile products for shot %s",
+            instance,
         )
 
     def _update_parent_shot_instance_tasks(self, instance):
