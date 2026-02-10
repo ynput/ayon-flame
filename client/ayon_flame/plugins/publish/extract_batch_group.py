@@ -39,28 +39,35 @@ class ExtractBatchgroup(publish.Extractor):
         # so it can be re-worked by other plugins.
         instance.data["extracted_batchgroup"] = bgroup
 
-        # save bgroup into a temp folder
-#        staging_dir = self.staging_dir(instance)
-#        self.log.debug(f"Batch group temp folder: {staging_dir}")
-#        bgroup.save_setup(staging_dir)
-        # get bgroup folder and asci batch file and convert all into json
-#        _ = f"{batchgroup_name}.json"
-#        json_output = {}
-#        batchgroup_folder = Path(staging_dir) / batchgroup_name
-#        if batchgroup_folder.is_dir():
-#            for file_path in batchgroup_folder.rglob("*"):
-#                if file_path.is_file():
-#                    relative_path = file_path.relative_to(batchgroup_folder)
-#                    try:
-#                        content = file_path.read_text(encoding="utf-8")
-#                        json_output[str(relative_path)] = content
-#                    except Exception as e:
-#                        self.log.warning(
-#                            f"Could not read file {file_path} as text: {e}")
-#        else:
-#            self.log.warning(
-#                f"Batch group folder not found: {batchgroup_folder}"
-#            )
+        # Create batchgroup representation: consolidated JSON.
+        staging_dir = self.staging_dir(instance)
+        output_json_file = Path(staging_dir) / f"{batchgroup_name}.json"
+        ayfapi.save_as_consolidated_json(
+            bgroup,
+            output_json_file,
+            staging_dir,
+        )
+        self.log.info(
+            "Save batchgroup %s as %s json file.",
+            bgroup.name,
+            output_json_file,
+        )
+
+        # Add as new representation.
+        if "representations" not in instance.data:
+            instance.data["representations"] = []
+
+        repre = {
+            'name': 'json',
+            'ext': 'json',
+            'files': f"{batchgroup_name}.json",
+            "stagingDir": staging_dir,
+        }
+        instance.data["representations"].append(repre)
+        self.log.info(
+            "Added batchgroup representation: %r",
+            repre,
+        )
 
     def _add_nodes_to_batch_with_links(
         self,

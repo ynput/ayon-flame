@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import contextlib
+import json
+import pathlib
 
 import flame
 from ayon_core.lib import Logger
@@ -158,3 +160,36 @@ def create_batch_group_content(batch_nodes, batch_links, batch_group=None):
     batch_group.organize()
 
     return all_batch_nodes
+
+
+def save_as_consolidated_json(bgroup, filepath, temporary_folder):
+    """ Export provided batch group as a consolidated json file.
+    """
+    bgroup.save_setup(temporary_folder)
+    expected_bgroup_folder = pathlib.Path(temporary_folder) / bgroup.name
+
+    if expected_bgroup_folder.is_dir():
+        raise RuntimeError(
+            f"Unable to save batchgroup to folder: {expected_bgroup_folder}."
+        )
+
+    # Concatenate all intermediary files as 1 single consolidated JSON.
+    json_output = {}
+    for file_path in expected_bgroup_folder.rglob("*"):
+        if file_path.is_file():
+            relative_path = file_path.relative_to(expected_bgroup_folder)
+            try:
+                content = file_path.read_text(encoding="utf-8")
+                json_output[str(relative_path)] = content
+
+            except Exception as error:
+                raise RuntimeError(
+                    f"Could not encode file {file_path} as text: {error}"
+                ) from error
+
+    with open(filepath, "w") as file_handler:
+        json.dump(
+            json_output,
+            file_handler,
+            indent=4
+        )
