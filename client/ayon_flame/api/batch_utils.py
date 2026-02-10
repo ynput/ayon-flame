@@ -5,9 +5,6 @@ import json
 import pathlib
 
 import flame
-from ayon_core.lib import Logger
-
-log = Logger.get_logger(__name__)
 
 
 def create_batch_group(
