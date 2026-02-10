@@ -107,11 +107,20 @@ class ExtractBatchgroup(publish.Extractor):
         return batch_nodes
 
     def _get_batch_group(self, instance, batchgroup_name):
-        frame_start = instance.data["frameStart"]
-        frame_end = instance.data["frameEnd"]
-        handle_start = instance.data["handleStart"]
-        handle_end = instance.data["handleEnd"]
-        frame_duration = (frame_end - frame_start) + 1
+        parent_instance_id = instance.data["parent_instance_id"]
+        parent_instance = None
+
+        # Find parent instance from context
+        for inst in instance.context:
+            if inst.data["instance_id"] == parent_instance_id:
+                parent_instance = inst
+                break
+
+        frame_start = parent_instance.data["frameStart"]
+        frame_end = parent_instance.data["frameEnd"]
+        handle_start = parent_instance.data["handleStart"]
+        handle_end = parent_instance.data["handleEnd"]
+        frame_duration = frame_end - frame_start + 1
 
         batch_data = {
             "schematic_reels": ["AYON_LoadedReel"],
