@@ -2,7 +2,6 @@ import pyblish.api
 
 from ayon_core.pipeline import PublishError
 
-from ayon_flame.otio import utils
 
 
 class CollectBatchgroup(pyblish.api.InstancePlugin):
