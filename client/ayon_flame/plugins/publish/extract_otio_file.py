@@ -15,6 +15,13 @@ class ExtractOTIOFile(publish.Extractor):
     hosts = ["flame"]
 
     def process(self, instance):
+
+        # Not interested in flame batchgroup workfile.
+        creator_identifier = instance.data["creator_identifier"]
+        if creator_identifier == "io.ayon.creators.flame.batchgroup":
+            self.log.debug("Batchgroup workfile, ignore.")
+            return
+
         # create representation data
         if "representations" not in instance.data:
             instance.data["representations"] = []
