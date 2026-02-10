@@ -3,7 +3,6 @@ import pyblish.api
 from ayon_core.pipeline import PublishError
 
 
-
 class CollectBatchgroup(pyblish.api.InstancePlugin):
     """Collect Shot related batchgroup workfile products."""
 
@@ -47,26 +46,8 @@ class CollectBatchgroup(pyblish.api.InstancePlugin):
             edit_shared_data[parent_instance_id]
         )
 
-        # Adjust instance data from parent otio timeline.
-#        otio_timeline = instance.context.data["otioTimeline"]
-#        otio_clip, _ = utils.get_marker_from_clip_index(
-#            otio_timeline, instance.data["clip_index"]
-#        )
-#        if not otio_clip:
-#            raise PublishError(
-#                f"Could not retrieve otioClip for shot {instance}"
-#            )
-
-#        instance.data["otioClip"] = otio_clip
-
-#        clip_src = instance.data["otioClip"].source_range
-#        clip_src_in = clip_src.start_time.to_frames()
-#        clip_src_out = clip_src_in + clip_src.duration.to_frames()
         instance.data.update({
-#            "clipInH": clip_src_in,
-#            "clipOutH": clip_src_out,
             "families": ["batchgroup"],
-#            "taskName": self.attach_to_task["task_name"],
             "attachToTask": self.attach_to_task,
             "outputNodeProperties": self.output_node_properties,
         })

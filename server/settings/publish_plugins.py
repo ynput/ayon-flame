@@ -25,7 +25,8 @@ class AddTasksModel(BaseSettingsModel):
     )
     create_batch_group: bool = SettingsField(
         True,
-        title="Create batch group"
+        title="Create batch group",
+        description="[deprecated] Use CollectShotsModel.add_tasks instead."
     )
 
 
@@ -328,9 +329,12 @@ class ExtractProductResourcesModel(BaseSettingsModel):
 
 
 class IntegrateBatchGroupModel(BaseSettingsModel):
+    """[deprecated] Use CollectBatchgroup settings instead."""
+
     enabled: bool = SettingsField(
         False,
-        title="Enabled"
+        title="Enabled",
+        description="[deprecated] Use CollectBatchgroup settings instead.",
     )
 
 

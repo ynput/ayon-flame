@@ -25,6 +25,11 @@ class IntegrateBatchGroupLegacy(pyblish.api.InstancePlugin):
     default_loader = "LoadClip"
 
     def process(self, instance):
+        self.warning(
+            "This plugin is part of the legacy batchgroup process "
+            "and should not be used any more. Please refer to the batchgroup "
+            "product instance workflow instead."
+        )
         add_tasks = instance.data["flameAddTasks"]
 
         # iterate all tasks from settings
