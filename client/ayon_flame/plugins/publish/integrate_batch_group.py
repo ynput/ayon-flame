@@ -11,9 +11,12 @@ from ayon_core.pipeline.load import (
 class IntegrateBatchgroup(pyblish.api.InstancePlugin):
     """Extract + Integrate Batchgroup Product data."""
 
+    order = pyblish.api.IntegratorOrder + 0.45
     label = "Integrate Batchgroup"
     hosts = ["flame"]
     families = ["batchgroup"]
+
+    settings_category = "flame"
 
     default_loader = "LoadClip"
 
@@ -58,11 +61,22 @@ class IntegrateBatchgroup(pyblish.api.InstancePlugin):
         else:
             return []
 
-        return [
-            repr_data
+        repre_names_to_load = {
+            repr_data["name"]: repr_data
             for repr_data in plate_instance.data["representations"]
             if repr_data.get("load_to_batch_group")
-        ]
+        }
+
+        published_representations = instance.data["published_representations"]
+        repre_plate_to_load = []
+        for repre_id, repre_info in published_representations.items():
+            repr_name = repre_info["representation"]["name"]
+            if repr_name in repre_names_to_load:
+                repre_info_copy = repre_info.copy()
+                repre_info_copy.update(repre_names_to_load[repr_name])
+                repre_plate_to_load.append(repre_info_copy)
+
+        return repre_plate_to_load
 
 
     def _load_clip_to_context(self, instance, bgroup, plate_repres):
