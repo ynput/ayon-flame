@@ -54,7 +54,7 @@ class IntegrateBatchgroup(pyblish.api.InstancePlugin):
 
             if (
                 inst_parent_instance_id == parent_instance_id
-                and creator_identifier != "io.ayon.creators.flame.plate"
+                and creator_identifier == "io.ayon.creators.flame.plate"
             ):
                 plate_instance = inst
                 break
@@ -67,13 +67,14 @@ class IntegrateBatchgroup(pyblish.api.InstancePlugin):
             if repr_data.get("load_to_batch_group")
         }
 
-        published_representations = instance.data["published_representations"]
+        published_repres = plate_instance.data["published_representations"]
         repre_plate_to_load = []
-        for repre_id, repre_info in published_representations.items():
+        for repre_id, repre_info in published_repres.items():
             repr_name = repre_info["representation"]["name"]
             if repr_name in repre_names_to_load:
                 repre_info_copy = repre_info.copy()
                 repre_info_copy.update(repre_names_to_load[repr_name])
+                repre_info_copy["id"] = repre_id
                 repre_plate_to_load.append(repre_info_copy)
 
         return repre_plate_to_load
@@ -115,7 +116,7 @@ class IntegrateBatchgroup(pyblish.api.InstancePlugin):
                     loader_plugin,
                     repre_context,
                     data={
-                        "workdir": self.task_workdir,
+#                        "workdir": self.task_workdir,  TODO investigate
                         "batch": bgroup
                     }
                 )
