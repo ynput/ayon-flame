@@ -915,7 +915,7 @@ class ExtractProductResources(
             # Get or create a temporary library for rendering
             workspace = flame.projects.current_project.current_workspace
             desktop = workspace.desktop
-           
+
             # Search for existing temp library and remove it
             for library in workspace.libraries:
                 if library.name == "AYON_TEMP_EXPORT":
