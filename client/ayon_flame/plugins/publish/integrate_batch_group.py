@@ -1,7 +1,10 @@
 import pyblish
+import os
 
 import ayon_api
+from ayon_api.operations import OperationsSession
 
+from ayon_core.lib import source_hash
 from ayon_core.pipeline.load import (
     get_representation_context,
     discover_loader_plugins,
@@ -9,6 +12,8 @@ from ayon_core.pipeline.load import (
     IncompatibleLoaderError
 )
 from ayon_core.pipeline.workfile import get_workdir
+
+import ayon_flame.api as ayfapi
 
 
 class IntegrateBatchgroup(pyblish.api.InstancePlugin):
@@ -42,6 +47,7 @@ class IntegrateBatchgroup(pyblish.api.InstancePlugin):
         self._load_clip_to_context(instance, bgroup, plate_repres)
 
         # Override batchgroup publish.
+        self.update_repre_entity(instance, bgroup)
 
     def _find_plate_representations(self, instance):
         """ Gather representations to load/update in the
@@ -117,7 +123,7 @@ class IntegrateBatchgroup(pyblish.api.InstancePlugin):
             self.log.debug("Task work dir: %s", task_workdir)
 
             try:
-                opc = load_with_repre_context(
+                load_with_repre_context(
                     loader_plugin,
                     repre_context,
                     data={
@@ -134,13 +140,12 @@ class IntegrateBatchgroup(pyblish.api.InstancePlugin):
                 )
                 raise
 
+            # TODO: investigate, only available from 2026.2 ?
             # Update resulting openclip to latest version.
-            ops = opc.format_specific_options
-            ops.scan_for_versions()
-            available_versions = ops.versions
-
-            if available_versions:
-                ops.current_version = available_versions[-1]
+            # FI-00398 Python: Possibility to change the Open Clip version
+            #ops = opc.clip.format_specific_options
+            #ops.refresh()
+            #available_versions = ops.versions
 
     def _get_shot_task_dir_path(self, instance):
         task_data = instance.data["attachToTask"]
@@ -162,3 +167,36 @@ class IntegrateBatchgroup(pyblish.api.InstancePlugin):
             anatomy=anatomy,
             project_settings=project_settings
         )
+
+
+    def update_repre_entity(self, instance, bgroup):
+        staging_dir = self.staging_dir(instance)
+        repre = instance.data["published_representations"][0]
+
+        ayfapi.save_as_consolidated_json(
+            bgroup,
+            output_json_file,
+            staging_dir,
+        )
+        self.log.info(
+            "Erase updated batchgroup %s as %s json file.",
+            bgroup.name,
+            output_json_file,
+        )
+
+        file_data.update(
+            {
+                "hash": source_hash(path),
+                "size": os.path.getsize(path),
+            }
+        )
+        op_session = OperationsSession()
+        op_session.update_entity(
+            instance.data["projectEntity"]["name"],
+            "representation",
+            repre["id"],
+            {"files": file_data},
+        )
+
+        op_session.commit()
+        self.log.info("Updated batchgroup representation.")
