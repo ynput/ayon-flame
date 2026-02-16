@@ -1,11 +1,14 @@
 import pyblish
 
+import ayon_api
+
 from ayon_core.pipeline.load import (
     get_representation_context,
     discover_loader_plugins,
     load_with_repre_context,
     IncompatibleLoaderError
 )
+from ayon_core.pipeline.workfile import get_workdir
 
 
 class IntegrateBatchgroup(pyblish.api.InstancePlugin):
@@ -110,13 +113,14 @@ class IntegrateBatchgroup(pyblish.api.InstancePlugin):
                 instance.data["projectEntity"]["name"],
                 repre["id"],
             )
+            task_workdir = self._get_shot_task_dir_path(instance)
 
             try:
                 load_with_repre_context(
                     loader_plugin,
                     repre_context,
                     data={
-#                        "workdir": self.task_workdir,  TODO investigate
+                        "workdir": task_workdir,
                         "batch": bgroup
                     }
                 )
@@ -128,3 +132,24 @@ class IntegrateBatchgroup(pyblish.api.InstancePlugin):
                     error
                 )
                 raise
+
+    def _get_shot_task_dir_path(self, instance):
+        task_data = instance.data["attachToTask"]
+        project_entity = instance.data["projectEntity"]
+        folder_entity = instance.data["folderEntity"]
+        task_entity = ayon_api.get_task_by_name(
+            project_entity["name"],
+            folder_entity["id"],
+            task_data["name"],
+        )
+        anatomy = instance.context.data["anatomy"]
+        project_settings = instance.context.data["project_settings"]
+
+        return get_workdir(
+            project_entity,
+            folder_entity,
+            task_entity,
+            "flame",
+            anatomy=anatomy,
+            project_settings=project_settings
+        )
