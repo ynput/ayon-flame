@@ -916,11 +916,12 @@ class ExtractProductResources(
             workspace = flame.projects.current_project.current_workspace
             desktop = workspace.desktop
 
-            # Search for existing temp library and remove it
+            # Delete any existing temp library and force re-create it.
+            # Copying a segment to this existing library fails for some reason.
             for library in workspace.libraries:
                 if library.name == "AYON_TEMP_EXPORT":
                     flame.delete(library)
-                    self.log.info("Deleted existing library: AYON_TEMP_EXPORT")
+                    self.log.debug("Deleted existing library: AYON_TEMP_EXPORT")
                     break
 
             # Create a temp library
