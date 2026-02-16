@@ -117,7 +117,7 @@ class IntegrateBatchgroup(pyblish.api.InstancePlugin):
             self.log.debug("Task work dir: %s", task_workdir)
 
             try:
-                load_with_repre_context(
+                opc = load_with_repre_context(
                     loader_plugin,
                     repre_context,
                     data={
@@ -134,6 +134,14 @@ class IntegrateBatchgroup(pyblish.api.InstancePlugin):
                 )
                 raise
 
+            # Update resulting openclip to latest version.
+            ops = opc.format_specific_options
+            ops.scan_for_versions()
+            available_versions = ops.versions
+
+            if available_versions:
+                ops.current_version = available_versions[-1]
+
     def _get_shot_task_dir_path(self, instance):
         task_data = instance.data["attachToTask"]
         project_entity = instance.data["projectEntity"]
@@ -141,7 +149,7 @@ class IntegrateBatchgroup(pyblish.api.InstancePlugin):
         task_entity = ayon_api.get_task_by_name(
             project_entity["name"],
             folder_entity["id"],
-            task_data["name"],
+            task_data["task_name"],
         )
         anatomy = instance.context.data["anatomy"]
         project_settings = instance.context.data["project_settings"]
