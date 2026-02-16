@@ -25,6 +25,23 @@ class IntegrateBatchGroupLegacy(pyblish.api.InstancePlugin):
     default_loader = "LoadClip"
 
     def process(self, instance):
+        # If an existing sibling batchgroup instance exists
+        # and is active, ignore this.
+        parent_instance_id = instance.data["parent_instance_id"]
+        for inst in instance.context:
+            creator_identifier = inst.data["creator_identifier"]
+            inst_parent_instance_id = inst.data.get("parent_instance_id")
+
+            if (
+                inst_parent_instance_id == parent_instance_id
+                and creator_identifier == "io.ayon.creators.flame.batchgroup"
+            ):
+                self.log.info(
+                    "Existing batchgroup instance associated to the "
+                    "shot, ignore deprecated integration plugin."
+                )
+                return
+
         self.log.warning(
             "This plugin is part of the legacy batchgroup process "
             "and should not be used any more. Please refer to the batchgroup "
