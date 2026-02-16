@@ -114,6 +114,7 @@ class IntegrateBatchgroup(pyblish.api.InstancePlugin):
                 repre["id"],
             )
             task_workdir = self._get_shot_task_dir_path(instance)
+            self.log.debug("Task work dir: %s", task_workdir)
 
             try:
                 load_with_repre_context(
