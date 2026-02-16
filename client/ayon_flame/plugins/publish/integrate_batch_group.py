@@ -11,6 +11,7 @@ from ayon_core.pipeline.load import (
     load_with_repre_context,
     IncompatibleLoaderError
 )
+from ayon_core.pipeline.publish import get_instance_staging_dir
 from ayon_core.pipeline.workfile import get_workdir
 
 import ayon_flame.api as ayfapi
@@ -141,13 +142,17 @@ class IntegrateBatchgroup(pyblish.api.InstancePlugin):
                 raise
 
             # TODO: investigate, only available from 2026.2 ?
-            # Update resulting openclip to latest version.
+            # Update resulting openclip to latest version. Currently the
+            # published version is available from the "Source Version" but
+            # OpenClip does not switch automatically to it.
             # FI-00398 Python: Possibility to change the Open Clip version
             #ops = opc.clip.format_specific_options
             #ops.refresh()
             #available_versions = ops.versions
 
     def _get_shot_task_dir_path(self, instance):
+        """ Retrieve shot/task directory path.
+        """
         task_data = instance.data["attachToTask"]
         project_entity = instance.data["projectEntity"]
         folder_entity = instance.data["folderEntity"]
@@ -170,8 +175,16 @@ class IntegrateBatchgroup(pyblish.api.InstancePlugin):
 
 
     def update_repre_entity(self, instance, bgroup):
-        staging_dir = self.staging_dir(instance)
-        repre = instance.data["published_representations"][0]
+        """ Post-integrate logic.
+        At this moment a batchgroup representation was already
+        created by extract_batch_group and integrated.
+        We need to edit it to inject the published plate paths.
+        """
+        staging_dir = get_instance_staging_dir(instance)
+        repre_info = tuple(
+            instance.data["published_representations"].values()
+        )[0]
+        output_json_file = repre_info["published_files"][0]
 
         ayfapi.save_as_consolidated_json(
             bgroup,
@@ -184,18 +197,25 @@ class IntegrateBatchgroup(pyblish.api.InstancePlugin):
             output_json_file,
         )
 
+        repre_data = repre_info["representation"]
+        file_data = repre_data["files"][0]
         file_data.update(
             {
-                "hash": source_hash(path),
-                "size": os.path.getsize(path),
+                "hash": source_hash(output_json_file),
+                "size": os.path.getsize(output_json_file),
             }
+        )
+        self.log.debug(
+            "Updated representation %s with files data %r.",
+            repre_data["id"],
+            file_data,
         )
         op_session = OperationsSession()
         op_session.update_entity(
             instance.data["projectEntity"]["name"],
             "representation",
-            repre["id"],
-            {"files": file_data},
+            repre_data["id"],
+            {"files": [file_data]},
         )
 
         op_session.commit()
