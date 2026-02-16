@@ -101,14 +101,14 @@ class IntegrateBatchgroup(pyblish.api.InstancePlugin):
                 self.log.warning(
                     "Unsupported loader for representation: %r ."
                     "Loader %s is unknown.",
-                    repre,
+                    repre["id"],
                     loader_name,
                 )
                 continue
 
             repre_context = get_representation_context(
                 instance.data["projectEntity"]["name"],
-                repre,
+                repre["id"],
             )
 
             try:
@@ -123,7 +123,7 @@ class IntegrateBatchgroup(pyblish.api.InstancePlugin):
             except IncompatibleLoaderError as error:
                 self.log.error(
                     "Failed to load representaton %r with loader %s: %r",
-                    repre,
+                    repre["id"],
                     loader_name,
                     error
                 )
