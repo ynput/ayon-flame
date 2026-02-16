@@ -25,6 +25,14 @@ class IntegrateBatchGroupLegacy(pyblish.api.InstancePlugin):
     default_loader = "LoadClip"
 
     def process(self, instance):
+        if (
+            instance.data.get("flame_context")
+            and instance.data["flame_context"] != "FlameMenuTimeline"
+        ):
+            # If this is not a place from a timeline ignore this.
+            self.log.debug("Current plate instance is not part of a shot.")
+            return
+
         # If an existing sibling batchgroup instance exists
         # and is active, ignore this.
         parent_instance_id = instance.data["parent_instance_id"]
