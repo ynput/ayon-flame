@@ -915,19 +915,20 @@ class ExtractProductResources(
             # Get or create a temporary library for rendering
             workspace = flame.projects.current_project.current_workspace
             desktop = workspace.desktop
-            temp_library = None
 
-            # Search for existing temp library
+            # Delete any existing temp library and force re-create it.
+            # Copying a segment to this existing library fails for some reason.
             for library in workspace.libraries:
                 if library.name == "AYON_TEMP_EXPORT":
-                    temp_library = library
-                    self.log.info("Found temporary library: AYON_TEMP_EXPORT")
+                    flame.delete(library)
+                    self.log.debug(
+                        "Deleted existing library: AYON_TEMP_EXPORT"
+                    )
                     break
 
-            else:
-                # Create a temp library if it doesn't exist
-                temp_library = workspace.create_library("AYON_TEMP_EXPORT")
-                self.log.info("Created temporary library: AYON_TEMP_EXPORT")
+            # Create a temp library
+            temp_library = workspace.create_library("AYON_TEMP_EXPORT")
+            self.log.info("Created temporary library: AYON_TEMP_EXPORT")
 
             # Duplicate/copy the segment to create a clip
             segment.selected = True
