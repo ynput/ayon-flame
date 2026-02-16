@@ -921,7 +921,9 @@ class ExtractProductResources(
             for library in workspace.libraries:
                 if library.name == "AYON_TEMP_EXPORT":
                     flame.delete(library)
-                    self.log.debug("Deleted existing library: AYON_TEMP_EXPORT")
+                    self.log.debug(
+                        "Deleted existing library: AYON_TEMP_EXPORT"
+                    )
                     break
 
             # Create a temp library
