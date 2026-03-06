@@ -256,13 +256,12 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
         parent_instance = instance.creator_attributes.get("parent_instance")
         current_sequence = lib.get_current_sequence(lib.CTX.selection)
 
+        gui_tracks = []
         if current_sequence is not None:
             gui_tracks = [
                 {"value": tr_name, "label": f"Track: {tr_name}"}
                 for tr_name in get_video_track_names(current_sequence)
             ]
-        else:
-            gui_tracks = []
 
         instance_attributes = [
             TextDef(
@@ -397,13 +396,12 @@ OTIO file.
     {_sequence_}: name of parent sequence (timeline)"""
 
         current_sequence = lib.get_current_sequence(lib.CTX.selection)
+        gui_tracks = []
         if current_sequence is not None:
             gui_tracks = [
                 {"value": tr_name, "label": f"Track: {tr_name}"}
                 for tr_name in get_video_track_names(current_sequence)
             ]
-        else:
-            gui_tracks = []
 
         plate_product_types = self.presets["plate_product_types"]
         if not plate_product_types:
@@ -607,8 +605,8 @@ OTIO file.
 
         disabled_attributes = self._get_disabled_attributes()
         return [
-            attr_def for attr_def in attr_defs
-
+            attr_def
+            for attr_def in attr_defs
             # include only if enabled as overridable in settings when
             # the attribute is overridable
             if attr_def.key not in disabled_attributes
@@ -693,10 +691,10 @@ OTIO file.
             # convert track item to timeline media pool item
             publish_clip = ayfapi.PublishableClip(
                 segment,
-                log=self.log,
                 pre_create_data=pre_create_data,
                 data=segment_instance_data,
                 rename_index=idx,
+                log=self.log,
             )
 
             segment = publish_clip.convert()
@@ -707,8 +705,7 @@ OTIO file.
 
             segment_instance_data.update(publish_clip.marker_data)
             self.log.info(
-                "Processing track item data: {} (index: {})".format(
-                    segment, idx)
+                f"Processing track item data: {segment} (index: {idx})"
             )
 
             # Delete any existing instances previously generated for the clip.
@@ -734,14 +731,14 @@ OTIO file.
                 pre_create_data.get("export_audio", False)
             )
 
-            enabled_creators = tuple(
-                cre for cre, enabled in all_creators.items() if enabled)
             clip_instances = {}
             shot_folder_path = segment_instance_data["folderPath"]
             shot_instances = self.shot_instances.setdefault(
                 shot_folder_path, {})
 
-            for creator_id in enabled_creators:
+            for creator_id, enabled in all_creators.items():
+                if not enabled:
+                    continue
                 creator = self.create_context.creators[creator_id]
                 sub_instance_data = deepcopy(segment_instance_data)
                 creator_attributes = sub_instance_data.setdefault(
