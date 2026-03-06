@@ -552,7 +552,7 @@ OTIO file.
             BoolDef(
                 "export_audio",
                 label="Include audio",
-                tooltip="Process subsets with corresponding audio",
+                tooltip="Process products with corresponding audio",
                 default=self.presets["export_audio"],
             ),
             BoolDef(
