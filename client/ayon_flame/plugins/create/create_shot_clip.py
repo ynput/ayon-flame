@@ -408,6 +408,9 @@ OTIO file.
         # Project settings might be applied to this creator via
         # the inherited `Creator.apply_settings`
         presets = self.presets
+        plate_product_types = self.presets["plate_product_types"]
+        if not plate_product_types:
+            plate_product_types = ["plate"]
 
         attr_defs = [
             BoolDef("use_selection",
@@ -536,10 +539,10 @@ OTIO file.
                 items=['<track_name>', 'main', 'bg', 'fg', 'bg', 'animatic'],
             ),
             EnumDef(
-                "productType",
-                label="Product Type",
-                tooltip="How the product will be used",
-                items=['plate', 'take'],
+                "plate_product_type",
+                label="Plate Product Type",
+                tooltip="How Plate product will be used",
+                items=plate_product_types,
             ),
             EnumDef(
                 "reviewableSource",
@@ -697,7 +700,6 @@ OTIO file.
                 log=self.log,
                 pre_create_data=pre_create_data,
                 data=segment_instance_data,
-                product_type=self.product_type,
                 rename_index=idx,
             )
 
