@@ -138,7 +138,7 @@ class _FlameInstanceCreator(plugin.HiddenFlameCreator):
         if not product_type:
             product_type = self.product_base_type
         new_instance = CreatedInstance(
-            product_base_type=product_base_type,
+            product_base_type=self.product_base_type,
             product_type=product_type,
             product_name=instance_data["productName"],
             data=instance_data,
