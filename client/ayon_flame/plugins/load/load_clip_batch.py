@@ -79,6 +79,7 @@ class LoadClipBatch(ayfapi.ClipLoader):
             "product": {
                 "name": product_entity["name"],
                 "type": product_entity["productType"],
+                "basetype": product_entity["productBaseType"],
             }
         })
 
