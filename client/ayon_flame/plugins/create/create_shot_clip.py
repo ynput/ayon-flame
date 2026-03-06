@@ -204,8 +204,8 @@ class _FlameInstanceCreator(plugin.HiddenFlameCreator):
 class FlameShotInstanceCreator(_FlameInstanceCreator):
     """Shot product type creator class"""
     identifier = "io.ayon.creators.flame.shot"
-    product_type = "shot"
     product_base_type = "shot"
+    product_type = product_base_type
     label = "Editorial Shot"
 
     def get_instance_attr_defs(self):
@@ -307,8 +307,8 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
 class EditorialPlateInstanceCreator(_FlameInstanceClipCreatorBase):
     """Plate product type creator class"""
     identifier = "io.ayon.creators.flame.plate"
-    product_type = "plate"
     product_base_type = "plate"
+    product_type = product_base_type
     label = "Editorial Plate"
 
     def create(self, instance_data, _):
@@ -326,8 +326,8 @@ class EditorialPlateInstanceCreator(_FlameInstanceClipCreatorBase):
 class EditorialAudioInstanceCreator(_FlameInstanceClipCreatorBase):
     """Audio product type creator class"""
     identifier = "io.ayon.creators.flame.audio"
-    product_type = "audio"
     product_base_type = "audio"
+    product_type = product_base_type
     label = "Editorial Audio"
 
 
@@ -336,8 +336,8 @@ class CreateShotClip(plugin.FlameEditorialCreator):
 
     identifier = "io.ayon.creators.flame.clip"
     label = "Create Publishable Clip"
-    product_type = "editorial"
     product_base_type = "editorial"
+    product_type = product_base_type
     icon = "film"
     defaults = ["Main"]
 

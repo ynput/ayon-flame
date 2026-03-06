@@ -30,8 +30,8 @@ _CONTENT_ID = "flame_sub_products"
 class FlameReelPlateCreator(plugin.FlameCreator):
     """Reel/Media panel clip"""
     identifier = "io.ayon.creators.flame.reel.plate"
-    product_type = "plate"
     product_base_type = "plate"
+    product_type = product_base_type
     label = "Plate Reel Clip"
 
     icon = "film"
