@@ -132,11 +132,7 @@ class _FlameInstanceCreator(plugin.HiddenFlameCreator):
             CreatedInstance: The created instance object for the new shot.
 
         """
-        instance_data.update({
-            "newHierarchyIntegration": True,
-            # Backwards compatible (Deprecated since 24/06/06)
-            "newAssetPublishing": True,
-        })
+        instance_data["newHierarchyIntegration"] = True
 
         product_type = instance_data.get("productType")
         if not product_type:
