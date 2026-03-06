@@ -743,7 +743,6 @@ OTIO file.
                 creator_attributes = sub_instance_data.setdefault(
                     "creator_attributes", {}
                 )
-                shot_folder_path = sub_instance_data["folderPath"]
 
                 # Shot creation
                 if creator_id == shot_creator_id:
