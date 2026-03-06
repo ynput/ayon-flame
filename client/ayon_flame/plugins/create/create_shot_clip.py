@@ -122,7 +122,7 @@ class _FlameInstanceCreator(plugin.HiddenFlameCreator):
             )
         super()._add_instance_to_context(instance)
 
-    def create(self, instance_data, _):
+    def create(self, instance_data):
         """Return a new CreateInstance for new shot from Flame.
 
         Args:
@@ -311,7 +311,7 @@ class EditorialPlateInstanceCreator(_FlameInstanceClipCreatorBase):
     product_type = product_base_type
     label = "Editorial Plate"
 
-    def create(self, instance_data, _):
+    def create(self, instance_data):
         """Return a new CreateInstance for new shot from Resolve.
 
         Args:
@@ -320,7 +320,7 @@ class EditorialPlateInstanceCreator(_FlameInstanceClipCreatorBase):
         Return:
             CreatedInstance: The created instance object for the new shot.
         """
-        return super().create(instance_data, None)
+        return super().create(instance_data)
 
 
 class EditorialAudioInstanceCreator(_FlameInstanceClipCreatorBase):
@@ -847,7 +847,7 @@ OTIO file.
                     if sub_instance_data.get("reviewableSource"):
                         creator_attributes["review"] = True
 
-                instance = creator.create(sub_instance_data, None)
+                instance = creator.create(sub_instance_data)
                 instance.transient_data["segment_item"] = segment
 
                 instance_data_to_store = instance.data_to_store()
@@ -881,7 +881,7 @@ OTIO file.
             CreatedInstance: The newly created instance.
         """
         creator = self.create_context.creators[creator_id]
-        instance = creator.create(data, None)
+        instance = creator.create(data)
         instance.transient_data["segment_item"] = segment
         instances.append(instance)
         return instance
@@ -933,7 +933,7 @@ OTIO file.
 
         shot_creator_id = "io.ayon.creators.flame.shot"
         creator = self.create_context.creators[shot_creator_id]
-        instance = creator.create(sub_instance_data, None)
+        instance = creator.create(sub_instance_data)
         instance.transient_data["segment_item"] = segment
         clip_instances[shot_creator_id] = instance.data_to_store()
         parenting_data = instance
@@ -967,7 +967,7 @@ OTIO file.
                     "review": True,
                 })
 
-            instance = creator.create(sub_instance_data, None)
+            instance = creator.create(sub_instance_data)
             instance.transient_data["segment_item"] = segment
             clip_instances[sub_creator_id] = instance.data_to_store()
 
