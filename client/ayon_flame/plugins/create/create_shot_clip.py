@@ -674,9 +674,9 @@ OTIO file.
         sorted_selected_segments.extend(unsorted_selected_segments)
 
         # detect enabled creators for review, plate and audio
-        shot_creator_id = "io.ayon.creators.flame.shot"
-        plate_creator_id = "io.ayon.creators.flame.plate"
-        audio_creator_id = "io.ayon.creators.flame.audio"
+        shot_creator_id = FlameShotInstanceCreator.identifier
+        plate_creator_id = EditorialPlateInstanceCreator.identifier
+        audio_creator_id = EditorialAudioInstanceCreator.identifier
         all_creators = {
             shot_creator_id: True,
             plate_creator_id: True,
@@ -929,7 +929,7 @@ OTIO file.
             ),
         })
 
-        shot_creator_id = "io.ayon.creators.flame.shot"
+        shot_creator_id = FlameShotInstanceCreator.identifier
         creator = self.create_context.creators[shot_creator_id]
         instance = creator.create(sub_instance_data)
         instance.transient_data["segment_item"] = segment
@@ -937,10 +937,10 @@ OTIO file.
         parenting_data = instance
 
         # Create plate/audio instance
-        sub_creators = ["io.ayon.creators.flame.plate"]
+        sub_creators = [EditorialPlateInstanceCreator.identifier]
         if instance_data["audio"]:
             sub_creators.append(
-                "io.ayon.creators.flame.audio"
+                EditorialAudioInstanceCreator.identifier
             )
 
         for sub_creator_id in sub_creators:
