@@ -130,6 +130,7 @@ class _FlameInstanceCreator(plugin.HiddenFlameCreator):
 
         Return:
             CreatedInstance: The created instance object for the new shot.
+
         """
         instance_data.update({
             "newHierarchyIntegration": True,
@@ -137,11 +138,15 @@ class _FlameInstanceCreator(plugin.HiddenFlameCreator):
             "newAssetPublishing": True,
         })
 
+        product_type = instance_data.get("productType")
+        if not product_type:
+            product_type = self.product_base_type
         new_instance = CreatedInstance(
-            self.product_type,
-            instance_data["productName"],
-            instance_data,
-            self
+            product_base_type=product_base_type,
+            product_type=product_type,
+            product_name=instance_data["productName"],
+            data=instance_data,
+            creator=self,
         )
         self._add_instance_to_context(new_instance)
         new_instance.transient_data["has_promised_context"] = True
@@ -272,7 +277,7 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
             ),
         ]
 
-        if self.product_type == "plate":
+        if self.product_base_type == "plate":
             current_review = instance.creator_attributes.get("review", False)
             instance_attributes.extend(
                 [
@@ -947,7 +952,7 @@ OTIO file.
                 "parent_instance_id": parenting_data["instance_id"],
                 "label": (
                     f"{sub_instance_data['folderPath']} "
-                    f"{creator.product_type}"
+                    f"{creator.product_base_type}"
                 ),
                 "creator_attributes": {
                     "parentInstance": parenting_data["label"],
