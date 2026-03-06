@@ -94,16 +94,6 @@ class CreateWorkfile(AutoCreator):
             "task": task_name,
             "variant": variant,
         }
-        data.update(
-            self.get_dynamic_data(
-                variant,
-                task_name,
-                folder_entity,
-                project_name,
-                host_name,
-                False,
-            )
-        )
         self.log.info("Auto-creating workfile instance...")
         current_instance = CreatedInstance(
             self.product_type, product_name, data, self)
