@@ -42,9 +42,7 @@ class FlameCreator(Creator):
     settings_category = "flame"
 
     def __init__(self, *args, **kwargs):
-        super(Creator, self).__init__(*args, **kwargs)
-        self.presets = get_current_project_settings()[
-            "flame"]["create"].get(self.__class__.__name__, {})
+        super().__init__(*args, **kwargs)
         self.project = flib.get_current_project()
 
     def create(self, product_name, instance_data, pre_create_data):

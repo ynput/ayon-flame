@@ -376,11 +376,15 @@ OTIO file.
         "retimedHandles",
         "retimedFramerange",
     }
+    presets = {}
 
-    def apply_settings(cls, project_settings):
+    def apply_settings(self, project_settings):
         super().apply_settings(project_settings)
+        self.presets = (
+            project_settings["flame"]["create"][self.__class__.__name__]
+        )
         # Disable if not in timeline context.
-        cls.enabled = (lib.CTX.context == "FlameMenuTimeline")
+        self.enabled = lib.CTX.context == "FlameMenuTimeline"
 
     def get_pre_create_attr_defs(self):
 
