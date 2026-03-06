@@ -106,7 +106,7 @@ class CreateWorkfile(AutoCreator):
         self._add_instance_to_context(current_instance)
         return current_instance
 
-    def create(self, options=None):
+    def create(self):
         """Auto-create an instance by default."""
         instance_data = self._load_instance_data()
         if instance_data:
