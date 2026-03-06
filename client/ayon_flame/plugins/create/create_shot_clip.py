@@ -681,7 +681,6 @@ OTIO file.
             plate_creator_id: True,
             audio_creator_id: True,
         }
-        instances = []
 
         for idx, segment in enumerate(sorted_selected_segments):
 
@@ -857,29 +856,26 @@ OTIO file.
                     "clip_index": clip_index,
                 }
             )
-            instances.append(instance)
 
         self.shot_instances = {}
         ayfapi.PublishableClip.restore_all_caches()
 
-        return instances
-
     def _create_and_add_instance(
-            self, data, creator_id, segment, instances):
+        self, data, creator_id, segment
+    ):
         """
         Args:
             data (dict): The data to re-recreate the instance from.
             creator_id (str): The creator id to use.
             segment (obj): The associated segment item.
-            instances (list): Result instance container.
 
         Returns:
             CreatedInstance: The newly created instance.
+
         """
         creator = self.create_context.creators[creator_id]
         instance = creator.create(data)
         instance.transient_data["segment_item"] = segment
-        instances.append(instance)
         return instance
 
     def _collect_legacy_instance(self, segment, marker_data):
@@ -975,7 +971,6 @@ OTIO file.
                 "clip_index": clip_index,
             }
         )
-        return clip_instances.values()
 
     def collect_instances(self):
         """Collect all created instances from current timeline."""
@@ -999,8 +994,6 @@ OTIO file.
             segments = lib.get_sequence_segments(current_sequence)
 
         for segment in segments:
-            instances = []
-
             # attempt to get AYON tag data
             marker_data = lib.get_segment_data_marker(segment)
             if not marker_data:
@@ -1008,16 +1001,13 @@ OTIO file.
 
             # Legacy instances handling
             if _CONTENT_ID not in marker_data:
-                instances.extend(
-                    self._collect_legacy_instance(segment, marker_data)
-                )
+                self._collect_legacy_instance(segment, marker_data)
                 continue
 
             for creator_id, data in marker_data[_CONTENT_ID].items():
                 self._create_and_add_instance(
-                    data, creator_id, segment, instances)
-
-        return instances
+                    data, creator_id, segment
+                )
 
     def update_instances(self, update_list):
         """Never called, update is handled via _FlameInstanceCreator."""
