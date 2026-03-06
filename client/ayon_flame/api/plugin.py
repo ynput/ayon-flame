@@ -22,6 +22,7 @@ log = Logger.get_logger(__name__)
 class HiddenFlameCreator(HiddenCreator):
     """HiddenCreator class wrapper
     """
+    skip_discovery = True
     settings_category = "flame"
 
     def collect_instances(self):
@@ -37,6 +38,7 @@ class HiddenFlameCreator(HiddenCreator):
 class FlameCreator(Creator):
     """Creator class wrapper
     """
+    skip_discovery = True
     settings_category = "flame"
 
     def __init__(self, *args, **kwargs):
@@ -65,6 +67,7 @@ class FlameCreator(Creator):
 class FlameEditorialCreator(FlameCreator):
     """Creator class wrapper for Editorial usage.
     """
+    skip_discovery = True
 
     def create(self, product_name, instance_data, pre_create_data):
         """Prepare data for new instance creation.

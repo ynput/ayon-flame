@@ -109,6 +109,7 @@ CLIP_ATTR_DEFS = [
 class _FlameInstanceCreator(plugin.HiddenFlameCreator):
     """Wrapper class for clip types products.
     """
+    skip_discovery = True
 
     def _add_instance_to_context(self, instance):
         parent_id = instance.get("parent_instance_id")
