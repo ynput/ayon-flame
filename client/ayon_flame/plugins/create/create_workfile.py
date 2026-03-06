@@ -88,6 +88,7 @@ class CreateWorkfile(AutoCreator):
             task_entity=task_entity,
             variant=self.default_variant,
             host_name=host_name,
+            product_type=self.product_type,
         )
         data = {
             "folderPath": folder_path,
@@ -96,7 +97,12 @@ class CreateWorkfile(AutoCreator):
         }
         self.log.info("Auto-creating workfile instance...")
         current_instance = CreatedInstance(
-            self.product_type, product_name, data, self)
+            product_base_type=self.product_base_type,
+            product_type=self.product_type,
+            product_name=product_name,
+            data=data,
+            creator=self,
+        )
         self._add_instance_to_context(current_instance)
         return current_instance
 
@@ -116,7 +122,11 @@ class CreateWorkfile(AutoCreator):
             return
 
         instance = CreatedInstance(
-            self.product_type, data["productName"], data, self
+            product_base_type=self.product_base_type,
+            product_type=self.product_type,
+            product_name=data["productName"],
+            data=data,
+            creator=self,
         )
         self._add_instance_to_context(instance)
 
