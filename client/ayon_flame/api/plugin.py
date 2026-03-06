@@ -305,6 +305,7 @@ class PublishableClip:
             self.variant = self.base_product_variant
 
         # create product name for publishing
+        # TODO: Use creator's `get_product_name` to correctly define name
         self.product_name = (
             f"{self.product_base_type}{self.variant.capitalize()}"
         )
