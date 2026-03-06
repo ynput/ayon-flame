@@ -17,7 +17,9 @@ class LoadClip(ayfapi.ClipLoader):
     during conforming to project
     """
 
-    product_types = {"render2d", "source", "plate", "render", "review"}
+    product_base_types = {
+        "render2d", "source", "plate", "render", "review"
+    }
     representations = {"*"}
     extensions = set(
         ext.lstrip(".") for ext in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS)
@@ -40,6 +42,10 @@ class LoadClip(ayfapi.ClipLoader):
     """
     layer_rename_template = "{folder[name]}_{product[name]}<_{output}>"
     layer_rename_patterns = []
+
+    @property
+    def product_types(self):
+        return self.product_base_types
 
     def load(self, context, name, namespace, options):
 

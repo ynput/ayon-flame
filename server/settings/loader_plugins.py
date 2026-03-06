@@ -67,7 +67,7 @@ class LoaderPluginsModel(BaseSettingsModel):
 DEFAULT_LOADER_SETTINGS = {
     "LoadClip": {
         "enabled": True,
-        "product_types": [
+        "product_base_types": [
             "render2d",
             "source",
             "plate",
@@ -85,7 +85,7 @@ DEFAULT_LOADER_SETTINGS = {
     },
     "LoadClipBatch": {
         "enabled": True,
-        "product_types": [
+        "product_base_types": [
             "render2d",
             "source",
             "plate",
