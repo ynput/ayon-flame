@@ -1,15 +1,22 @@
+from __future__ import annotations
+
 import os
 import re
+import logging
 import shutil
 from copy import deepcopy
+from typing import Any
 from xml.etree import ElementTree as ET
 
 import qargparse
 
 from ayon_core.lib import Logger, StringTemplate
-from ayon_core.pipeline.create import CreatorError
-from ayon_core.pipeline import LoaderPlugin, HiddenCreator
-from ayon_core.pipeline import Creator
+from ayon_core.pipeline import (
+    LoaderPlugin,
+    Creator,
+    HiddenCreator,
+    CreatorError,
+)
 from ayon_core.pipeline.colorspace import get_remapped_colorspace_to_native
 from ayon_core.pipeline.context_tools import get_current_project_settings
 
@@ -116,7 +123,8 @@ class PublishableClip:
     clip_name_default = "shot_{_trackIndex_:0>3}_{_clipIndex_:0>4}"
     review_source_default = None
     base_product_variant_default = "<track_name>"
-    product_type_default = "plate"
+    product_base_type = "plate"
+    product_type = product_base_type
     count_from_default = 10
     count_steps_default = 10
     vertical_sync_default = False
@@ -127,16 +135,15 @@ class PublishableClip:
     retimed_handles_default = True
     retimed_framerange_default = True
 
-    def __init__(self,
-            segment,
-            pre_create_data=None,
-            data=None,
-            product_type=None,
-            rename_index=None,
-            log=None,
-        ):
+    def __init__(
+        self,
+        segment: object,
+        pre_create_data: dict[str, Any],
+        data: dict[str, Any],
+        rename_index: int,
+        log: logging.Logger,
+    ):
         self.rename_index = rename_index
-        self.product_type = product_type
         self.log = log
         self.pre_create_data = pre_create_data or {}
 
@@ -270,8 +277,8 @@ class PublishableClip:
         self.base_product_variant = self.pre_create_data.get(
             "clipVariant") or self.base_product_variant_default
         self.product_type = (
-            self.pre_create_data.get("productType")
-            or self.product_type_default
+            self.pre_create_data.get("plate_product_type")
+            or self.product_base_type
         )
         self.vertical_sync = self.pre_create_data.get(
             "vSyncOn") or self.vertical_sync_default
@@ -297,9 +304,9 @@ class PublishableClip:
         else:
             self.variant = self.base_product_variant
 
-        # create product for publishing
+        # create product name for publishing
         self.product_name = (
-            self.product_type + self.variant.capitalize()
+            f"{self.product_base_type}{self.variant.capitalize()}"
         )
 
         self.hierarchy_data = {
@@ -499,7 +506,8 @@ class PublishableClip:
             "parents": self.parents,
             "hierarchyData": hierarchy_formatting_data,
             "productName": self.product_name,
-            "productType": self.product_type_default,
+            "productType": self.product_type,
+            "productBaseType": self.product_base_type,
             "variant": self.variant,
         }
 
