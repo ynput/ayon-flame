@@ -731,7 +731,6 @@ OTIO file.
                 pre_create_data.get("export_audio", False)
             )
 
-            clip_instances = {}
             shot_folder_path = segment_instance_data["folderPath"]
             shot_instances = self.shot_instances.setdefault(
                 shot_folder_path, {})
