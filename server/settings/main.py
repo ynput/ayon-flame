@@ -1,5 +1,6 @@
 from ayon_server.settings import BaseSettingsModel, SettingsField
 
+from .bookmarks import BookmarksModel, DEFAULT_BOOKMARK_SETTINGS
 from .imageio import FlameImageIOModel, DEFAULT_IMAGEIO_SETTINGS
 from .create_plugins import CreatePluginsModel, DEFAULT_CREATE_SETTINGS
 from .publish_plugins import PublishPluginsModel, DEFAULT_PUBLISH_SETTINGS
@@ -24,6 +25,10 @@ class FlameHooksModel(BaseSettingsModel):
 
 
 class FlameSettings(BaseSettingsModel):
+    bookmarks: BookmarksModel = SettingsField(
+        default_factory=BookmarksModel,
+        title="Project Bookmarks",
+    )
     imageio: FlameImageIOModel = SettingsField(
         default_factory=FlameImageIOModel,
         title="Color Management (ImageIO)"
@@ -47,6 +52,7 @@ class FlameSettings(BaseSettingsModel):
 
 
 DEFAULT_VALUES = {
+    "bookmarks": DEFAULT_BOOKMARK_SETTINGS,
     "imageio": DEFAULT_IMAGEIO_SETTINGS,
     "create": DEFAULT_CREATE_SETTINGS,
     "publish": DEFAULT_PUBLISH_SETTINGS,
