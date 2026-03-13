@@ -2,6 +2,7 @@ import os
 import json
 import tempfile
 import contextlib
+import re
 import socket
 from pprint import pformat
 
@@ -11,6 +12,7 @@ from ayon_core.lib import (
 )
 from ayon_applications import PreLaunchHook, LaunchTypes
 from ayon_flame import FLAME_ADDON_ROOT
+from ayon_flame.utils import perl_style_sub
 
 
 class FlamePrelaunch(PreLaunchHook):
@@ -19,6 +21,7 @@ class FlamePrelaunch(PreLaunchHook):
     Will make sure flame_script_dirs are copied to user's folder defined
     in environment var FLAME_SCRIPT_DIR.
     """
+
     app_groups = {"flame"}
     order = 1
     permissions = 0o777
@@ -82,9 +85,27 @@ class FlamePrelaunch(PreLaunchHook):
         height = project_attribs["resolutionHeight"]
         fps = float(project_attribs["fps"])
 
+        nickname_settings = project_settings["flame"]["nickname"]
+        if not nickname_settings["enabled"]:
+            nickname = project_entity["code"]
+        else:
+            self.log.debug(
+                "%r, %r, %s",
+                nickname_settings["regex"],
+                nickname_settings["replacement"],
+                project_entity["name"],
+            )
+            nickname = perl_style_sub(
+                nickname_settings["regex"],
+                nickname_settings["replacement"],
+                project_entity["name"],
+                flags=re.IGNORECASE,
+            )
+        self.log.info("nickname: %s", nickname)
+
         project_data = {
             "Name": project_entity["name"],
-            "Nickname": project_entity["code"],
+            "Nickname": nickname,
             "Description": "Created by AYON",
             "SetupDir": project_entity["name"],
             "FrameWidth": int(width),
