@@ -4,9 +4,8 @@ import os
 import re
 import logging
 import shutil
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 from copy import deepcopy
-from typing import Any
 from xml.etree import ElementTree as ET
 
 import qargparse
@@ -846,7 +845,7 @@ class OpenClipSolver:
         path: str,
         version_name: str,
         colorspace: Optional[str],
-        context_data: Dict[str, Any],
+        context_data: dict[str, Any],
         layer_rename_template: str,
     ) -> None:
         clip = flib.MediaInfoFile(path, self.log)
@@ -882,7 +881,7 @@ class OpenClipSolver:
         clip_data: ET.Element,
         feed_version_name: str,
         feed_colorspace: Optional[str],
-        context_data: Dict[str, Any],
+        context_data: dict[str, Any],
         layer_rename_template: str,
     ) -> None:
         self.log.info("Building new openClip")
@@ -932,7 +931,7 @@ class OpenClipSolver:
         self,
         xml_track_data: ET.Element,
         basename: str,
-        context_data: Dict[str, Any],
+        context_data: dict[str, Any],
         layer_rename_template: str,
     ) -> None:
         layer_uid = xml_track_data.get("uid")
@@ -963,7 +962,7 @@ class OpenClipSolver:
         clip: flib.MediaInfoFile,
         feed_version_name: str,
         feed_colorspace: Optional[str],
-        context_data: Dict[str, Any],
+        context_data: dict[str, Any],
         layer_rename_template: str,
     ) -> None:
         self.log.info("Updating openClip ..")
