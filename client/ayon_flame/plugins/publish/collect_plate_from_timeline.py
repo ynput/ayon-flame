@@ -8,7 +8,7 @@ from ayon_flame.otio import utils
 class CollectTimelinePlate(pyblish.api.InstancePlugin):
     """Collect new plates from Timeline."""
 
-    order = order = pyblish.api.CollectorOrder - 0.48
+    order = pyblish.api.CollectorOrder - 0.48
     label = "Collect Plate from Timeline"
     hosts = ["flame"]
     families = ["plate"]

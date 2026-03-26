@@ -10,7 +10,7 @@ from ayon_flame.api import lib
 class CollectReelPlate(pyblish.api.InstancePlugin):
     """Collect new plates from Reel."""
 
-    order = order = pyblish.api.CollectorOrder - 0.48
+    order = pyblish.api.CollectorOrder - 0.48
     label = "Collect Plate from Reel"
     hosts = ["flame"]
     families = ["plate"]
