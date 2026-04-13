@@ -8,7 +8,7 @@ class CollecFlameProject(pyblish.api.ContextPlugin):
     """Inject the current project data into current context."""
 
     label = "Collect Flame project"
-    order = pyblish.api.CollectorOrder - 0.492
+    order = pyblish.api.CollectorOrder - 0.5
 
     def process(self, context):
         # update context with main project attributes
