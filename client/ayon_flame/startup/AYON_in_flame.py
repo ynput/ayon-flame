@@ -2,6 +2,26 @@ from __future__ import print_function
 import sys
 from pprint import pformat
 import atexit
+import platform
+
+if platform.system() == "darwin":
+    try:
+        from qtpy import QtWidgets
+
+    # QtOpenGLWidgets is broken in Flame 2026 on macOS
+    # /opt/Autodesk/python/2026.2.2/lib/python3.11/site-packages/PySide6/
+    # QtOpenGLWidgets.abi3.so
+    # Reason: tried: '/opt/Autodesk/lib64/QtOpenGLWidgets.framework/Versions/A/
+    # QtOpenGLWidgets' (no such file),
+    except ImportError:
+        import sys
+        from unittest.mock import MagicMock
+        mock_module = MagicMock()
+        mock_module.__name__ = 'PySide6.QtOpenGLWidgets'
+        mock_module.QOpenGLWidget = MagicMock
+        sys.modules['PySide6.QtOpenGLWidgets'] = mock_module
+
+
 from qtpy import QtWidgets
 import traceback
 
