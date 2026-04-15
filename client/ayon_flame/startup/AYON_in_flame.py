@@ -4,7 +4,7 @@ from pprint import pformat
 import atexit
 import platform
 
-if platform.system() == "darwin":
+if platform.system().lower() == "darwin":
     try:
         from qtpy import QtWidgets
 
@@ -14,7 +14,6 @@ if platform.system() == "darwin":
     # Reason: tried: '/opt/Autodesk/lib64/QtOpenGLWidgets.framework/Versions/A/
     # QtOpenGLWidgets' (no such file),
     except ImportError:
-        import sys
         from unittest.mock import MagicMock
         mock_module = MagicMock()
         mock_module.__name__ = 'PySide6.QtOpenGLWidgets'
