@@ -1,32 +1,26 @@
-from __future__ import print_function
-import sys
-from pprint import pformat
+from __future__ import print_function  # noqa: UP010
+
 import atexit
-import platform
+import sys
+import types
+from pprint import pformat
 
-if platform.system().lower() == "darwin":
-    try:
-        from qtpy import QtWidgets
+try:
+    from PySide6.QtOpenGLWidgets import QOpenGLWidget  # noqa: F401
+except ImportError:
+    mock_module = types.ModuleType("PySide6.QtOpenGLWidgets")
+    setattr(mock_module, "QOpenGLWidget", object())  # noqa: B010
 
-    # QtOpenGLWidgets is broken in Flame 2026 on macOS
-    # /opt/Autodesk/python/2026.2.2/lib/python3.11/site-packages/PySide6/
-    # QtOpenGLWidgets.abi3.so
-    # Reason: tried: '/opt/Autodesk/lib64/QtOpenGLWidgets.framework/Versions/A/
-    # QtOpenGLWidgets' (no such file),
-    except ImportError:
-        from unittest.mock import MagicMock
-        mock_module = MagicMock()
-        mock_module.__name__ = 'PySide6.QtOpenGLWidgets'
-        mock_module.QOpenGLWidget = MagicMock
-        sys.modules['PySide6.QtOpenGLWidgets'] = mock_module
+    sys.modules["PySide6.QtOpenGLWidgets"] = mock_module
+    from qtpy import QtWidgets
+    sys.modules.pop("PySide6.QtOpenGLWidgets")
 
-
-from qtpy import QtWidgets
 import traceback
 
 import ayon_flame.api as flame_api
-from ayon_flame.api import FlameHost
 from ayon_core.pipeline import install_host
+from ayon_flame.api import FlameHost
+from qtpy import QtWidgets
 
 
 def ayon_flame_install():
