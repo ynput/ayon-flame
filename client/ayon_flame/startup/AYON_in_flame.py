@@ -8,6 +8,7 @@ from pprint import pformat
 try:
     from PySide6.QtOpenGLWidgets import QOpenGLWidget  # noqa: F401
 except ImportError:
+    # https://github.com/ynput/ayon-flame/issues/120
     mock_module = types.ModuleType("PySide6.QtOpenGLWidgets")
     setattr(mock_module, "QOpenGLWidget", object())  # noqa: B010
 
