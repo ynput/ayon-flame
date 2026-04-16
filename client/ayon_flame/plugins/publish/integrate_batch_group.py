@@ -1,331 +1,166 @@
-import os
-import copy
-from collections import OrderedDict
-from pprint import pformat
 import pyblish
-import ayon_flame.api as ayfapi
-import ayon_core.pipeline as op_pipeline
+import os
+
+import ayon_api
+from ayon_api.operations import OperationsSession
+
+from ayon_core.lib import source_hash
+from ayon_core.pipeline.load import (
+    get_representation_context,
+    discover_loader_plugins,
+    load_with_repre_context,
+    IncompatibleLoaderError
+)
+from ayon_core.pipeline.publish import get_instance_staging_dir
 from ayon_core.pipeline.workfile import get_workdir
 
+import ayon_flame.api as ayfapi
 
-class IntegrateBatchGroup(pyblish.api.InstancePlugin):
-    """Integrate published shot to batch group"""
+
+class IntegrateBatchgroup(pyblish.api.InstancePlugin):
+    """Extract + Integrate Batchgroup Product data."""
 
     order = pyblish.api.IntegratorOrder + 0.45
-    label = "Integrate Batch Groups"
+    label = "Integrate Batchgroup"
     hosts = ["flame"]
-    families = ["clip"]
+    families = ["batchgroup"]
 
     settings_category = "flame"
 
-    # settings
     default_loader = "LoadClip"
 
     def process(self, instance):
-        add_tasks = instance.data["flameAddTasks"]
+        # Gather new published plate representation to
+        # be associated with the current batchgroup.
+        plate_repres = self._find_plate_representations(
+            instance,
+        )
+        if not plate_repres:
+            self.log.info(
+                "Ignore batchgroup post-upgrade. "
+                "No relevant plate representation found."
+            )
+            return
 
-        # iterate all tasks from settings
-        for task_data in add_tasks:
-            # exclude batch group
-            if not task_data["create_batch_group"]:
-                continue
+        # Load/Update plate representation(s) in the bgroup.
+        bgroup = instance.data["extracted_batchgroup"]
+        self.log.debug("Batchgroup: %s.", bgroup.name)
+        self._load_clip_to_context(instance, bgroup, plate_repres)
 
-            # create or get already created batch group
-            bgroup = self._get_batch_group(instance, task_data)
+        # Override batchgroup publish.
+        self.update_repre_entity(instance, bgroup)
 
-            # add batch group content
-            all_batch_nodes = self._add_nodes_to_batch_with_links(
-                instance, task_data, bgroup)
+    def _find_plate_representations(self, instance):
+        """ Gather representations to load/update in the
+            batchgroup from sibling plate instance if any.
+        """
+        parent_instance_id = instance.data["parent_instance_id"]
+        plate_instance = None
 
-            for name, node in all_batch_nodes.items():
-                self.log.debug("name: {}, dir: {}".format(
-                    name, dir(node)
-                ))
-                self.log.debug("__ node.attributes: {}".format(
-                    node.attributes
-                ))
+        # Find parent instance from context
+        for inst in instance.context:
+            creator_identifier = inst.data["creator_identifier"]
+            inst_parent_instance_id = inst.data.get("parent_instance_id")
 
-            # load plate to batch group
-            self.log.info("Loading product `{}` into batch `{}`".format(
-                instance.data["productName"], bgroup.name.get_value()
-            ))
-            self._load_clip_to_context(instance, bgroup)
+            if (
+                inst_parent_instance_id == parent_instance_id
+                and creator_identifier == "io.ayon.creators.flame.plate"
+            ):
+                plate_instance = inst
+                break
+        else:
+            return []
 
-    def _add_nodes_to_batch_with_links(self, instance, task_data, batch_group):
-        # get write file node properties > OrederDict because order does matter
-        write_pref_data = self._get_write_prefs(instance, task_data)
-
-        batch_nodes = [
-            {
-                "type": "comp",
-                "properties": {},
-                "id": "comp_node01"
-            },
-            {
-                "type": "Write File",
-                "properties": write_pref_data,
-                "id": "write_file_node01"
-            }
-        ]
-        batch_links = [
-            {
-                "from_node": {
-                    "id": "comp_node01",
-                    "connector": "Result"
-                },
-                "to_node": {
-                    "id": "write_file_node01",
-                    "connector": "Front"
-                }
-            }
-        ]
-
-        # add nodes into batch group
-        return ayfapi.create_batch_group_conent(
-            batch_nodes, batch_links, batch_group)
-
-    def _load_clip_to_context(self, instance, bgroup):
-        # get all loaders for host
-        loaders_by_name = {
-            loader.__name__: loader
-            for loader in op_pipeline.discover_loader_plugins()
-        }
-
-        # get all published representations
-        published_representations = instance.data["published_representations"]
-        repres_db_id_by_name = {
-            repre_info["representation"]["name"]: repre_id
-            for repre_id, repre_info in published_representations.items()
-        }
-
-        # get all loadable representations
-        repres_by_name = {
-            repre["name"]: repre for repre in instance.data["representations"]
-        }
-
-        # get repre_id for the loadable representations
-        loader_name_by_repre_id = {
-            repres_db_id_by_name[repr_name]: {
-                "loader": repr_data["batch_group_loader_name"],
-                # add repre data for exception logging
-                "_repre_data": repr_data
-            }
-            for repr_name, repr_data in repres_by_name.items()
+        repre_names_to_load = {
+            repr_data["name"]: repr_data
+            for repr_data in plate_instance.data["representations"]
             if repr_data.get("load_to_batch_group")
         }
 
-        self.log.debug("__ loader_name_by_repre_id: {}".format(pformat(
-            loader_name_by_repre_id)))
+        published_repres = plate_instance.data["published_representations"]
+        repre_plate_to_load = []
+        for repre_id, repre_info in published_repres.items():
+            repr_name = repre_info["representation"]["name"]
+            if repr_name in repre_names_to_load:
+                repre_info_copy = repre_info.copy()
+                repre_info_copy.update(repre_names_to_load[repr_name])
+                repre_info_copy["id"] = repre_id
+                repre_plate_to_load.append(repre_info_copy)
 
-        # get representation context from the repre_id
-        repre_contexts = op_pipeline.load.get_repres_contexts(
-            loader_name_by_repre_id.keys())
+        return repre_plate_to_load
 
-        self.log.debug("__ repre_contexts: {}".format(pformat(
-            repre_contexts)))
+
+    def _load_clip_to_context(self, instance, bgroup, plate_repres):
+        """ Load/Update the representation(s) in the batchgroup.
+        """
+        # get all loaders for host
+        loaders_by_name = {
+            loader.__name__: loader
+            for loader in discover_loader_plugins()
+        }
 
         # loop all returned repres from repre_context dict
-        for repre_id, repre_context in repre_contexts.items():
-            self.log.debug("__ repre_id: {}".format(repre_id))
-            # get loader name by representation id
+        for repre in plate_repres:
             loader_name = (
-                loader_name_by_repre_id[repre_id]["loader"]
-                # if nothing was added to settings fallback to default
+                repre.get("batch_group_loader_name")
                 or self.default_loader
             )
 
-            # get loader plugin
             loader_plugin = loaders_by_name.get(loader_name)
-            if loader_plugin:
-                # load to flame by representation context
-                try:
-                    op_pipeline.load.load_with_repre_context(
-                        loader_plugin, repre_context, **{
-                            "data": {
-                                "workdir": self.task_workdir,
-                                "batch": bgroup
-                            }
-                        })
-                except op_pipeline.load.IncompatibleLoaderError as msg:
-                    self.log.error(
-                        "Check allowed representations for Loader `{}` "
-                        "in settings > error: {}".format(
-                            loader_plugin.__name__, msg))
-                    self.log.error(
-                        "Representaton context >>{}<< is not compatible "
-                        "with loader `{}`".format(
-                            pformat(repre_context), loader_plugin.__name__
-                        )
-                    )
-            else:
+            if not loader_plugin:
                 self.log.warning(
-                    "Something got wrong and there is not Loader found for "
-                    "following data: {}".format(
-                        pformat(loader_name_by_repre_id))
+                    "Unsupported loader for representation: %r ."
+                    "Loader %s is unknown.",
+                    repre["id"],
+                    loader_name,
                 )
+                continue
 
-    def _get_batch_group(self, instance, task_data):
-        frame_start = instance.data["frameStart"]
-        frame_end = instance.data["frameEnd"]
-        handle_start = instance.data["handleStart"]
-        handle_end = instance.data["handleEnd"]
-        frame_duration = (frame_end - frame_start) + 1
-        folder_path = instance.data["folderPath"]
-
-        task_name = task_data["name"]
-        batchgroup_name = "{}_{}".format(folder_path, task_name)
-
-        batch_data = {
-            "shematic_reels": [
-                "AYON_LoadedReel"
-            ],
-            "handleStart": handle_start,
-            "handleEnd": handle_end
-        }
-        self.log.debug(
-            "__ batch_data: {}".format(pformat(batch_data)))
-
-        # check if the batch group already exists
-        bgroup = ayfapi.get_batch_group_from_desktop(batchgroup_name)
-
-        if not bgroup:
-            self.log.info(
-                "Creating new batch group: {}".format(batchgroup_name))
-            # create batch with utils
-            bgroup = ayfapi.create_batch_group(
-                batchgroup_name,
-                frame_start,
-                frame_duration,
-                **batch_data
+            repre_context = get_representation_context(
+                instance.data["projectEntity"]["name"],
+                repre["id"],
             )
+            task_workdir = self._get_shot_task_dir_path(instance)
+            self.log.debug("Task work dir: %s", task_workdir)
 
-        else:
-            self.log.info(
-                "Updating batch group: {}".format(batchgroup_name))
-            # update already created batch group
-            bgroup = ayfapi.create_batch_group(
-                batchgroup_name,
-                frame_start,
-                frame_duration,
-                update_batch_group=bgroup,
-                **batch_data
-            )
+            try:
+                load_with_repre_context(
+                    loader_plugin,
+                    repre_context,
+                    data={
+                        "workdir": task_workdir,
+                        "batch": bgroup
+                    }
+                )
+            except IncompatibleLoaderError as error:
+                self.log.error(
+                    "Failed to load representaton %r with loader %s: %r",
+                    repre["id"],
+                    loader_name,
+                    error
+                )
+                raise
 
-        return bgroup
+            # TODO: investigate, only available from 2026.2 ?
+            # Update resulting openclip to latest version. Currently the
+            # published version is available from the "Source Version" but
+            # OpenClip does not switch automatically to it.
+            # FI-00398 Python: Possibility to change the Open Clip version
+            #ops = opc.clip.format_specific_options
+            #ops.refresh()
+            #available_versions = ops.versions
 
-    def _get_anamoty_data_with_current_task(self, instance, task_data):
-        anatomy_data = copy.deepcopy(instance.data["anatomyData"])
-        task_name = task_data["name"]
-        task_type = task_data["type"]
-        anatomy_obj = instance.context.data["anatomy"]
-
-        # update task data in anatomy data
-        project_task_types = anatomy_obj["tasks"]
-        task_code = project_task_types.get(task_type, {}).get("shortName")
-        anatomy_data.update({
-            "task": {
-                "name": task_name,
-                "type": task_type,
-                "short": task_code
-            }
-        })
-        return anatomy_data
-
-    def _get_write_prefs(self, instance, task_data):
-        # update task in anatomy data
-        anatomy_data = self._get_anamoty_data_with_current_task(
-            instance, task_data)
-
-        self.task_workdir = self._get_shot_task_dir_path(
-            instance, task_data)
-        self.log.debug("__ task_workdir: {}".format(
-            self.task_workdir))
-
-        # TODO: this might be done with template in settings
-        render_dir_path = os.path.join(
-            self.task_workdir, "render", "flame")
-
-        if not os.path.exists(render_dir_path):
-            os.makedirs(render_dir_path, mode=0o777)
-
-        # TODO: add most of these to `imageio/flame/batch/write_node`
-        name = "{project[code]}_{folder[name]}_{task[name]}".format(
-            **anatomy_data
-        )
-
-        # The path attribute where the rendered clip is exported
-        # /path/to/file.[0001-0010].exr
-        media_path = render_dir_path
-        # name of file represented by tokens
-        media_path_pattern = (
-            "<name>_v<iteration###>/<name>_v<iteration###>.<frame><ext>")
-        # The Create Open Clip attribute of the Write File node. \
-        # Determines if an Open Clip is created by the Write File node.
-        create_clip = True
-        # The Include Setup attribute of the Write File node.
-        # Determines if a Batch Setup file is created by the Write File node.
-        include_setup = True
-        # The path attribute where the Open Clip file is exported by
-        # the Write File node.
-        create_clip_path = "<name>"
-        # The path attribute where the Batch setup file
-        # is exported by the Write File node.
-        include_setup_path = "./<name>_v<iteration###>"
-        # The file type for the files written by the Write File node.
-        # Setting this attribute also overwrites format_extension,
-        # bit_depth and compress_mode to match the defaults for
-        # this file type.
-        file_type = "OpenEXR"
-        # The file extension for the files written by the Write File node.
-        # This attribute resets to match file_type whenever file_type
-        # is set. If you require a specific extension, you must
-        # set format_extension after setting file_type.
-        format_extension = "exr"
-        # The bit depth for the files written by the Write File node.
-        # This attribute resets to match file_type whenever file_type is set.
-        bit_depth = "16"
-        # The compressing attribute for the files exported by the Write
-        # File node. Only relevant when file_type in 'OpenEXR', 'Sgi', 'Tiff'
-        compress = True
-        # The compression format attribute for the specific File Types
-        # export by the Write File node. You must set compress_mode
-        # after setting file_type.
-        compress_mode = "DWAB"
-        # The frame index mode attribute of the Write File node.
-        # Value range: `Use Timecode` or `Use Start Frame`
-        frame_index_mode = "Use Start Frame"
-        frame_padding = 6
-        # The versioning mode of the Open Clip exported by the Write File node.
-        # Only available if create_clip = True.
-        version_mode = "Follow Iteration"
-        version_name = "v<version>"
-        version_padding = 3
-
-        # need to make sure the order of keys is correct
-        return OrderedDict((
-            ("name", name),
-            ("media_path", media_path),
-            ("media_path_pattern", media_path_pattern),
-            ("create_clip", create_clip),
-            ("include_setup", include_setup),
-            ("create_clip_path", create_clip_path),
-            ("include_setup_path", include_setup_path),
-            ("file_type", file_type),
-            ("format_extension", format_extension),
-            ("bit_depth", bit_depth),
-            ("compress", compress),
-            ("compress_mode", compress_mode),
-            ("frame_index_mode", frame_index_mode),
-            ("frame_padding", frame_padding),
-            ("version_mode", version_mode),
-            ("version_name", version_name),
-            ("version_padding", version_padding)
-        ))
-
-    def _get_shot_task_dir_path(self, instance, task_data):
+    def _get_shot_task_dir_path(self, instance):
+        """ Retrieve shot/task directory path.
+        """
+        task_data = instance.data["attachToTask"]
         project_entity = instance.data["projectEntity"]
         folder_entity = instance.data["folderEntity"]
-        task_entity = instance.data["taskEntity"]
+        task_entity = ayon_api.get_task_by_name(
+            project_entity["name"],
+            folder_entity["id"],
+            task_data["task_name"],
+        )
         anatomy = instance.context.data["anatomy"]
         project_settings = instance.context.data["project_settings"]
 
@@ -337,3 +172,51 @@ class IntegrateBatchGroup(pyblish.api.InstancePlugin):
             anatomy=anatomy,
             project_settings=project_settings
         )
+
+
+    def update_repre_entity(self, instance, bgroup):
+        """ Post-integrate logic.
+        At this moment a batchgroup representation was already
+        created by extract_batch_group and integrated.
+        We need to edit it to inject the published plate paths.
+        """
+        staging_dir = get_instance_staging_dir(instance)
+        repre_info = tuple(
+            instance.data["published_representations"].values()
+        )[0]
+        output_json_file = repre_info["published_files"][0]
+
+        ayfapi.save_as_consolidated_json(
+            bgroup,
+            output_json_file,
+            staging_dir,
+        )
+        self.log.info(
+            "Erase updated batchgroup %s as %s json file.",
+            bgroup.name,
+            output_json_file,
+        )
+
+        repre_data = repre_info["representation"]
+        file_data = repre_data["files"][0]
+        file_data.update(
+            {
+                "hash": source_hash(output_json_file),
+                "size": os.path.getsize(output_json_file),
+            }
+        )
+        self.log.debug(
+            "Updated representation %s with files data %r.",
+            repre_data["id"],
+            file_data,
+        )
+        op_session = OperationsSession()
+        op_session.update_entity(
+            instance.data["projectEntity"]["name"],
+            "representation",
+            repre_data["id"],
+            {"files": [file_data]},
+        )
+
+        op_session.commit()
+        self.log.info("Updated batchgroup representation.")

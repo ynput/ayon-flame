@@ -1,3 +1,9 @@
+from __future__ import annotations
+
+import contextlib
+import json
+import pathlib
+
 import flame
 
 
@@ -22,7 +28,7 @@ def create_batch_group(
     # make sure some batch obj is present
     batch_group = update_batch_group or flame.batch
 
-    schematic_reels = kwargs.get("shematic_reels") or ['LoadedReel1']
+    schematic_reels = kwargs.get("schematic_reels") or ['LoadedReel1']
     shelf_reels = kwargs.get("shelf_reels") or ['ShelfReel1']
 
     handle_start = kwargs.get("handleStart") or 0
@@ -84,7 +90,7 @@ def _add_reels_to_batch_group(batch_group, reels, shelf_reels):
         batch_group.create_shelf_reel(_sr)
 
 
-def create_batch_group_conent(batch_nodes, batch_links, batch_group=None):
+def create_batch_group_content(batch_nodes, batch_links, batch_group=None):
     """Creating batch group with links
 
     Args:
@@ -123,7 +129,9 @@ def create_batch_group_conent(batch_nodes, batch_links, batch_group=None):
         for key, value in node_props.items():
             if not hasattr(batch_node, key):
                 continue
-            setattr(batch_node, key, value)
+            with contextlib.suppress(RuntimeError):
+                setattr(batch_node, key, value)
+
 
         # add created node for possible linking
         all_batch_nodes[node_id] = batch_node
@@ -149,3 +157,37 @@ def create_batch_group_conent(batch_nodes, batch_links, batch_group=None):
     batch_group.organize()
 
     return all_batch_nodes
+
+
+def save_as_consolidated_json(bgroup, filepath, temporary_folder):
+    """ Export provided batch group as a consolidated json file.
+    """
+    expected_bgroup_folder = pathlib.Path(temporary_folder)
+    bgroup_file = expected_bgroup_folder / f"{bgroup.name}.batch"
+    bgroup.save_setup(str(bgroup_file))
+
+    if not expected_bgroup_folder.is_dir():
+        raise RuntimeError(
+            f"Unable to save batchgroup to folder: {expected_bgroup_folder}."
+        )
+
+    # Concatenate all intermediary files as 1 single consolidated JSON.
+    json_output = {}
+    for file_path in expected_bgroup_folder.rglob("*"):
+        if file_path.is_file():
+            relative_path = file_path.relative_to(expected_bgroup_folder)
+            try:
+                content = file_path.read_text(encoding="utf-8")
+                json_output[str(relative_path)] = content
+
+            except Exception as error:
+                raise RuntimeError(
+                    f"Could not encode file {file_path} as text: {error}"
+                ) from error
+
+    with open(filepath, "w") as file_handler:
+        json.dump(
+            json_output,
+            file_handler,
+            indent=4
+        )

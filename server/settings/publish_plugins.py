@@ -25,7 +25,8 @@ class AddTasksModel(BaseSettingsModel):
     )
     create_batch_group: bool = SettingsField(
         True,
-        title="Create batch group"
+        title="Create batch group",
+        description="[deprecated] Use CollectShotsModel.add_tasks instead."
     )
 
 
@@ -103,6 +104,42 @@ class MissingMediaPresetModel(BaseSettingsModel):
         ),
         section="Representation properties",
     )
+
+class OutputNodePropertiesModel(BaseSettingsModel):
+    _layout = "compact"
+    name: str = SettingsField(
+        default_factory=str,
+        title="Attribute name"
+    )
+    value: str = SettingsField(
+        default_factory=str,
+        title="Attribute value"
+    )
+
+
+class AttachToTaskModel(BaseSettingsModel):
+    task_name: str = SettingsField(
+        default_factory=str,
+        title="Task name"
+    )
+    task_type: str = SettingsField(
+        default_factory=str,
+        title="Task type",
+        enum_resolver=task_types_enum
+    )
+
+
+class CollectBatchgroupModel(BaseSettingsModel):
+    _isGroup = True
+    output_node_properties: list[OutputNodePropertiesModel] = SettingsField(
+        default_factory=list,
+        title="Output node properties"
+    )
+    attach_to_task: AttachToTaskModel = SettingsField(
+        default_factory=AttachToTaskModel,
+        title="Attach to task"
+    )
+
 
 class ExportPresetsMappingModel(BaseSettingsModel):
     enabled: bool = SettingsField(
@@ -292,9 +329,12 @@ class ExtractProductResourcesModel(BaseSettingsModel):
 
 
 class IntegrateBatchGroupModel(BaseSettingsModel):
+    """[deprecated] Use CollectBatchgroup settings instead."""
+
     enabled: bool = SettingsField(
         False,
-        title="Enabled"
+        title="Enabled",
+        description="[deprecated] Use CollectBatchgroup settings instead.",
     )
 
 
@@ -317,6 +357,11 @@ class PublishPluginsModel(BaseSettingsModel):
     CollectShot: CollectShotsModel = SettingsField(
         default_factory=CollectShotsModel,
         title="Collect Shot instances"
+    )
+
+    CollectBatchgroup: CollectBatchgroupModel = SettingsField(
+        default_factory=CollectBatchgroupModel,
+        title="Collect Batchgroup instances"
     )
 
     ValidateProductAttributes: OptionalValidatorModel = SettingsField(
@@ -371,6 +416,41 @@ DEFAULT_PUBLISH_SETTINGS = {
                 "create_batch_group": True
             }
         ]
+    },
+    "CollectBatchgroup": {
+        "output_node_properties": [
+            {
+                "name": "name",
+                "value": "{project[code]}_{folder[name]}_{task[name]}"
+            },
+            {
+                "name": "media_path",
+                "value": (
+                    "{root[work]}/{project[name]}/{hierarchy}/{folder[name]}"
+                    "/work/{task[name]}/render/flame"
+                )
+            },
+            {
+                "name": "file_type",
+                "value": "OpenEXR",
+            },
+            {
+                "name": "format_extension",
+                "value": "exr",
+            },
+            {
+                "name": "bit_depth",
+                "value": "16",
+            },
+            {
+                "name": "include_setup_path",
+                "value": "./<name>_v<iteration###>",
+            }
+        ],
+        "attach_to_task": {
+            "task_name": "compositing",
+            "task_type": "Compositing",
+        }
     },
     "ValidateProductAttributes": {
         "enabled": False,

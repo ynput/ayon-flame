@@ -81,7 +81,8 @@ from .render_utils import (
 )
 from .batch_utils import (
     create_batch_group,
-    create_batch_group_conent
+    create_batch_group_content,
+    save_as_consolidated_json
 )
 
 __all__ = [
@@ -168,5 +169,6 @@ __all__ = [
 
     # batch utils
     "create_batch_group",
-    "create_batch_group_conent"
+    "create_batch_group_content",
+    "save_as_consolidated_json",
 ]

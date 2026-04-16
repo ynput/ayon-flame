@@ -94,6 +94,12 @@ class CreateShotClipModel(BaseSettingsModel):
         title="Include audio",
     )
 
+    export_batchgroup: bool = SettingsField(
+        False,
+        title="Include batchgroup",
+        tooltip="Also generate batchgroup product for the shot",
+    )
+
     sourceResolution: bool = SettingsField(
         False,
         title="Source resolution",
@@ -173,6 +179,7 @@ DEFAULT_CREATE_SETTINGS = {
         "vSyncOn": False,
         "export_audio": False,
         "sourceResolution": False,
+        "export_batchgroup": False,
         "workfileFrameStart": 1001,
         "handleStart": 5,
         "handleEnd": 5,
