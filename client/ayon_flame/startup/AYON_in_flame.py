@@ -1,13 +1,27 @@
-from __future__ import print_function
-import sys
-from pprint import pformat
+from __future__ import print_function  # noqa: UP010
+
 import atexit
-from qtpy import QtWidgets
+import sys
+import types
+from pprint import pformat
+
+try:
+    from PySide6.QtOpenGLWidgets import QOpenGLWidget  # noqa: F401
+except ImportError:
+    # https://github.com/ynput/ayon-flame/issues/120
+    mock_module = types.ModuleType("PySide6.QtOpenGLWidgets")
+    setattr(mock_module, "QOpenGLWidget", object())  # noqa: B010
+
+    sys.modules["PySide6.QtOpenGLWidgets"] = mock_module
+    from qtpy import QtWidgets
+    sys.modules.pop("PySide6.QtOpenGLWidgets")
+
 import traceback
 
 import ayon_flame.api as flame_api
-from ayon_flame.api import FlameHost
 from ayon_core.pipeline import install_host
+from ayon_flame.api import FlameHost
+from qtpy import QtWidgets
 
 
 def ayon_flame_install():
