@@ -340,7 +340,7 @@ def set_clip_data_marker(clip, data=None):
             f"data points toward {segment_data}."
         )
 
-    set_segment_data_marker(segment)
+    set_segment_data_marker(segment, data=data)
 
 
 def set_publish_attribute(segment, value):

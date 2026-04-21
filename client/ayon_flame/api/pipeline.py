@@ -22,7 +22,6 @@ from ayon_flame import FLAME_ADDON_ROOT
 from .lib import (
     get_current_sequence,
     maintained_segment_selection,
-    reset_segment_selection,
     set_clip_data_marker,
     set_segment_data_marker,
 )
