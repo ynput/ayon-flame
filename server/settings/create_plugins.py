@@ -133,6 +133,12 @@ class CreateShotClipModel(BaseSettingsModel):
         enum_resolver=create_shot_clip_overrides_enum,
         default_factory=list,
     )
+    plate_product_types: list[str] = SettingsField(
+        default_factory=list,
+        title="Plate product types",
+        description="Optional list of product types for plate products.",
+    )
+
 
 class CollectShotClipInstancesModels(BaseSettingsModel):
     collectSelectedInstance: bool = SettingsField(
@@ -203,6 +209,7 @@ DEFAULT_CREATE_SETTINGS = {
             "retimedHandles",
             "retimedFramerange",
         ],
+        "plate_product_types": [],
     },
     "CollectShotClip": {
         "collectSelectedInstance": False,

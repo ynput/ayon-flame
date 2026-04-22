@@ -30,8 +30,8 @@ _CONTENT_ID = "flame_sub_products"
 class FlameReelPlateCreator(plugin.FlameCreator):
     """Reel/Media panel clip"""
     identifier = "io.ayon.creators.flame.reel.plate"
-    product_type = "plate"
     product_base_type = "plate"
+    product_type = product_base_type
     label = "Plate Reel Clip"
 
     icon = "film"
@@ -41,10 +41,10 @@ class FlameReelPlateCreator(plugin.FlameCreator):
 Publishing clips/plate from Media panel.
 """
 
-    def apply_settings(cls, project_settings):
+    def apply_settings(self, project_settings):
         super().apply_settings(project_settings)
         # Disable if not in menu context.
-        cls.enabled = (lib.CTX.context == "FlameMenuUniversal")
+        self.enabled = (lib.CTX.context == "FlameMenuUniversal")
 
     def get_pre_create_attr_defs(self):
         return [
@@ -94,6 +94,9 @@ Publishing clips/plate from Media panel.
         project_name = project_entity["name"]
         host_name = self.create_context.host_name
 
+        product_type = instance_data.get("productType")
+        if not product_type:
+            product_type = self.product_base_type
         product_name_base = self.get_product_name(
             project_name=project_name,
             project_entity=project_entity,
@@ -101,6 +104,7 @@ Publishing clips/plate from Media panel.
             task_entity=task_entity,
             variant=self.default_variant,
             host_name=host_name,
+            product_type=product_type,
         )
 
         instance_data.update(pre_create_data)
@@ -122,10 +126,11 @@ Publishing clips/plate from Media panel.
             clip_instance_data["clip_data"] = clip_data
 
             instance = CreatedInstance(
-                self.product_type,
-                product_name,
-                clip_instance_data,
-                self
+                product_base_type=self.product_base_type,
+                product_type=product_type,
+                product_name=product_name,
+                data=clip_instance_data,
+                creator=self,
             )
             self._add_instance_to_context(instance)
             instance.transient_data["has_promised_context"] = True
