@@ -1,9 +1,8 @@
 import logging
 import os
 import re
-import logging
 import shutil
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 from copy import deepcopy
 from xml.etree import ElementTree as ET
 
