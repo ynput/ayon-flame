@@ -698,7 +698,7 @@ class ClipLoader(LoaderPlugin):
         })
 
         if not format_data.get("output"):
-            format_data["output"] = context["representation"]
+            format_data["output"] = format_data["representation"]
 
         return format_data
 
