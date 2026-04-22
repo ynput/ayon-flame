@@ -37,7 +37,9 @@ class LoadClip(ayfapi.ClipLoader):
             for reel in reel_group.reels:
                 if "reel" not in reel.name.get_value().lower():
                     continue
-                self.log.debug(f"Removing useless reel: {reel.name}")
+                self.log.debug(
+                    f"Removing useless reel: {reel.name.get_value()}"
+                )
                 flame.delete(reel)
 
         matching_reel = [
