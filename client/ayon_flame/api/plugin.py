@@ -15,6 +15,10 @@ import flame
 import ayon_api
 
 from ayon_core.lib import Logger, StringTemplate
+from ayon_core.lib.transcoding import (
+    VIDEO_EXTENSIONS,
+    IMAGE_EXTENSIONS
+)
 from ayon_core.pipeline import (
     LoaderPlugin,
     Creator,
@@ -566,6 +570,14 @@ class ClipLoader(LoaderPlugin):
     """
     log = log
 
+    product_base_types = {
+        "render2d", "source", "plate", "render", "review"
+    }
+    representations = {"*"}
+    extensions = set(
+        ext.lstrip(".") for ext in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS)
+    )
+
     options = [
         qargparse.Boolean(
             "handles",
@@ -665,78 +677,93 @@ class ClipLoader(LoaderPlugin):
 
         return native_name
 
-    def _get_formatting_data(self, context, options):
-        return deepcopy(context["representation"]["context"])
+    def _get_clip_name_format_data(self, context, _) -> dict[str, str]:
+        """ Get formatting data for the clip name template.
+        """
+        format_data = deepcopy(context["representation"]["context"])
+        folder_entity = context["folder"]
+        product_entity = context["product"]
+        format_data.update({
+            "asset": folder_entity["name"],
+            "folder": {
+                "name": folder_entity["name"],
+            },
+            "subset": product_entity["name"],
+            "family": product_entity["productType"],
+            "product": {
+                "name": product_entity["name"],
+                "type": product_entity["productType"],
+                "basetype": product_entity["productBaseType"],
+            }
+        })
+
+        if not format_data.get("output"):
+            format_data["output"] = context["representation"]
+
+        return format_data
 
     def load(self, context, name, namespace, options):
-        # get flame objects
+        """
+        From a specific clip representation, load it with all of
+        its versions, connecting to Flame native OpenClip version support.
+        """
         fproject = flame.project.current_project
         self.fpd = fproject.current_workspace.desktop
 
-        # load clip to timeline and get main variables
-        version_entity = context["version"]
-        representation_name = context["representation"]["name"]
-        project_name = context["project"]["name"]
-
-        repre_context = deepcopy(
-            context["representation"]["context"]
-        )
-        if not repre_context.get("output"):
-            repre_context["output"] = repre_context["representation"]
-
+        # Build clip name from current clip,
+        # using settings template and representation context.
         clip_name = StringTemplate(self.clip_name_template).format(
-            repre_context
+            self._get_clip_name_format_data(context, options)
         )
 
-        # create workfile path
+        # Flame OpenClip is a file-based format,
+        # prepare clip file in work directory.
         workfile_dir = os.environ["AYON_WORKDIR"]
-        openclip_dir = os.path.join(
-            workfile_dir, clip_name
-        )
+        openclip_dir = os.path.join(workfile_dir, clip_name)
         openclip_path = os.path.join(
             openclip_dir, clip_name + ".clip"
         )
-        if not os.path.exists(openclip_dir):
-            os.makedirs(openclip_dir)
+        os.makedirs(openclip_dir, exist_ok=True)
 
-        clip_solver = OpenClipSolver(
-            openclip_path, self.layer_rename_patterns
-        )
-        rename_clip = clip_solver.out_clip_data is None
-        if not version_entity["taskId"]:
-            all_versions = [version_entity]
-        else:
-            all_versions = ayon_api.get_versions(
+        # Find all versions for the clip.
+        project_name = context["project"]["name"]
+        product_id =  context["version"]["productId"]
+        all_versions = list(
+            ayon_api.get_versions(
                 project_name,
-                product_ids=[version_entity["productId"]],
-                task_ids=[version_entity["taskId"]],
+                product_ids=[product_id],
             )
+        )
 
-        repres_by_version_id = {
-            version["id"]: None
-            for version in all_versions
-        }
+        # Find all representations per version.
+        repres_by_version_id = {}
         for repre_entity in ayon_api.get_representations(
              project_name,
-             representation_names={representation_name},
-             version_ids=set(repres_by_version_id),
+             representation_names={context["representation"]["name"]},
+             version_ids=[version["id"] for version in all_versions],
          ):
-             version_id = repre_entity["versionId"]
-             repres_by_version_id[version_id] = repre_entity
+             repre_version_id = repre_entity["versionId"]
+             repres_by_version_id[repre_version_id] = repre_entity
 
-        for version in all_versions:
-            representation = repres_by_version_id[version["id"]]
+        # Prepare OpenClip object.
+        clip_solver = OpenClipSolver(
+            openclip_path,
+            self.layer_rename_patterns
+        )
+        # out_clip_data is None: create new clip = allow rename
+        rename_clip = clip_solver.out_clip_data is None
 
+        # Resolve each version as new OpenClip feed.
+        for version_id, representation in repres_by_version_id.items():
+            version = next(v for v in all_versions if v["id"] == version_id)
             version_context = deepcopy(context)
             version_context["version"] = version
             version_context["representation"] = representation
-
             version_name = version["name"]
             colorspace = self.get_colorspace(version_context)
 
-            layer_rename_template = self.layer_rename_template
-
             # in case output is not in context replace key to representation
+            layer_rename_template = self.layer_rename_template
             if not representation["context"].get("output"):
                 layer_rename_template = self.layer_rename_template.replace(
                     "output", "representation"
@@ -757,37 +784,18 @@ class ClipLoader(LoaderPlugin):
                 layer_rename_template,
             )
 
+        version_entity = context["version"]
         clip_solver.set_current_version(
             f"v{version_entity['version']:03}"
         )
-
         clip_solver.write()
 
         # prepare Reel group in actual desktop
-        opc = self._get_clip(
-            clip_name,
-            openclip_path
-        )
-
-        if len(all_versions) == 1 and rename_clip:
+        opc = self._get_clip(clip_name, openclip_path)
+        if rename_clip:
             opc.name = f"{clip_name} [v{version_entity['version']:03}]"
         else:
             opc.name = clip_name
-
-        if not version_entity["taskId"]:
-            flame.messages.show_in_dialog(
-                "Import Warning",
-                (
-                    "Version doesn't have set task."
-                    "\nUnable to import any other versions alongside"
-                    " the current selection."
-                    "\nThis may result in unordered versions within the"
-                    " clip. Deleting the clip and reloading it will resolve"
-                    " this issue."
-                ),
-                "warning",
-                ["OK"],
-            )
 
         return opc
 
@@ -802,12 +810,30 @@ class ClipLoader(LoaderPlugin):
         return created_clips.pop()
 
     def _get_reel(self):
-        raise NotImplementedError()
+        """ Retrieve/Create expected reel for current clip.
+        """
+        raise NotImplementedError(
+            "To be implemented by public loader subclass."
+        )
+
+    def update(self, container, context):
+        """ AYON native version management.
+        """
+        raise NotImplementedError(
+            "Version management rely on Flame "
+            "native implementation through OpenClip."
+        )
+
+    def remove(self, container):
+        """ AYON native version management.
+        """
+        raise NotImplementedError(
+            "Version management rely on Flame "
+            "native implementation through OpenClip."
+        )
 
 
 class OpenClipSolver:
-
-    log = log
 
     def __init__(
         self,
@@ -820,8 +846,7 @@ class OpenClipSolver:
         self.layer_rename_patterns = layer_rename_patterns
 
         # replace log if any
-        if logger:
-            self.log = logger
+        self.log = logger if logger else log
         self.out_clip_data = None
         if self._is_valid_tmp_file(self.out_file):
             self.out_clip_data = ET.parse(self.out_file).getroot()
@@ -1061,9 +1086,16 @@ class OpenClipSolver:
         )
 
     def set_current_version(self, version_name: str) -> None:
+        if self.out_clip_data is None:
+            raise ValueError(
+                "Cannot set current version: No clip data available"
+            )
+
+        # Adjust current version in xml versions slot.
         out_xml_versions_obj = self.out_clip_data.find("versions")
         out_xml_versions_obj.set("currentVersion", version_name)
 
+        # Adjust current version in xml feeds.
         for out_xml_track in self.out_clip_data.iter("track"):
             out_feeds = out_xml_track.find("feeds")
             for feed in out_feeds.iter("feed"):

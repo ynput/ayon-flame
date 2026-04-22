@@ -1,26 +1,11 @@
 import flame
+
 import ayon_flame.api as ayfapi
-from ayon_core.lib.transcoding import (
-    VIDEO_EXTENSIONS,
-    IMAGE_EXTENSIONS
-)
 
 
 class LoadClip(ayfapi.ClipLoader):
-    """Load a product to timeline as clip
-
-    Place clip to timeline on its asset origin timings collected
-    during conforming to project
+    """Load a media product to as clip in the media panel.
     """
-
-    product_base_types = {
-        "render2d", "source", "plate", "render", "review"
-    }
-    representations = {"*"}
-    extensions = set(
-        ext.lstrip(".") for ext in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS)
-    )
-
     label = "Load as clip"
     order = -10
     icon = "code-fork"
@@ -31,11 +16,6 @@ class LoadClip(ayfapi.ClipLoader):
     reel_name = "Loaded"
     clip_name_template = "{folder[name]}_{product[name]}<_{output}>"
 
-    """ Anatomy keys from version context data and dynamically added:
-        - {layerName} - original layer name token
-        - {layerUID} - original layer UID token
-        - {originalBasename} - original clip name taken from file
-    """
     layer_rename_template = "{folder[name]}_{product[name]}<_{output}>"
     layer_rename_patterns = []
 
@@ -44,21 +24,21 @@ class LoadClip(ayfapi.ClipLoader):
         return self.product_base_types
 
     def _get_reel(self):
+        """ Retrieve or create a reel_group/reel for loaded clips.
+        """
+        for reel_group in self.fpd.reel_groups:
+            # Expected reel group from settings exists, retrieve.
+            if reel_group.name.get_value() == self.reel_group_name:
+                break
 
-        matching_rgroup = [
-            rg for rg in self.fpd.reel_groups
-            if rg.name.get_value() == self.reel_group_name
-        ]
-
-        if not matching_rgroup:
-            reel_group = self.fpd.create_reel_group(str(self.reel_group_name))
-            for _r in reel_group.reels:
-                if "reel" not in _r.name.get_value().lower():
-                    continue
-                self.log.debug("Removing: {}".format(_r.name))
-                flame.delete(_r)
+        # Create new empty reel group.
         else:
-            reel_group = matching_rgroup.pop()
+            reel_group = self.fpd.create_reel_group(str(self.reel_group_name))
+            for reel in reel_group.reels:
+                if "reel" not in reel.name.get_value().lower():
+                    continue
+                self.log.debug(f"Removing useless reel: {reel.name}")
+                flame.delete(reel)
 
         matching_reel = [
             re for re in reel_group.reels
@@ -66,8 +46,6 @@ class LoadClip(ayfapi.ClipLoader):
         ]
 
         if not matching_reel:
-            reel_group = reel_group.create_reel(str(self.reel_name))
-        else:
-            reel_group = matching_reel.pop()
+            return reel_group.create_reel(str(self.reel_name))
 
-        return reel_group
+        return matching_reel.pop()
