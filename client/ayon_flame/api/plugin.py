@@ -561,12 +561,7 @@ class PublishableClip:
 
 # Loader plugin functions
 class ClipLoader(LoaderPlugin):
-    """A basic clip loader for Flame
-
-    This will implement the basic behavior for a loader to inherit from that
-    will containerize the reference and will implement the `remove` and
-    `update` logic.
-
+    """A basic clip loader for Flame leveraging native OpenClip API.
     """
     log = log
 

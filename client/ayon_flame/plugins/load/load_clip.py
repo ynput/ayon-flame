@@ -4,7 +4,7 @@ import ayon_flame.api as ayfapi
 
 
 class LoadClip(ayfapi.ClipLoader):
-    """Load a media product to as clip in the media panel.
+    """ Load a media product as a clip in the media panel.
     """
     label = "Load as clip"
     order = -10
