@@ -740,6 +740,18 @@ class ClipLoader(LoaderPlugin):
              repre_version_id = repre_entity["versionId"]
              repres_by_version_id[repre_version_id] = repre_entity
 
+        if not repres_by_version_id:
+            raise RuntimeError(
+                "Could not find any representations named '{}' for product "
+                "'{}' in project '{}' while preparing OpenClip feeds. "
+                "Current version id: '{}'. Checked {} version(s).".format(
+                    context["representation"]["name"],
+                    product_id,
+                    project_name,
+                    context["version"]["id"],
+                    len(all_versions),
+                )
+            )
         # Prepare OpenClip object.
         clip_solver = OpenClipSolver(
             openclip_path,
