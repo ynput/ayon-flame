@@ -109,6 +109,7 @@ CLIP_ATTR_DEFS = [
 class _FlameInstanceCreator(plugin.HiddenFlameCreator):
     """Wrapper class for clip types products.
     """
+    skip_discovery = True
 
     def _add_instance_to_context(self, instance):
         parent_id = instance.get("parent_instance_id")
@@ -121,7 +122,7 @@ class _FlameInstanceCreator(plugin.HiddenFlameCreator):
             )
         super()._add_instance_to_context(instance)
 
-    def create(self, instance_data, _):
+    def create(self, instance_data):
         """Return a new CreateInstance for new shot from Flame.
 
         Args:
@@ -129,18 +130,19 @@ class _FlameInstanceCreator(plugin.HiddenFlameCreator):
 
         Return:
             CreatedInstance: The created instance object for the new shot.
-        """
-        instance_data.update({
-            "newHierarchyIntegration": True,
-            # Backwards compatible (Deprecated since 24/06/06)
-            "newAssetPublishing": True,
-        })
 
+        """
+        instance_data["newHierarchyIntegration"] = True
+
+        product_type = instance_data.get("productType")
+        if not product_type:
+            product_type = self.product_base_type
         new_instance = CreatedInstance(
-            self.product_type,
-            instance_data["productName"],
-            instance_data,
-            self
+            product_base_type=self.product_base_type,
+            product_type=product_type,
+            product_name=instance_data["productName"],
+            data=instance_data,
+            creator=self,
         )
         self._add_instance_to_context(new_instance)
         new_instance.transient_data["has_promised_context"] = True
@@ -203,8 +205,8 @@ class _FlameInstanceCreator(plugin.HiddenFlameCreator):
 class FlameShotInstanceCreator(_FlameInstanceCreator):
     """Shot product type creator class"""
     identifier = "io.ayon.creators.flame.shot"
-    product_type = "shot"
     product_base_type = "shot"
+    product_type = product_base_type
     label = "Editorial Shot"
 
     def get_instance_attr_defs(self):
@@ -255,13 +257,12 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
         parent_instance = instance.creator_attributes.get("parent_instance")
         current_sequence = lib.get_current_sequence(lib.CTX.selection)
 
+        gui_tracks = []
         if current_sequence is not None:
             gui_tracks = [
                 {"value": tr_name, "label": f"Track: {tr_name}"}
                 for tr_name in get_video_track_names(current_sequence)
             ]
-        else:
-            gui_tracks = []
 
         instance_attributes = [
             TextDef(
@@ -272,7 +273,7 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
             ),
         ]
 
-        if self.product_type == "plate":
+        if self.product_base_type == "plate":
             current_review = instance.creator_attributes.get("review", False)
             instance_attributes.extend(
                 [
@@ -306,11 +307,11 @@ class _FlameInstanceClipCreatorBase(_FlameInstanceCreator):
 class EditorialPlateInstanceCreator(_FlameInstanceClipCreatorBase):
     """Plate product type creator class"""
     identifier = "io.ayon.creators.flame.plate"
-    product_type = "plate"
     product_base_type = "plate"
+    product_type = product_base_type
     label = "Editorial Plate"
 
-    def create(self, instance_data, _):
+    def create(self, instance_data):
         """Return a new CreateInstance for new shot from Resolve.
 
         Args:
@@ -319,14 +320,14 @@ class EditorialPlateInstanceCreator(_FlameInstanceClipCreatorBase):
         Return:
             CreatedInstance: The created instance object for the new shot.
         """
-        return super().create(instance_data, None)
+        return super().create(instance_data)
 
 
 class EditorialAudioInstanceCreator(_FlameInstanceClipCreatorBase):
     """Audio product type creator class"""
     identifier = "io.ayon.creators.flame.audio"
-    product_type = "audio"
     product_base_type = "audio"
+    product_type = product_base_type
     label = "Editorial Audio"
 
 
@@ -335,8 +336,8 @@ class CreateShotClip(plugin.FlameEditorialCreator):
 
     identifier = "io.ayon.creators.flame.clip"
     label = "Create Publishable Clip"
-    product_type = "editorial"
     product_base_type = "editorial"
+    product_type = product_base_type
     icon = "film"
     defaults = ["Main"]
 
@@ -375,11 +376,15 @@ OTIO file.
         "retimedHandles",
         "retimedFramerange",
     }
+    presets = {}
 
-    def apply_settings(cls, project_settings):
+    def apply_settings(self, project_settings):
         super().apply_settings(project_settings)
+        self.presets = (
+            project_settings["flame"]["create"][self.__class__.__name__]
+        )
         # Disable if not in timeline context.
-        cls.enabled = (lib.CTX.context == "FlameMenuTimeline")
+        self.enabled = lib.CTX.context == "FlameMenuTimeline"
 
     def get_pre_create_attr_defs(self):
 
@@ -392,17 +397,16 @@ OTIO file.
     {_sequence_}: name of parent sequence (timeline)"""
 
         current_sequence = lib.get_current_sequence(lib.CTX.selection)
+        gui_tracks = []
         if current_sequence is not None:
             gui_tracks = [
                 {"value": tr_name, "label": f"Track: {tr_name}"}
                 for tr_name in get_video_track_names(current_sequence)
             ]
-        else:
-            gui_tracks = []
 
-        # Project settings might be applied to this creator via
-        # the inherited `Creator.apply_settings`
-        presets = self.presets
+        plate_product_types = self.presets["plate_product_types"]
+        if not plate_product_types:
+            plate_product_types = ["plate"]
 
         attr_defs = [
             BoolDef("use_selection",
@@ -422,44 +426,44 @@ OTIO file.
                 label="Shot Parent Hierarchy",
                 tooltip="Parents folder for shot root folder, "
                         "Template filled with *Hierarchy Data* section",
-                default=presets.get("hierarchy", "{folder}/{sequence}"),
+                default=self.presets["hierarchy"],
             ),
             BoolDef(
                 "useShotName",
                 label="Use shot name",
                 tooltip="Use name form Shot name clip attribute.",
-                default=presets.get("useShotName", True),
+                default=self.presets["useShotName"],
             ),
             BoolDef(
                 "clipRename",
                 label="Rename clips",
                 tooltip="Renaming selected clips on fly",
-                default=presets.get("clipRename", False),
+                default=self.presets["clipRename"],
             ),
             TextDef(
                 "clipName",
                 label="Clip Name Template",
                 tooltip="template for creating shot names, used for "
                         "renaming (use rename: on)",
-                default=presets.get("clipName", "{sequence}{shot}"),
+                default=self.presets["clipName"],
             ),
             BoolDef(
                 "segmentIndex",
                 label="Segment Index",
                 tooltip="Take number from segment index",
-                default=presets.get("segmentIndex", True),
+                default=self.presets["segmentIndex"],
             ),
             NumberDef(
                 "countFrom",
                 label="Count sequence from",
                 tooltip="Set where the sequence number starts from",
-                default=presets.get("countFrom", 10),
+                default=self.presets["countFrom"],
             ),
             NumberDef(
                 "countSteps",
                 label="Stepping number",
                 tooltip="What number is adding every new step",
-                default=presets.get("countSteps", 10),
+                default=self.presets["countSteps"],
             ),
 
             # hierarchyData
@@ -471,32 +475,32 @@ OTIO file.
                 label="{folder}",
                 tooltip="Name of folder used for root of generated shots.\n"
                         f"{tokens_help}",
-                default=presets.get("folder", "shots"),
+                default=self.presets["folder"],
             ),
             TextDef(
                 "episode",
                 label="{episode}",
                 tooltip=f"Name of episode.\n{tokens_help}",
-                default=presets.get("episode", "ep01"),
+                default=self.presets["episode"],
             ),
             TextDef(
                 "sequence",
                 label="{sequence}",
                 tooltip=f"Name of sequence of shots.\n{tokens_help}",
-                default=presets.get("sequence", "sq01"),
+                default=self.presets["sequence"],
             ),
             TextDef(
                 "track",
                 label="{track}",
                 tooltip=f"Name of timeline track.\n{tokens_help}",
-                default=presets.get("track", "{_track_}"),
+                default=self.presets["track"],
             ),
             TextDef(
                 "shot",
                 label="{shot}",
                 tooltip="Name of shot. '#' is converted to padded number."
                         f"\n{tokens_help}",
-                default=presets.get("shot", "sh###"),
+                default=self.presets["shot"],
             ),
 
             # verticalSync
@@ -508,7 +512,7 @@ OTIO file.
                 label="Enable Vertical Sync",
                 tooltip="Switch on if you want clips above "
                         "each other to share its attributes",
-                default=presets.get("vSyncOn", True),
+                default=self.presets["vSyncOn"],
             ),
             EnumDef(
                 "vSyncTrack",
@@ -531,10 +535,10 @@ OTIO file.
                 items=['<track_name>', 'main', 'bg', 'fg', 'bg', 'animatic'],
             ),
             EnumDef(
-                "productType",
-                label="Product Type",
-                tooltip="How the product will be used",
-                items=['plate', 'take'],
+                "plate_product_type",
+                label="Plate Product Type",
+                tooltip="How Plate product will be used",
+                items=plate_product_types,
             ),
             EnumDef(
                 "reviewableSource",
@@ -543,20 +547,19 @@ OTIO file.
                 items=[
                     {"value": None, "label": "< none >"},
                     {"value": "clip_media", "label": "[ Clip's media ]"},
-                ]
-                + gui_tracks,
+                ] + gui_tracks,
             ),
             BoolDef(
                 "export_audio",
                 label="Include audio",
-                tooltip="Process subsets with corresponding audio",
-                default=presets.get("export_audio", False),
+                tooltip="Process products with corresponding audio",
+                default=self.presets["export_audio"],
             ),
             BoolDef(
                 "sourceResolution",
                 label="Source resolution",
                 tooltip="Is resolution taken from timeline or source?",
-                default=presets.get("sourceResolution", False),
+                default=self.presets["sourceResolution"],
             ),
 
             # shotAttr
@@ -567,44 +570,44 @@ OTIO file.
                 "workfileFrameStart",
                 label="Workfiles Start Frame",
                 tooltip="Set workfile starting frame number",
-                default=presets.get("workfileFrameStart", 1001),
+                default=self.presets["workfileFrameStart"],
             ),
             NumberDef(
                 "handleStart",
                 label="Handle start (head)",
                 tooltip="Handle at start of clip",
-                default=presets.get("handleStart", 0),
+                default=self.presets["handleStart"],
             ),
             NumberDef(
                 "handleEnd",
                 label="Handle end (tail)",
                 tooltip="Handle at end of clip",
-                default=presets.get("handleEnd", 0),
+                default=self.presets["handleEnd"],
             ),
             BoolDef(
                 "includeHandles",
                 label="Include handles",
                 tooltip="Should the handles be included?",
-                default=presets.get("includeHandles", True),
+                default=self.presets["includeHandles"],
             ),
             BoolDef(
                 "retimedHandles",
                 label="Retimed handles",
                 tooltip="Should the handles be retimed?",
-                default=presets.get("retimedHandles", True),
+                default=self.presets["retimedHandles"],
             ),
             BoolDef(
                 "retimedFramerange",
                 label="Retimed framerange",
                 tooltip="Should the framerange be retimed?",
-                default=presets.get("retimedFramerange", True),
+                default=self.presets["retimedFramerange"],
             ),
         ]
 
         disabled_attributes = self._get_disabled_attributes()
         return [
-            attr_def for attr_def in attr_defs
-
+            attr_def
+            for attr_def in attr_defs
             # include only if enabled as overridable in settings when
             # the attribute is overridable
             if attr_def.key not in disabled_attributes
@@ -670,15 +673,14 @@ OTIO file.
         sorted_selected_segments.extend(unsorted_selected_segments)
 
         # detect enabled creators for review, plate and audio
-        shot_creator_id = "io.ayon.creators.flame.shot"
-        plate_creator_id = "io.ayon.creators.flame.plate"
-        audio_creator_id = "io.ayon.creators.flame.audio"
+        shot_creator_id = FlameShotInstanceCreator.identifier
+        plate_creator_id = EditorialPlateInstanceCreator.identifier
+        audio_creator_id = EditorialAudioInstanceCreator.identifier
         all_creators = {
             shot_creator_id: True,
             plate_creator_id: True,
             audio_creator_id: True,
         }
-        instances = []
 
         for idx, segment in enumerate(sorted_selected_segments):
 
@@ -689,11 +691,10 @@ OTIO file.
             # convert track item to timeline media pool item
             publish_clip = ayfapi.PublishableClip(
                 segment,
-                log=self.log,
                 pre_create_data=pre_create_data,
                 data=segment_instance_data,
-                product_type=self.product_type,
                 rename_index=idx,
+                log=self.log,
             )
 
             segment = publish_clip.convert()
@@ -704,8 +705,7 @@ OTIO file.
 
             segment_instance_data.update(publish_clip.marker_data)
             self.log.info(
-                "Processing track item data: {} (index: {})".format(
-                    segment, idx)
+                f"Processing track item data: {segment} (index: {idx})"
             )
 
             # Delete any existing instances previously generated for the clip.
@@ -731,20 +731,18 @@ OTIO file.
                 pre_create_data.get("export_audio", False)
             )
 
-            enabled_creators = tuple(
-                cre for cre, enabled in all_creators.items() if enabled)
-            clip_instances = {}
             shot_folder_path = segment_instance_data["folderPath"]
             shot_instances = self.shot_instances.setdefault(
                 shot_folder_path, {})
 
-            for creator_id in enabled_creators:
+            for creator_id, enabled in all_creators.items():
+                if not enabled:
+                    continue
                 creator = self.create_context.creators[creator_id]
                 sub_instance_data = deepcopy(segment_instance_data)
                 creator_attributes = sub_instance_data.setdefault(
                     "creator_attributes", {}
                 )
-                shot_folder_path = sub_instance_data["folderPath"]
 
                 # Shot creation
                 if creator_id == shot_creator_id:
@@ -842,7 +840,7 @@ OTIO file.
                     if sub_instance_data.get("reviewableSource"):
                         creator_attributes["review"] = True
 
-                instance = creator.create(sub_instance_data, None)
+                instance = creator.create(sub_instance_data)
                 instance.transient_data["segment_item"] = segment
 
                 instance_data_to_store = instance.data_to_store()
@@ -856,29 +854,26 @@ OTIO file.
                     "clip_index": clip_index,
                 }
             )
-            instances.append(instance)
 
         self.shot_instances = {}
         ayfapi.PublishableClip.restore_all_caches()
 
-        return instances
-
     def _create_and_add_instance(
-            self, data, creator_id, segment, instances):
+        self, data, creator_id, segment
+    ):
         """
         Args:
             data (dict): The data to re-recreate the instance from.
             creator_id (str): The creator id to use.
             segment (obj): The associated segment item.
-            instances (list): Result instance container.
 
         Returns:
             CreatedInstance: The newly created instance.
+
         """
         creator = self.create_context.creators[creator_id]
-        instance = creator.create(data, None)
+        instance = creator.create(data)
         instance.transient_data["segment_item"] = segment
-        instances.append(instance)
         return instance
 
     def _collect_legacy_instance(self, segment, marker_data):
@@ -926,18 +921,18 @@ OTIO file.
             ),
         })
 
-        shot_creator_id = "io.ayon.creators.flame.shot"
+        shot_creator_id = FlameShotInstanceCreator.identifier
         creator = self.create_context.creators[shot_creator_id]
-        instance = creator.create(sub_instance_data, None)
+        instance = creator.create(sub_instance_data)
         instance.transient_data["segment_item"] = segment
         clip_instances[shot_creator_id] = instance.data_to_store()
         parenting_data = instance
 
         # Create plate/audio instance
-        sub_creators = ["io.ayon.creators.flame.plate"]
+        sub_creators = [EditorialPlateInstanceCreator.identifier]
         if instance_data["audio"]:
             sub_creators.append(
-                "io.ayon.creators.flame.audio"
+                EditorialAudioInstanceCreator.identifier
             )
 
         for sub_creator_id in sub_creators:
@@ -947,7 +942,7 @@ OTIO file.
                 "parent_instance_id": parenting_data["instance_id"],
                 "label": (
                     f"{sub_instance_data['folderPath']} "
-                    f"{creator.product_type}"
+                    f"{creator.product_base_type}"
                 ),
                 "creator_attributes": {
                     "parentInstance": parenting_data["label"],
@@ -962,7 +957,7 @@ OTIO file.
                     "review": True,
                 })
 
-            instance = creator.create(sub_instance_data, None)
+            instance = creator.create(sub_instance_data)
             instance.transient_data["segment_item"] = segment
             clip_instances[sub_creator_id] = instance.data_to_store()
 
@@ -974,7 +969,6 @@ OTIO file.
                 "clip_index": clip_index,
             }
         )
-        return clip_instances.values()
 
     def collect_instances(self):
         """Collect all created instances from current timeline."""
@@ -998,8 +992,6 @@ OTIO file.
             segments = lib.get_sequence_segments(current_sequence)
 
         for segment in segments:
-            instances = []
-
             # attempt to get AYON tag data
             marker_data = lib.get_segment_data_marker(segment)
             if not marker_data:
@@ -1007,16 +999,13 @@ OTIO file.
 
             # Legacy instances handling
             if _CONTENT_ID not in marker_data:
-                instances.extend(
-                    self._collect_legacy_instance(segment, marker_data)
-                )
+                self._collect_legacy_instance(segment, marker_data)
                 continue
 
             for creator_id, data in marker_data[_CONTENT_ID].items():
                 self._create_and_add_instance(
-                    data, creator_id, segment, instances)
-
-        return instances
+                    data, creator_id, segment
+                )
 
     def update_instances(self, update_list):
         """Never called, update is handled via _FlameInstanceCreator."""

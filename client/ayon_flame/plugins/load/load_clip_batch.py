@@ -12,7 +12,9 @@ class LoadClipBatch(ayfapi.ClipLoader):
     during conforming to project
     """
 
-    product_types = {"render2d", "source", "plate", "render", "review"}
+    product_base_types = {
+        "render2d", "source", "plate", "render", "review"
+    }
     representations = {"*"}
     extensions = set(
         ext.lstrip(".") for ext in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS)
@@ -35,6 +37,10 @@ class LoadClipBatch(ayfapi.ClipLoader):
     layer_rename_template = "{folder[name]}_{product[name]}<_{output}>"
     layer_rename_patterns = []
 
+    @property
+    def product_types(self):
+        return self.product_base_types
+
     def _get_formatting_data(self, context, options):
         formatting_data = super()._get_formatting_data(context, options)
         self.batch = options.get("batch") or flame.batch
@@ -51,12 +57,12 @@ class LoadClipBatch(ayfapi.ClipLoader):
             "product": {
                 "name": product_entity["name"],
                 "type": product_entity["productType"],
+                "basetype": product_entity["productBaseType"],
             }
         })
         return formatting_data
 
     def _get_reel(self):
-
         matching_reel = [
             rg for rg in self.batch.reels
             if rg.name.get_value() == self.reel_name

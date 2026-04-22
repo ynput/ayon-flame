@@ -17,8 +17,8 @@ class CreateWorkfile(AutoCreator):
 
     identifier = "io.ayon.creators.flame.workfile"
     label = "Workfile"
-    product_type = "workfile"
     product_base_type = "workfile"
+    product_type = product_base_type
     icon = "fa5.file"
     default_variant = "Main"
 
@@ -88,29 +88,25 @@ class CreateWorkfile(AutoCreator):
             task_entity=task_entity,
             variant=self.default_variant,
             host_name=host_name,
+            product_type=self.product_type,
         )
         data = {
             "folderPath": folder_path,
             "task": task_name,
             "variant": variant,
         }
-        data.update(
-            self.get_dynamic_data(
-                variant,
-                task_name,
-                folder_entity,
-                project_name,
-                host_name,
-                False,
-            )
-        )
         self.log.info("Auto-creating workfile instance...")
         current_instance = CreatedInstance(
-            self.product_type, product_name, data, self)
+            product_base_type=self.product_base_type,
+            product_type=self.product_type,
+            product_name=product_name,
+            data=data,
+            creator=self,
+        )
         self._add_instance_to_context(current_instance)
         return current_instance
 
-    def create(self, options=None):
+    def create(self):
         """Auto-create an instance by default."""
         instance_data = self._load_instance_data()
         if instance_data:
@@ -126,7 +122,11 @@ class CreateWorkfile(AutoCreator):
             return
 
         instance = CreatedInstance(
-            self.product_type, data["productName"], data, self
+            product_base_type=self.product_base_type,
+            product_type=self.product_type,
+            product_name=data["productName"],
+            data=data,
+            creator=self,
         )
         self._add_instance_to_context(instance)
 
