@@ -757,8 +757,6 @@ class ClipLoader(LoaderPlugin):
             openclip_path,
             self.layer_rename_patterns
         )
-        # out_clip_data is None: create new clip = allow rename
-        rename_clip = clip_solver.out_clip_data is None
 
         # Resolve each version as new OpenClip feed.
         for version_id, representation in repres_by_version_id.items():
@@ -783,13 +781,22 @@ class ClipLoader(LoaderPlugin):
             # prepare clip data from context ad send it to openClipLoader
             path = self.filepath_from_context(version_context)
 
-            clip_solver.add_feed(
-                path,
-                version_name,
-                colorspace,
-                representation["context"],
-                layer_rename_template,
-            )
+            try:
+                clip_solver.add_feed(
+                    path,
+                    version_name,
+                    colorspace,
+                    representation["context"],
+                    layer_rename_template,
+                )
+            except RuntimeError:
+                flame.messages.show_in_dialog(
+                    "Unsupported Input",
+                    f"Flame does not support incoming media path {path}",
+                    "warning",
+                    ["OK"],
+                )
+                return
 
         version_entity = context["version"]
         clip_solver.set_current_version(
@@ -799,10 +806,7 @@ class ClipLoader(LoaderPlugin):
 
         # prepare Reel group in actual desktop
         opc = self._get_clip(clip_name, openclip_path)
-        if rename_clip:
-            opc.name = f"{clip_name} [v{version_entity['version']:03}]"
-        else:
-            opc.name = clip_name
+        opc.name = clip_name
 
         return opc
 
@@ -880,7 +884,13 @@ class OpenClipSolver:
         context_data: dict[str, Any],
         layer_rename_template: str,
     ) -> None:
-        clip = flib.MediaInfoFile(path, self.log)
+        try:
+            clip = flib.MediaInfoFile(path, self.log)
+        except ET.ParseError as error:
+            self.log.error(f"Error adding feed: {error}")
+            raise RuntimeError(
+                f"Unsupported input media: {path}"
+            ) from error
 
         if self.out_clip_data is None:
             self.out_clip_data = clip.clip_data
@@ -967,7 +977,10 @@ class OpenClipSolver:
         layer_rename_template: str,
     ) -> None:
         layer_uid = xml_track_data.get("uid")
-        name_obj = xml_track_data.find("name")
+        name_obj = (
+            xml_track_data.find("name")
+            or xml_track_data.find("sourceName")
+        )
         layer_name = name_obj.text
 
         if (

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Any
 
 import flame
 
@@ -28,7 +29,7 @@ class LoadClipBatch(ayfapi.ClipLoader):
         self.batch = options.get("batch") or flame.batch
         return super().load(context, name, namespace, options)
 
-    def _get_clip_name_format_data(self, context, options) -> dict[str, str]:
+    def _get_clip_name_format_data(self, context, options) -> dict[str, Any]:
         """ Get formatting data for the clip name template.
         """
         formatting_data = super()._get_clip_name_format_data(context, options)
