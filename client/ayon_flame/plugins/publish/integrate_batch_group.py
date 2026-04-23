@@ -3,9 +3,11 @@ import copy
 from collections import OrderedDict
 from pprint import pformat
 import pyblish
-import ayon_flame.api as ayfapi
+
 import ayon_core.pipeline as op_pipeline
 from ayon_core.pipeline.workfile import get_workdir
+
+import ayon_flame.api as ayfapi
 
 
 class IntegrateBatchGroup(pyblish.api.InstancePlugin):
@@ -81,8 +83,11 @@ class IntegrateBatchGroup(pyblish.api.InstancePlugin):
         ]
 
         # add nodes into batch group
-        return ayfapi.create_batch_group_conent(
-            batch_nodes, batch_links, batch_group)
+        return ayfapi.edit_batch_group_content(
+            batch_group,
+            batch_nodes,
+            batch_links
+        )
 
     def _load_clip_to_context(self, instance, bgroup):
         # get all loaders for host
@@ -175,43 +180,33 @@ class IntegrateBatchGroup(pyblish.api.InstancePlugin):
         task_name = task_data["name"]
         batchgroup_name = "{}_{}".format(folder_path, task_name)
 
-        batch_data = {
-            "shematic_reels": [
-                "AYON_LoadedReel"
-            ],
-            "handleStart": handle_start,
-            "handleEnd": handle_end
-        }
-        self.log.debug(
-            "__ batch_data: {}".format(pformat(batch_data)))
-
-        # check if the batch group already exists
-        bgroup = ayfapi.get_batch_group_from_desktop(batchgroup_name)
-
-        if not bgroup:
-            self.log.info(
-                "Creating new batch group: {}".format(batchgroup_name))
-            # create batch with utils
-            bgroup = ayfapi.create_batch_group(
-                batchgroup_name,
-                frame_start,
-                frame_duration,
-                **batch_data
+        # check if parent batch group exists
+        bgroup = ayfapi.get_batch_from_workspace(batchgroup_name)
+        if bgroup:
+            self.log.info("Updating batch group: {batchgroup_name}")
+            batch = ayfapi.update_batch(
+                bgroup,
+                frame_start=frame_start,
+                frame_duration=frame_duration,
+                handle_start=handle_start,
+                handle_end=handle_end,
             )
 
         else:
-            self.log.info(
-                "Updating batch group: {}".format(batchgroup_name))
-            # update already created batch group
-            bgroup = ayfapi.create_batch_group(
+            self.log.info(f"Creating new batch group: {batchgroup_name}")
+            batch = ayfapi.create_batch(
                 batchgroup_name,
-                frame_start,
-                frame_duration,
-                update_batch_group=bgroup,
-                **batch_data
+                frame_start=frame_start,
+                frame_duration=frame_duration,
+                handle_start=handle_start,
+                handle_end=handle_end,
             )
 
-        return bgroup
+        ayfapi.add_reels_to_batch(
+            batch,
+            reels=["AYON_LoadedReel"],
+        )
+        return batch
 
     def _get_anamoty_data_with_current_task(self, instance, task_data):
         anatomy_data = copy.deepcopy(instance.data["anatomyData"])

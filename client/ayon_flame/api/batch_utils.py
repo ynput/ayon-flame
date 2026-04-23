@@ -1,151 +1,144 @@
+from typing import Optional, List, Dict, Any
+
+from ayon_core.lib import Logger
+
 import flame
 
 
-def create_batch_group(
+log = Logger.get_logger(__name__)
+
+
+def create_batch(
     name,
-    frame_start,
-    frame_duration,
-    update_batch_group=None,
-    **kwargs
-):
+    frame_start: int,
+    frame_duration: int,
+    handle_start: int = 0,
+    handle_end: int = 0,
+) -> flame.PyBatch:
     """Create Batch Group in active project's Desktop
-
-    Args:
-        name (str): name of batch group to be created
-        frame_start (int): start frame of batch
-        frame_end (int): end frame of batch
-        update_batch_group (PyBatch)[optional]: batch group to update
-
-    Return:
-        PyBatch: active flame batch group
     """
-    # make sure some batch obj is present
-    batch_group = update_batch_group or flame.batch
-
-    schematic_reels = kwargs.get("shematic_reels") or ['LoadedReel1']
-    shelf_reels = kwargs.get("shelf_reels") or ['ShelfReel1']
-
-    handle_start = kwargs.get("handleStart") or 0
-    handle_end = kwargs.get("handleEnd") or 0
-
     frame_start -= handle_start
     frame_duration += handle_start + handle_end
 
-    if not update_batch_group:
-        # Create batch group with name, start_frame value, duration value,
-        # set of schematic reel names, set of shelf reel names
-        batch_group = batch_group.create_batch_group(
-            name,
-            start_frame=frame_start,
-            duration=frame_duration,
-            reels=schematic_reels,
-            shelf_reels=shelf_reels
-        )
-    else:
-        batch_group.name = name
-        batch_group.start_frame = frame_start
-        batch_group.duration = frame_duration
-
-        # add reels to batch group
-        _add_reels_to_batch_group(
-            batch_group, schematic_reels, shelf_reels)
-
-        # TODO: also update write node if there is any
-        # TODO: also update loaders to start from correct frameStart
-
-    if kwargs.get("switch_batch_tab"):
-        # use this command to switch to the batch tab
-        batch_group.go_to()
-
-    return batch_group
+    return flame.batch.create_batch_group(
+        name,
+        start_frame=frame_start,
+        duration=frame_duration,
+    )
 
 
-def _add_reels_to_batch_group(batch_group, reels, shelf_reels):
-    # update or create defined reels
-    # helper variables
-    reel_names = [
-        r.name.get_value()
-        for r in batch_group.reels
-    ]
-    shelf_reel_names = [
-        r.name.get_value()
-        for r in batch_group.shelf_reels
-    ]
-    # add schematic reels
-    for _r in reels:
-        if _r in reel_names:
-            continue
-        batch_group.create_reel(_r)
-
-    # add shelf reels
-    for _sr in shelf_reels:
-        if _sr in shelf_reel_names:
-            continue
-        batch_group.create_shelf_reel(_sr)
-
-
-def create_batch_group_conent(batch_nodes, batch_links, batch_group=None):
-    """Creating batch group with links
-
-    Args:
-        batch_nodes (list of dict): each dict is node definition
-        batch_links (list of dict): each dict is link definition
-        batch_group (PyBatch, optional): batch group. Defaults to None.
-
-    Return:
-        dict: all batch nodes {name or id: PyNode}
+def update_batch(
+    batch: flame.PyBatch,
+    name: Optional[str] = None,
+    frame_start: Optional[int] = None,
+    frame_duration: Optional[int] = None,
+    handle_start: int = 0,
+    handle_end: int = 0,
+) -> flame.PyBatch:
+    """ Update provided batch with new values.
     """
-    # make sure some batch obj is present
-    batch_group = batch_group or flame.batch
+    if name:
+        batch.name = name
+    if frame_start is not None:
+        batch.start_frame = frame_start
+    if frame_duration is not None:
+        frame_duration += handle_start + handle_end
+        batch.duration = frame_duration
+
+    return batch
+
+
+def add_reels_to_batch(
+    batch: flame.PyBatch,
+    reels: Optional[List[str]] = None,
+    shelf_reels: Optional[List[str]] = None,
+):
+    """ Add reels and shelf reels to batch.
+    """
+    if reels:
+        existing_reel_names = [
+            reel.name.get_value()
+            for reel in batch.reels
+        ]
+        for new_reel in reels:
+            if new_reel not in existing_reel_names:
+                batch.create_reel(new_reel)
+
+    if shelf_reels:
+        existing_shelf_reel_names = [
+            reel.name.get_value()
+            for reel in batch.shelf_reels
+        ]
+        for new_sr in shelf_reels:
+            if new_sr not in existing_shelf_reel_names:
+                batch.create_shelf_reel(new_sr)
+
+
+def edit_batch_group_content(
+    batch: flame.PyBatch,
+    batch_nodes: List[Dict[str, Any]],  # each dict is node definition
+    batch_links: List[Dict[str, Any]]   # each dict is new link definition
+) -> Dict[str, flame.PyNode]:
     all_batch_nodes = {
-        b.name.get_value(): b
-        for b in batch_group.nodes
+        node.name.get_value(): node
+        for node in batch.nodes
     }
     for node in batch_nodes:
-        # NOTE: node_props needs to be ideally OrederDict type
-        node_id, node_type, node_props = (
-            node["id"], node["type"], node["properties"])
 
-        # get node name for checking if exists
-        node_name = node_props.pop("name", None) or node_id
-
+        # Node to edit already exists, update existing batch node
+        node_name = node["properties"].pop("name", None) or node["id"]
         if all_batch_nodes.get(node_name):
-            # update existing batch node
             batch_node = all_batch_nodes[node_name]
-        else:
-            # create new batch node
-            batch_node = batch_group.create_node(node_type)
 
-            # set name
+        # create new batch node, otherwise
+        else:
+            batch_node = batch.create_node(node["type"])
             batch_node.name.set_value(node_name)
+            all_batch_nodes[node["id"]] = batch_node
 
         # set attributes found in node props
-        for key, value in node_props.items():
-            if not hasattr(batch_node, key):
-                continue
-            setattr(batch_node, key, value)
-
-        # add created node for possible linking
-        all_batch_nodes[node_id] = batch_node
+        for key, value in node["properties"].items():
+            if hasattr(batch_node, key):
+                setattr(batch_node, key, value)
+            else:
+                log.warning(
+                    f"Attribute {key} not found on batch node {node_name}"
+                )
 
     # link nodes to each other
     for link in batch_links:
         _from_n, _to_n = link["from_node"], link["to_node"]
 
-        # check if all linking nodes are available
-        if not all([
-            all_batch_nodes.get(_from_n["id"]),
-            all_batch_nodes.get(_to_n["id"])
-        ]):
-            continue
+        if(
+            all_batch_nodes.get(_from_n["id"])
+            and all_batch_nodes.get(_to_n["id"])
+        ):
+            batch.connect_nodes(
+                all_batch_nodes[_from_n["id"]], _from_n["connector"],
+                all_batch_nodes[_to_n["id"]], _to_n["connector"]
+            )
+        else:
+            log.warning(
+                f"Failed to link node(s) {_from_n['id']} to {_to_n['id']}."
+            )
 
-        # link nodes in defined link
-        batch_group.connect_nodes(
-            all_batch_nodes[_from_n["id"]], _from_n["connector"],
-            all_batch_nodes[_to_n["id"]], _to_n["connector"]
-        )
-
-    # sort batch nodes
-    batch_group.organize()
-
+    batch.organize()  # sort batch nodes
     return all_batch_nodes
+
+
+def get_batch_from_workspace(
+    name: str,
+    workspace: Optional[flame.Workspace] = None
+) -> Optional[flame.PyBatch]:
+    """ Get batch group from name and workspace.
+    """
+    if workspace is None:
+        project = flame.project.current_project
+        workspace = project.current_workspace
+
+    desktop = workspace.desktop
+    for batchgroup in desktop.batch_groups:
+        if batchgroup.name.get_value() == name:
+            return batchgroup
+
+    return None

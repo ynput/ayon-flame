@@ -32,7 +32,6 @@ from .lib import (
     maintained_object_duplication,
     maintained_temp_file_path,
     get_clip_segment,
-    get_batch_group_from_desktop,
     MediaInfoFile,
     TimeEffectMetadata
 )
@@ -80,8 +79,11 @@ from .render_utils import (
     modify_preset_file
 )
 from .batch_utils import (
-    create_batch_group,
-    create_batch_group_conent
+    create_batch,
+    update_batch,
+    add_reels_to_batch,
+    edit_batch_group_content,
+    get_batch_from_workspace,
 )
 
 __all__ = [
@@ -116,7 +118,6 @@ __all__ = [
     "maintained_object_duplication",
     "maintained_temp_file_path",
     "get_clip_segment",
-    "get_batch_group_from_desktop",
     "MediaInfoFile",
     "TimeEffectMetadata",
 
@@ -167,6 +168,9 @@ __all__ = [
     "modify_preset_file",
 
     # batch utils
-    "create_batch_group",
-    "create_batch_group_conent"
+    "create_batch",
+    "update_batch",
+    "add_reels_to_batch",
+    "edit_batch_group_content",
+    "get_batch_from_workspace"
 ]
