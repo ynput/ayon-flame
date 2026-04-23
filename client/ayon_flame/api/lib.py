@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import contextlib
 import itertools
 import json
@@ -8,8 +6,7 @@ import pickle
 import re
 import sys
 import tempfile
-import traceback
-import xml.etree.cElementTree as cET
+
 from copy import copy, deepcopy
 from dataclasses import dataclass, field
 from pprint import pformat
@@ -43,19 +40,21 @@ class CTX:
 class ValidationAggregator:
     failed_segments: list = field(default_factory=list)
 
-    def has_errors(self):
-        return len(self.failed_segments) > 0
+    def has_errors(self) -> bool:
+        return bool(self.failed_segments)
 
 
 @contextlib.contextmanager
 def io_preferences_file(klass, filepath, write=False):
+    # Create file if it doesn't exist.
     if not os.path.exists(filepath):
         with open(filepath, "w"):
             pass
 
     try:
         flag = "wb" if write else "rb"
-        yield open(filepath, flag)
+        with open(filepath, flag) as file_handler:
+            yield file_handler
 
     except (IOError, EOFError) as _error:
         klass.log.info("Unable to work with preferences `{}`: {}".format(
@@ -63,57 +62,8 @@ def io_preferences_file(klass, filepath, write=False):
 
 
 class FlameAppFramework(object):
-    # flameAppFramework class takes care of preferences
-
-    class prefs_dict(dict):
-
-        def __init__(self, master, name, **kwargs):
-            self.name = name
-            self.master = master
-            if not self.master.get(self.name):
-                self.master[self.name] = {}
-            self.master[self.name].__init__()
-
-        def __getitem__(self, k):
-            return self.master[self.name].__getitem__(k)
-
-        def __setitem__(self, k, v):
-            return self.master[self.name].__setitem__(k, v)
-
-        def __delitem__(self, k):
-            return self.master[self.name].__delitem__(k)
-
-        def get(self, k, default=None):
-            return self.master[self.name].get(k, default)
-
-        def setdefault(self, k, default=None):
-            return self.master[self.name].setdefault(k, default)
-
-        def pop(self, *args, **kwargs):
-            return self.master[self.name].pop(*args, **kwargs)
-
-        def update(self, mapping=(), **kwargs):
-            self.master[self.name].update(mapping, **kwargs)
-
-        def __contains__(self, k):
-            return self.master[self.name].__contains__(k)
-
-        def copy(self):  # don"t delegate w/ super - dict.copy() -> dict :(
-            return type(self)(self)
-
-        def keys(self):
-            return self.master[self.name].keys()
-
-        @classmethod
-        def fromkeys(cls, keys, v=None):
-            return cls.master[cls.name].fromkeys(keys, v)
-
-        def __repr__(self):
-            return "{0}({1})".format(
-                type(self).__name__, self.master[self.name].__repr__())
-
-        def master_keys(self):
-            return self.master.keys()
+    """ Takes care of preferences.
+    """
 
     def __init__(self):
         self.name = self.__class__.__name__
@@ -186,78 +136,42 @@ class FlameAppFramework(object):
 
         return (prefs_file_path, prefs_user_file_path, prefs_global_file_path)
 
-    def load_prefs(self):
 
-        (proj_pref_path, user_pref_path,
-         glob_pref_path) = self.get_pref_file_paths()
-
-        # make directories if not exists
+    def _process_prefs(self, save: bool = False):
+        # make sure the preference folder is available
         try:
             os.makedirs(self.prefs_folder, exist_ok=True)
-        except Exception as err:
+        except Exception:
             self.log.error(
-                f"Unable to create folder {self.prefs_folder}")
-            raise err
+                "Unable to create folder %s",
+                self.prefs_folder
+            )
+            return False
 
-        with io_preferences_file(self, proj_pref_path) as prefs_file:
-            self.prefs = pickle.load(prefs_file)
-            self.log.info(
-                "Project - preferences contents:\n{}".format(
-                    pformat(self.prefs)
-                ))
+        # Read or write the prefs in each files.
+        for attr, path in zip(
+            (self.prefs, self.prefs_user, self.prefs_global),
+            self.get_pref_file_paths(),
+        ):
+            with io_preferences_file(self, path, True) as prefs_file:
+                if save:
+                    pickle.dump(attr, prefs_file)
+                else:
+                    attr.clear()
+                    attr.update(pickle.load(prefs_file))
 
-        with io_preferences_file(self, user_pref_path) as prefs_file:
-            self.prefs_user = pickle.load(prefs_file)
-            self.log.info(
-                "User - preferences contents:\n{}".format(
-                    pformat(self.prefs_user)
-                ))
-
-        with io_preferences_file(self, glob_pref_path) as prefs_file:
-            self.prefs_global = pickle.load(prefs_file)
-            self.log.info(
-                "Global - preferences contents:\n{}".format(
-                    pformat(self.prefs_global)
-                ))
+                self.log.info(
+                    "Preferences contents:\n%s",
+                    pformat(attr),
+                )
 
         return True
 
-    def save_prefs(self):
-        # make sure the preference folder is available
-        if not os.path.isdir(self.prefs_folder):
-            try:
-                os.makedirs(self.prefs_folder)
-            except Exception:
-                self.log.info("Unable to create folder {}".format(
-                    self.prefs_folder))
-                return False
+    def load_prefs(self) -> bool:
+        return self._process_prefs(save=False)
 
-        # get all pref file paths
-        (proj_pref_path, user_pref_path,
-         glob_pref_path) = self.get_pref_file_paths()
-
-        with io_preferences_file(self, proj_pref_path, True) as prefs_file:
-            pickle.dump(self.prefs, prefs_file)
-            self.log.info(
-                "Project - preferences contents:\n{}".format(
-                    pformat(self.prefs)
-                ))
-
-        with io_preferences_file(self, user_pref_path, True) as prefs_file:
-            pickle.dump(self.prefs_user, prefs_file)
-            self.log.info(
-                "User - preferences contents:\n{}".format(
-                    pformat(self.prefs_user)
-                ))
-
-        with io_preferences_file(self, glob_pref_path, True) as prefs_file:
-            pickle.dump(self.prefs_global, prefs_file)
-            self.log.info(
-                "Global - preferences contents:\n{}".format(
-                    pformat(self.prefs_global)
-                ))
-
-        return True
+    def save_prefs(self) -> bool:
+        return self._process_prefs(save=True)
 
 
 def get_current_project():
@@ -296,54 +210,40 @@ def rescan_hooks():
     import flame
     try:
         flame.execute_shortcut("Rescan Python Hooks")
-    except Exception:
-        pass
+    except Exception as error:
+        log.warning(
+            "Could not rescan Python hooks: %s" % error
+        )
 
 
-def get_metadata(project_name, _log=None):
-    # TODO: can be replaced by MediaInfoFile class method
+def get_metadata(project_name, _log=None) -> str:
     from adsk.libwiretapPythonClientAPI import (
         WireTapClient,
         WireTapServerHandle,
         WireTapNodeHandle,
         WireTapStr
     )
+    _log = _log or log
+    client = WireTapClient()
+    policy = WireTapStr()
 
-    class GetProjectColorPolicy(object):
-        def __init__(self, host_name=None, _log=None):
-            # Create a connection to the Backburner manager using the Wiretap
-            # python API.
-            #
-            self.log = _log or log
-            self.host_name = host_name or "localhost"
-            self._wiretap_client = WireTapClient()
-            if not self._wiretap_client.init():
-                raise Exception("Could not initialize Wiretap Client")
-            self._server = WireTapServerHandle(
-                "{}:IFFFS".format(self.host_name))
+    if not client.init():
+        raise Exception("Could not initialize Wiretap Client")
 
-        def process(self, project_name):
-            policy_node_handle = WireTapNodeHandle(
-                self._server,
-                "/projects/{}/syncolor/policy".format(project_name)
+    server = WireTapServerHandle("localhost:IFFFS")
+    node = WireTapNodeHandle(
+        server,
+        f"/projects/{project_name}/syncolor/policy"
+    )
+    _log.info(node)
+    if not node.getNodeTypeStr(policy):
+        _log.warning(
+            "Could not retrieve policy of '%s': %s" % (
+                node.getNodeId().id(),
+                node.lastError()
             )
-            self.log.info(policy_node_handle)
-
-            policy = WireTapStr()
-            if not policy_node_handle.getNodeTypeStr(policy):
-                self.log.warning(
-                    "Could not retrieve policy of '%s': %s" % (
-                        policy_node_handle.getNodeId().id(),
-                        policy_node_handle.lastError()
-                    )
-                )
-
-            return policy.c_str()
-
-    policy_wiretap = GetProjectColorPolicy(_log=_log)
-    return policy_wiretap.process(project_name)
-
-
+        )
+    return policy.c_str()
 
 
 def get_segment_data_marker(segment, with_marker=None):
@@ -364,8 +264,10 @@ def get_segment_data_marker(segment, with_marker=None):
         color = marker.colour.get_value()
         name = marker.name.get_value()
 
-        if (name == MARKER_NAME) and (
-                color == COLOR_MAP[MARKER_COLOR]):
+        if (
+            name == MARKER_NAME
+            and color == COLOR_MAP[MARKER_COLOR]
+        ):
             if not with_marker:
                 return json.loads(comment)
             else:
@@ -438,20 +340,7 @@ def set_clip_data_marker(clip, data=None):
             f"data points toward {segment_data}."
         )
 
-    marker_data = get_segment_data_marker(segment, True)
-
-    if marker_data:
-        # get available AYON tag if any
-        marker, tag_data = marker_data
-        # update tag data with new data
-        tag_data.update(data)
-        # update marker with tag data
-        marker.comment = json.dumps(tag_data)
-    else:
-        # update tag data with new data
-        marker = create_segment_data_marker(segment)
-        # add tag data to marker's comment
-        marker.comment = json.dumps(data)
+    set_segment_data_marker(segment, data=data)
 
 
 def set_publish_attribute(segment, value):
@@ -522,7 +411,6 @@ def create_clip_data_marker(clip):
     """
     # get duration of segment
     duration = clip.duration.frame
-    print(duration)
     # calculate start frame of the new marker
     start_frame = int(clip.start_frame) + int(duration / 2)
     # create marker
@@ -574,8 +462,7 @@ def maintained_segment_selection(sequence):
         >>> with maintained_segment_selection(sequence) as selected_segments:
         ...     for segment in selected_segments:
         ...         segment.selected = False
-        >>> print(segment.selected)
-        True
+        >>> assert(segment.selected)
     """
     selected_segments = get_sequence_segments(sequence, True)
     try:
@@ -601,7 +488,6 @@ def reset_segment_selection(sequence):
 
 
 def _get_shot_tokens_values(clip, tokens):
-    old_value = None
     output = {}
 
     if not clip.shot_name:
@@ -673,18 +559,13 @@ def get_segment_attributes(
             validation_aggregator.failed_segments.append(segment)
 
     # head and tail with forward compatibility
-    if segment.head:
-        # `infinite` can be also returned
-        if isinstance(segment.head, str):
-            clip_data["segment_head"] = 0
-        else:
-            clip_data["segment_head"] = int(segment.head)
-    if segment.tail:
-        # `infinite` can be also returned
-        if isinstance(segment.tail, str):
-            clip_data["segment_tail"] = 0
-        else:
-            clip_data["segment_tail"] = int(segment.tail)
+    for key in ("head", "tail"):
+        value = getattr(segment, key)
+        if value:
+            clip_data[f"segment_{key}"] = (
+                0 if isinstance(value, str)
+                else int(value)
+            )
 
     # add all available shot tokens
     shot_tokens = _get_shot_tokens_values(segment, [
@@ -1331,7 +1212,7 @@ class MediaInfoFile(object):
         """
         try:
             # save it as new file
-            tree = cET.ElementTree(xml_element_data)
+            tree = ET.ElementTree(xml_element_data)
             tree.write(
                 fpath, xml_declaration=True,
                 method="xml", encoding="UTF-8"
@@ -1397,11 +1278,10 @@ class TimeEffectMetadata(object):
     def _get_attributes_from_xml(self, tmp_path):
         with open(tmp_path, "r") as tw_setup_file:
             tw_setup_string = tw_setup_file.read()
-            tw_setup_file.close()
 
         tw_setup_xml = ET.fromstring(tw_setup_string)
         tw_setup = self._dictify(tw_setup_xml)
-        # pprint(tw_setup)
+
         try:
             tw_setup_state = tw_setup["Setup"]["State"][0]
             mode = int(
@@ -1451,9 +1331,8 @@ class TimeEffectMetadata(object):
                         )
                     }
                 }
-        except Exception:
-            lines = traceback.format_exception(*sys.exc_info())
-            self.log.error("\n".join(lines))
+        except Exception as error:
+            self.log.error(error, exc_info=True)
             return None, {}
 
         return tw_setup_string, r_data

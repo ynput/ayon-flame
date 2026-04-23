@@ -1,8 +1,6 @@
-from __future__ import annotations
-
+import logging
 import os
 import re
-import logging
 import shutil
 from typing import Any, Optional
 from copy import deepcopy
@@ -109,7 +107,6 @@ class PublishableClip:
     """
     vertical_clip_match = {}
     vertical_clip_used = {}
-    marker_data = {}
     types = {
         "shot": "shot",
         "folder": "folder",
@@ -150,6 +147,7 @@ class PublishableClip:
         self.rename_index = rename_index
         self.log = log
         self.pre_create_data = pre_create_data or {}
+        self.marker_data = {}
 
         # get main parent objects
         self.current_segment = segment
@@ -403,13 +401,10 @@ class PublishableClip:
         if not hero_track and self.vertical_sync:
             # driving layer is set as negative match
             for (hero_in, hero_out), hero_data in self.vertical_clip_match.items():  # noqa
-                """ Iterate over all clips in vertical sync match
-
-                If clip frame range is outside of hero clip frame range
-                then skip this clip and do not add to hierarchical shared
-                metadata to them.
-                """
-
+                # Iterate over all clips in vertical sync match
+                # If clip frame range is outside of hero clip frame range
+                # then skip this clip and do not add to hierarchical shared
+                # metadata to them.
                 if self.clip_in < hero_in or self.clip_out > hero_out:
                     continue
 
@@ -548,12 +543,10 @@ class PublishableClip:
         par_split = [(pattern.findall(t).pop(), t)
                      for t in self.hierarchy.split("/")]
 
-        for type, template in par_split:
-            parent = self._convert_to_entity(type, template)
+        for type_, template in par_split:
+            parent = self._convert_to_entity(type_, template)
             self.parents.append(parent)
 
-
-# Publishing plugin functions
 
 # Loader plugin functions
 class ClipLoader(LoaderPlugin):
@@ -600,14 +593,14 @@ class ClipLoader(LoaderPlugin):
         if not plugin_settings:
             return
 
-        print(">>> We have preset for {}".format(plugin_name))
+        log.debug(">>> We have preset for {}".format(plugin_name))
         for option, value in plugin_settings.items():
             if option == "enabled" and value is False:
-                print("  - is disabled by preset")
+                log.debug("  - is disabled by preset")
             elif option == "representations":
                 continue
             else:
-                print("  - setting `{}`: `{}`".format(option, value))
+                log.debug("  - setting `{}`: `{}`".format(option, value))
             setattr(cls, option, value)
 
     def get_colorspace(self, context):
@@ -696,8 +689,7 @@ class ClipLoader(LoaderPlugin):
         openclip_path = os.path.join(
             openclip_dir, clip_name + ".clip"
         )
-        if not os.path.exists(openclip_dir):
-            os.makedirs(openclip_dir)
+        os.makedirs(openclip_dir, exist_ok=True)
 
         clip_solver = OpenClipSolver(
             openclip_path, self.layer_rename_patterns
@@ -831,9 +823,9 @@ class OpenClipSolver:
         if os.path.isfile(file):
             # test also if file is not empty
             with open(file) as f:
-                lines = f.readlines()
+                lines = sum(1 for _ in f)
 
-            if len(lines) > 2:
+            if lines > 2:
                 return True
 
             # file is probably corrupted
@@ -1090,6 +1082,7 @@ class OpenClipSolver:
                 self.log.warning(
                     "Not appending file as it already is in .clip file")
                 return True
+        return False
 
     def _create_openclip_backup_file(self, file):
         if not os.path.isfile(file):
@@ -1112,8 +1105,8 @@ class OpenClipSolver:
     def _add_colorspace(self, feed_obj, profile_name):
         feed_storage_obj = feed_obj.find("storageFormat")
         feed_clr_obj = feed_storage_obj.find("colourSpace")
-        if feed_clr_obj is not None:
+        if feed_clr_obj is None:
             feed_clr_obj = ET.Element(
                 "colourSpace", {"type": "string"})
-            feed_clr_obj.text = profile_name
             feed_storage_obj.append(feed_clr_obj)
+        feed_clr_obj.text = profile_name

@@ -1,3 +1,4 @@
+import logging
 from copy import deepcopy
 from pprint import pformat
 
@@ -6,25 +7,10 @@ from qtpy import QtWidgets
 from ayon_core.pipeline import get_current_project_name
 from ayon_core.tools.utils import host_tools
 
-menu_group_name = 'AYON'
 
-default_flame_export_presets = {
-    'Publish': {
-        'PresetVisibility': 2,
-        'PresetType': 0,
-        'PresetFile': 'OpenEXR/OpenEXR (16-bit fp PIZ).xml'
-    },
-    'Preview': {
-        'PresetVisibility': 3,
-        'PresetType': 2,
-        'PresetFile': 'Generate Preview.xml'
-    },
-    'Thumbnail': {
-        'PresetVisibility': 3,
-        'PresetType': 0,
-        'PresetFile': 'Generate Thumbnail.xml'
-    }
-}
+logger = logging.getLogger(__name__)
+
+menu_group_name = 'AYON'
 
 
 def callback_selection(
@@ -35,7 +21,7 @@ def callback_selection(
     import ayon_flame.api as ayfapi
     ayfapi.CTX.selection = selection
     ayfapi.CTX.context = context
-    print("Hook Selection: \n\t{}".format(
+    logger.debug("Hook Selection: \n\t{}".format(
         pformat({
             index: (type(item), item.name)
             for index, item in enumerate(ayfapi.CTX.selection)})
@@ -66,7 +52,6 @@ class _FlameMenuApp(object):
         self.framework = framework
         self.log = framework.log
         self.menu_group_name = menu_group_name
-        self.dynamic_menu_data = {}
 
         # flame module is only available when a
         # flame project is loaded and initialized
@@ -74,17 +59,19 @@ class _FlameMenuApp(object):
         try:
             import flame
             self.flame = flame
+            self.flame_project_name = flame.project.current_project.name
+
         except ImportError:
             self.flame = None
+            self.flame_project_name = None
 
-        self.flame_project_name = flame.project.current_project.name
-        self.prefs = self.framework.prefs_dict(self.framework.prefs, self.name)
-        self.prefs_user = self.framework.prefs_dict(
-            self.framework.prefs_user, self.name)
-        self.prefs_global = self.framework.prefs_dict(
-            self.framework.prefs_global, self.name)
+        self.prefs = self.framework.prefs.setdefault(self.name, {})
+        self.prefs_user = self.framework.prefs_user.setdefault(self.name, {})
+        self.prefs_global = self.framework.prefs_global.setdefault(
+            self.name,
+            {}
+        )
 
-        self.mbox = QtWidgets.QMessageBox()
         project_name = get_current_project_name()
         self.menu = {
             "actions": [
@@ -101,7 +88,7 @@ class _FlameMenuApp(object):
 
     def __getattr__(self, name):
         def method(*args, **kwargs):
-            print('calling %s' % name)
+            logger.debug('calling %s' % name)
         return method
 
     def rescan(self, *args, **kwargs):
@@ -116,20 +103,13 @@ class _FlameMenuApp(object):
             self.flame.execute_shortcut('Rescan Python Hooks')
             self.log.info('Rescan Python Hooks')
 
+    def refresh(self, *args, **kwargs):
+        self.rescan()
+
 
 class FlameMenuProjectConnect(_FlameMenuApp):
-
-    # flameMenuProjectconnect app takes care of the preferences dialog as well
-
-    def __init__(self, framework):
-        _FlameMenuApp.__init__(self, framework)
-
-    def __getattr__(self, name):
-        def method(*args, **kwargs):
-            project = self.dynamic_menu_data.get(name)
-            if project:
-                self.link_project(project)
-        return method
+    """ Takes care of the preferences dialog as well.
+    """
 
     def build_menu(self):
         if not self.flame:
@@ -148,35 +128,10 @@ class FlameMenuProjectConnect(_FlameMenuApp):
 
         return menu
 
-    def refresh(self, *args, **kwargs):
-        self.rescan()
-
-    def rescan(self, *args, **kwargs):
-        if not self.flame:
-            try:
-                import flame
-                self.flame = flame
-            except ImportError:
-                self.flame = None
-
-        if self.flame:
-            self.flame.execute_shortcut('Rescan Python Hooks')
-            self.log.info('Rescan Python Hooks')
-
 
 class FlameMenuTimeline(_FlameMenuApp):
-
-    # flameMenuProjectconnect app takes care of the preferences dialog as well
-
-    def __init__(self, framework):
-        _FlameMenuApp.__init__(self, framework)
-
-    def __getattr__(self, name):
-        def method(*args, **kwargs):
-            project = self.dynamic_menu_data.get(name)
-            if project:
-                self.link_project(project)
-        return method
+    """ Menu that appears in the timeline context.
+    """
 
     def build_menu(self):
         if not self.flame:
@@ -212,6 +167,7 @@ class FlameMenuTimeline(_FlameMenuApp):
             "name": "3 - Load...",
             "execute": lambda x: self.tools_helper.show_loader()
         })
+        # TODO: enable once scene inventory is ready
         # menu['actions'].append({
         #     "name": "Manage...",
         #     "execute": lambda x: self.tools_helper.show_scene_inventory()
@@ -223,35 +179,10 @@ class FlameMenuTimeline(_FlameMenuApp):
 
         return menu
 
-    def refresh(self, *args, **kwargs):
-        self.rescan()
-
-    def rescan(self, *args, **kwargs):
-        if not self.flame:
-            try:
-                import flame
-                self.flame = flame
-            except ImportError:
-                self.flame = None
-
-        if self.flame:
-            self.flame.execute_shortcut('Rescan Python Hooks')
-            self.log.info('Rescan Python Hooks')
-
 
 class FlameMenuUniversal(_FlameMenuApp):
-
-    # flameMenuProjectconnect app takes care of the preferences dialog as well
-
-    def __init__(self, framework):
-        _FlameMenuApp.__init__(self, framework)
-
-    def __getattr__(self, name):
-        def method(*args, **kwargs):
-            project = self.dynamic_menu_data.get(name)
-            if project:
-                self.link_project(project)
-        return method
+    """ Menu that appears in the universal context.
+    """
 
     def build_menu(self):
         if not self.flame:
@@ -296,18 +227,3 @@ class FlameMenuUniversal(_FlameMenuApp):
         })
 
         return menu
-
-    def refresh(self, *args, **kwargs):
-        self.rescan()
-
-    def rescan(self, *args, **kwargs):
-        if not self.flame:
-            try:
-                import flame
-                self.flame = flame
-            except ImportError:
-                self.flame = None
-
-        if self.flame:
-            self.flame.execute_shortcut('Rescan Python Hooks')
-            self.log.info('Rescan Python Hooks')

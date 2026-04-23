@@ -34,11 +34,6 @@ def export_clip(export_path, clip, preset_path, **kwargs):
 
     if kwargs.get("thumb_frame_number"):
         thumb_frame_number = kwargs["thumb_frame_number"]
-        # make sure it exists in kwargs
-        if not thumb_frame_number:
-            raise KeyError(
-                "Missing key `thumb_frame_number` in input kwargs")
-
         in_mark = int(thumb_frame_number)
         out_mark = int(thumb_frame_number) + 1
 
@@ -57,7 +52,7 @@ def export_clip(export_path, clip, preset_path, **kwargs):
         # export with exporter
         exporter.export(clip, preset_path, export_path)
     finally:
-        print('Exported: {} at {}-{}'.format(
+        log.debug('Exported: {} at {}-{}'.format(
             clip.name.get_value(),
             clip.in_mark,
             clip.out_mark
@@ -67,24 +62,20 @@ def export_clip(export_path, clip, preset_path, **kwargs):
 def get_preset_path_by_xml_name(xml_preset_name):
     def _search_path(root):
         output = []
-        for root, _dirs, files in os.walk(root):
+        for subroot, _dirs, files in os.walk(root):
             for f in files:
                 if f != xml_preset_name:
                     continue
-                file_path = os.path.join(root, f)
+                file_path = os.path.join(subroot, f)
                 output.append(file_path)
         return output
 
     def _validate_results(results):
-        if results and len(results) == 1:
-            return results.pop()
-        elif results and len(results) > 1:
-            print((
-                "More matching presets for `{}`: /n"
+        if results and len(results) > 1:
+            log.warning((
+                "More matching presets for `{}`: \n"
                 "{}").format(xml_preset_name, results))
-            return results.pop()
-        else:
-            return None
+        return results.pop() if results else None
 
     from .utils import (
         get_flame_install_root,
@@ -138,10 +129,10 @@ def modify_preset_file(xml_path, staging_dir, data):
         data (dict): data where key is xmlTag and value as string
 
     Returns:
-        str: _description_
+        str: path to modified preset file
     """
     # create temp path
-    dirname, basename = os.path.split(xml_path)
+    _, basename = os.path.split(xml_path)
     temp_path = os.path.join(staging_dir, basename)
 
     # change xml following data keys

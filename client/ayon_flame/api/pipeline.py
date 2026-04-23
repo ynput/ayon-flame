@@ -22,7 +22,6 @@ from ayon_flame import FLAME_ADDON_ROOT
 from .lib import (
     get_current_sequence,
     maintained_segment_selection,
-    reset_segment_selection,
     set_clip_data_marker,
     set_segment_data_marker,
 )
@@ -39,22 +38,21 @@ log = Logger.get_logger(__name__)
 class FlameHost(HostBase, ILoadHost, IPublishHost):
     name = "flame"
 
-    # object variables
-    _publish_context_data = {}
+    def __init__(self):
+        super().__init__()
+        self._publish_context_data = {}
 
     def get_containers(self):
         return ls()
 
     def install(self):
-        """Installing all requirements for Nuke host"""
+        """Install all requirements for Flame host"""
         install()
 
     def get_context_data(self):
-        # TODO: find a way to implement this
         return deepcopy(self._publish_context_data)
 
     def update_context_data(self, data, changes):
-        # TODO: find a way to implement this
         self._publish_context_data = deepcopy(data)
 
 
@@ -63,26 +61,19 @@ def install():
     pyblish.register_plugin_path(PUBLISH_PATH)
     register_loader_plugin_path(LOAD_PATH)
     register_creator_plugin_path(CREATE_PATH)
-    log.info("AYON Flame plug-ins registered ...")
-
-    # register callback for switching publishable
-    pyblish.register_callback("instanceToggled", on_pyblish_instance_toggled)
-
-    log.info("AYON Flame host installed ...")
+    log.info("AYON Flame plug-ins registered.")
+    log.info("AYON Flame host installed.")
 
 
 def uninstall():
     pyblish.deregister_host("flame")
 
-    log.info("Deregistering Flame plug-ins..")
+    log.info("Deregistering Flame plug-ins.")
     pyblish.deregister_plugin_path(PUBLISH_PATH)
     deregister_loader_plugin_path(LOAD_PATH)
     deregister_creator_plugin_path(CREATE_PATH)
 
-    # register callback for switching publishable
-    pyblish.deregister_callback("instanceToggled", on_pyblish_instance_toggled)
-
-    log.info("AYON Flame host uninstalled ...")
+    log.info("AYON Flame host uninstalled.")
 
 
 def containerise(flame_clip_segment,
@@ -91,7 +82,8 @@ def containerise(flame_clip_segment,
                  context,
                  loader=None,
                  data=None):
-
+    """ Containerise a flame clip segment.
+    """
     data_imprint = {
         "schema": "ayon:container-3.0",
         "id": AYON_CONTAINER_ID,
@@ -102,10 +94,8 @@ def containerise(flame_clip_segment,
     }
 
     if data:
-        for k, v in data.items():
-            data_imprint[k] = v
+        data_imprint.update(data)
 
-    # TODO: implement also openClip loaded data
     # timeline item imprinted data
     set_segment_data_marker(flame_clip_segment, data_imprint)
 
@@ -115,44 +105,29 @@ def containerise(flame_clip_segment,
 def ls():
     """List available containers.
     """
-    return []
+    return []  # TODO implement this from metadata
 
 
 def parse_container(tl_segment, validate=True):
     """Return container data from timeline_item's AYON tag.
     """
-    # TODO: parse_container
-    pass
+    log.debug("TODO: parse_container")
 
 
 def update_container(tl_segment, data=None):
     """Update container data to input timeline_item's AYON tag.
     """
-    # TODO: update_container
-    pass
-
-
-def on_pyblish_instance_toggled(instance, old_value, new_value):
-    """Toggle node passthrough states on instance toggles."""
-
-    log.info("instance toggle: {}, old_value: {}, new_value:{} ".format(
-        instance, old_value, new_value))
-
-    # # Whether instances should be passthrough based on new value
-    # timeline_item = instance.data["item"]
-    # set_publish_attribute(timeline_item, new_value)
+    log.debug("TODO: update_container")
 
 
 def remove_instance(instance):
     """Remove instance marker from track item."""
-    # TODO: remove_instance
-    pass
+    log.debug("TODO: remove_instance")
 
 
 def list_instances():
     """List all created instances from current workfile."""
-    # TODO: list_instances
-    pass
+    log.debug("TODO: list_instances")
 
 
 def imprint(item, data=None):
@@ -162,8 +137,8 @@ def imprint(item, data=None):
     Also including publish attribute into tag.
 
     Arguments:
-        item (flame.PySegment | flame.PyClip)): flame api object
-        data (dict): Any data which needst to be imprinted
+        item (flame.PySegment | flame.PyClip): flame api object
+        data (dict): Any data which needs to be imprinted
 
     Examples:
         data = {
@@ -182,22 +157,9 @@ def imprint(item, data=None):
         raise TypeError("Unsupported item type: {}".format(type(item)))
 
 
-
-
 @contextlib.contextmanager
 def maintained_selection():
     from .lib import CTX
-
-    # check if segment is selected
-    if isinstance(CTX.selection[0], flame.PySegment):
-        sequence = get_current_sequence(CTX.selection)
-
-        try:
-            with maintained_segment_selection(sequence) as selected:
-                yield
-        finally:
-            # reset all selected clips
-            reset_segment_selection(sequence)
-            # select only original selection of segments
-            for segment in selected:
-                segment.selected = True
+    sequence = get_current_sequence(CTX.selection)
+    with maintained_segment_selection(sequence):
+        yield
