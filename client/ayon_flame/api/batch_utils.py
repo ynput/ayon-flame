@@ -132,7 +132,7 @@ def edit_batch_group_content(
 
 def get_batch_from_workspace(
     name: str,
-    workspace: Optional[flame.Workspace] = None
+    workspace: Optional[flame.PyWorkspace] = None
 ) -> Optional[flame.PyBatch]:
     """ Get batch group from name and workspace.
     """

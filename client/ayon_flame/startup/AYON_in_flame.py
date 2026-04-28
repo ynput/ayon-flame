@@ -85,6 +85,8 @@ def load_apps():
     flame_api.CTX.flame_apps.append(
         flame_api.FlameMenuTimeline(flame_api.CTX.app_framework))
     flame_api.CTX.flame_apps.append(
+        flame_api.FlameMenuBatch(flame_api.CTX.app_framework))
+    flame_api.CTX.flame_apps.append(
         flame_api.FlameMenuUniversal(flame_api.CTX.app_framework))
     flame_api.CTX.app_framework.log.info("Apps are loaded")
 
@@ -218,7 +220,7 @@ def get_batch_custom_ui_actions():
     # install AYON and the host
     ayon_flame_install()
 
-    return _build_app_menu("FlameMenuUniversal")
+    return _build_app_menu("FlameMenuBatch")
 
 
 def get_media_panel_custom_ui_actions():

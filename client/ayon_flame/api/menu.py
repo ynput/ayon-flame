@@ -239,6 +239,56 @@ class FlameMenuTimeline(_FlameMenuApp):
             self.log.info('Rescan Python Hooks')
 
 
+class FlameMenuBatch(_FlameMenuApp):
+
+    def __init__(self, framework):
+        _FlameMenuApp.__init__(self, framework)
+
+    def build_menu(self):
+        if not self.flame:
+            return []
+
+        menu = deepcopy(self.menu)
+        menu['actions'].append(
+            {
+                "name": "1 - Create...",
+                "execute": lambda x: callback_selection(
+                    x,
+                    host_tools.show_publisher(
+                        tab="create", parent=_get_main_window()
+                    ),
+                    context="FlameMenuBatch"
+                ),
+            }
+        )
+        menu["actions"].append(
+            {
+                "name": "2 - Publish...",
+                "execute": lambda x: callback_selection(
+                    x,
+                    host_tools.show_publisher(
+                        tab="publish", parent=_get_main_window()
+                    ),
+                    context="FlameMenuBatch"
+                ),
+            }
+        )
+        menu['actions'].append({
+            "name": "3 - Load...",
+            "execute": lambda x: callback_selection(
+                x,
+                self.tools_helper.show_loader,
+                context="FlameMenuBatch"
+            )
+        })
+        menu['actions'].append({
+            "name": "4 - Library...",
+            "execute": lambda x: self.tools_helper.show_library_loader()
+        })
+
+        return menu
+
+
 class FlameMenuUniversal(_FlameMenuApp):
 
     # flameMenuProjectconnect app takes care of the preferences dialog as well
