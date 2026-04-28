@@ -1,5 +1,10 @@
 from typing import Optional, List, Dict, Any
 
+import os
+import pathlib
+import json
+import tempfile
+
 from ayon_core.lib import Logger
 
 import flame
@@ -142,3 +147,81 @@ def get_batch_from_workspace(
             return batchgroup
 
     return None
+
+
+def save_batch_as_consolidated_json(
+    batch: flame.PyBatch,
+    filepath: str,
+    temporary_folder: Optional[str] = None,  # where flame run native export
+) -> str:
+    """ Export batch as a consolidated json file.
+    """
+    tmp = tempfile.TemporaryDirectory() if temporary_folder is None else None
+    tmp_dir = pathlib.Path(tmp.name if tmp else temporary_folder)
+
+    try:
+        bgroup_file = tmp_dir / f"{batch.name}.batch"
+        batch.save_setup(str(bgroup_file))
+
+        if not tmp_dir.is_dir():
+            raise RuntimeError(
+                f"Unable to save batchgroup to folder: {tmp_dir}."
+            )
+
+        # Concatenate all intermediary files as 1 single consolidated JSON.
+        json_output = {}
+        for file_path in tmp_dir.rglob("*"):
+            if file_path.is_file():
+                relative_path = file_path.relative_to(tmp_dir)
+                try:
+                    content = file_path.read_text(encoding="utf-8")
+                    json_output[str(relative_path)] = content
+                except Exception as error:
+                    raise RuntimeError(
+                        f"Could not encode file {file_path} as text: {error}"
+                    ) from error
+
+        with open(filepath, "w") as file_handler:
+            json.dump(json_output, file_handler, indent=4)
+
+    finally:
+        # Delete temporary directory if created.
+        if tmp is not None:
+            tmp.cleanup()
+
+    return filepath
+
+
+def load_batch_from_consolidated_json(
+    filepath: str,
+    temporary_folder: Optional[str] = None,
+) -> Optional[flame.PyBatch]:
+    """ Load a batch from a consolidated json file.
+    """
+    with open(filepath, "r", encoding="utf-8") as file_:
+        data = json.load(file_)
+
+    tmp = tempfile.TemporaryDirectory() if not temporary_folder else None
+    tmp_dir = pathlib.Path(tmp.name if tmp else temporary_folder)
+
+    try:
+        batch_file = None
+        for relative_file, content in data.items():
+            file_path = tmp_dir / relative_file
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            file_path.write_text(content, encoding="utf-8")
+
+            if relative_file.endswith(".batch"):
+                batch_file = relative_file
+
+        if batch_file is None:
+            raise ValueError(
+                f"No valid batch found in consolidated json: {filepath}"
+            )
+
+        return flame.batch.load_setup(str(tmp_dir / batch_file))
+
+    finally:
+        # Delete temporary directory if created.
+        if tmp is not None:
+            tmp.cleanup()

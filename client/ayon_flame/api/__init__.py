@@ -84,6 +84,8 @@ from .batch_utils import (
     add_reels_to_batch,
     edit_batch_group_content,
     get_batch_from_workspace,
+    save_batch_as_consolidated_json,
+    load_batch_from_consolidated_json,
 )
 
 __all__ = [
@@ -172,5 +174,7 @@ __all__ = [
     "update_batch",
     "add_reels_to_batch",
     "edit_batch_group_content",
-    "get_batch_from_workspace"
+    "get_batch_from_workspace",
+    "save_batch_as_consolidated_json",
+    "load_batch_from_consolidated_json",
 ]
