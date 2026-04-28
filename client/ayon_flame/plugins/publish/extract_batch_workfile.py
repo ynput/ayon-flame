@@ -39,6 +39,11 @@ class ExtractBatchWorkfile(publish.Extractor):
             "stagingDir": staging_dir,
         }
         instance.data["representations"].append(representation)
+
+        # Preserve batch name in version data for reference and loading.
+        version_data = instance.data.setdefault("versionData", {})
+        version_data["batch_name"] = batch_name
+
         self.log.info(
             f"Extracted batch workfile representation: {representation}"
         )

@@ -193,6 +193,7 @@ def save_batch_as_consolidated_json(
 
 def load_batch_from_consolidated_json(
     filepath: str,
+    name: Optional[str] = None,
     temporary_folder: Optional[str] = None,
 ) -> Optional[flame.PyBatch]:
     """ Load a batch from a consolidated json file.
@@ -218,9 +219,15 @@ def load_batch_from_consolidated_json(
                 f"No valid batch found in consolidated json: {filepath}"
             )
 
-        return flame.batch.load_setup(str(tmp_dir / batch_file))
+        flame.batch.load_setup(str(tmp_dir / batch_file))
+
+        # Restore the batch group name from the provided name
+        # or use the .batch filename stem otherwise.
+        batch_name = name or pathlib.Path(batch_file).stem
+        flame.batch.name = batch_name
+
+        return flame.batch
 
     finally:
-        # Delete temporary directory if created.
         if tmp is not None:
             tmp.cleanup()

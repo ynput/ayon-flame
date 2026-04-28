@@ -25,7 +25,14 @@ class LoadBatchgroup(LoaderPlugin):
         """Load new batch from consolidated json file.
         """
         path = self.filepath_from_context(context)
-        _ = batch_utils.load_batch_from_consolidated_json(path)
+        version_data = context.get("version", {}).get("data", {})
+        batch_name = version_data.get("batch_name")
+
+        batch = batch_utils.load_batch_from_consolidated_json(
+            path,
+            name=batch_name
+        )
+        self.log.info(f"Loaded batch: {batch}")
         #TODO: match with batchgroup iteration
 
     def update(self, container, context):
