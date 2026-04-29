@@ -44,7 +44,7 @@ def update_batch(
     if name:
         batch.name = name
     if frame_start is not None:
-        batch.start_frame = frame_start
+        batch.start_frame = frame_start - handle_start
     if frame_duration is not None:
         frame_duration += handle_start + handle_end
         batch.duration = frame_duration
