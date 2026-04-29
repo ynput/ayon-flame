@@ -8,6 +8,24 @@ from ayon_core.pipeline import LoaderPlugin
 from ayon_flame.api import batch_utils
 
 
+def _unique_batch_name(name: str) -> str:
+    """Return a unique batch group name, appending (2), (3)… if needed."""
+    import flame
+
+    existing = {
+        bg.name.get_value()
+        for bg in flame.project.current_project.current_workspace
+            .desktop.batch_groups
+    }
+    if name not in existing:
+        return name
+
+    counter = 2
+    while f"{name} ({counter})" in existing:
+        counter += 1
+    return f"{name} ({counter})"
+
+
 class LoadBatchgroup(LoaderPlugin):
     product_types = {"workfile"}
     representations = {"*"}
@@ -27,10 +45,10 @@ class LoadBatchgroup(LoaderPlugin):
     ):
         """Load all published versions as native Flame batch iterations.
 
-        Each AYON version is loaded as a named iteration (v001, v002, …)
-        inside a single batch group. Switch between versions via the Flame UI
-        (right-click batch → Iterations). Programmatic iteration switching is
-        not supported by the Flame Python API.
+        Each AYON version is loaded as an iteration inside a single batch
+        group.
+        If a batch group with the same name already exists in the workspace,
+        a unique name is generated automatically (e.g. "MyBatch (2)").
         """
         import flame
 
@@ -41,6 +59,21 @@ class LoadBatchgroup(LoaderPlugin):
             requested_version_entity.get("data", {}).get("batch_name")
             or context["representation"]["context"].get("asset")
         )
+        unique_batch_name = _unique_batch_name(batch_name)
+        if unique_batch_name != batch_name:
+            self.log.warning(
+                f"Batch group '{batch_name}' already exists. "
+                f"Loading as '{unique_batch_name}'."
+            )
+            flame.messages.show_in_dialog(
+                "Existing Batch Group",
+                f"A batch group with the name '{batch_name}' already exists. "
+                f"Loading as '{unique_batch_name}'.",
+                "warning",
+                ["OK"],
+            )
+            batch_name = unique_batch_name
+            flame.batch.create_batch_group(batch_name)
 
         # Collect all versions sorted oldest → newest.
         all_versions = sorted(
@@ -66,6 +99,7 @@ class LoadBatchgroup(LoaderPlugin):
 
         current_iteration = None
         iterations = 0
+
         for version in all_versions:
             repre = repres_by_version_id.get(version["id"])
             if not repre:
