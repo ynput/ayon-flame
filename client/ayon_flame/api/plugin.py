@@ -979,12 +979,12 @@ class OpenClipSolver:
         layer_uid = xml_track_data.get("uid")
         name_obj = (
             xml_track_data.find("name")
-            or xml_track_data.find("sourceName")
         )
-        layer_name = name_obj.text
+        layer_name = name_obj.text if name_obj else None
 
         if (
             self.layer_rename_patterns
+            and layer_name
             and not any(
                 re.search(lp_.lower(), layer_name.lower())
                 for lp_ in self.layer_rename_patterns
@@ -1057,7 +1057,10 @@ class OpenClipSolver:
                 if clip.fps is not None:
                     tmp_feed_fps_obj = tmp_xml_feed.find(
                         "startTimecode/rate")
-                    tmp_feed_fps_obj.text = str(clip.fps)
+                    fps = clip.fps
+                    tmp_feed_fps_obj.text = (
+                        str(int(fps)) if fps == int(fps) else str(fps)
+                    )
 
                 # update start_frame from MediaInfoFile class
                 if clip.start_frame is not None:
