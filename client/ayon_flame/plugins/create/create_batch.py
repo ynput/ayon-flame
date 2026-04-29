@@ -72,6 +72,7 @@ Publishing batch from Batch panel.
         """
         node = self._get_metadata_node()
         node.note = json.dumps(data)
+        node.note_collapsed = True
 
     def _load_instance_data(self) -> Dict[str, Any]:
         """ Read instance data from the batch metadata Note node.
