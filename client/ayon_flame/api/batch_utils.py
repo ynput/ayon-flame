@@ -11,6 +11,41 @@ import flame
 
 log = Logger.get_logger(__name__)
 
+# Helps to identify AYON-managed nodes.
+AYON_NOTE_MARKER = "__ayon__"
+
+
+def read_node_metadata(node: flame.PyNode) -> Optional[Dict[str, Any]]:
+    """ Read AYON instance data from a node's note attribute.
+    """
+    try:
+        raw = node.note.get_value()
+    except Exception:
+        return None
+
+    if not raw:
+        return None
+
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+
+    return data if data.get(AYON_NOTE_MARKER) else None
+
+
+def write_node_metadata(node: flame.PyNode, data: Dict[str, Any]):
+    """ Write AYON instance data into a node's note attribute."""
+    payload = dict(data)
+    payload[AYON_NOTE_MARKER] = True
+    node.note = json.dumps(payload)
+    node.note_collapsed = True
+
+
+def clear_node_metadata(node: flame.PyNode):
+    """ Remove AYON instance data from a node's note attribute."""
+    node.note = ""
+
 
 def create_batch(
     name,
@@ -19,7 +54,7 @@ def create_batch(
     handle_start: int = 0,
     handle_end: int = 0,
 ) -> flame.PyBatch:
-    """Create Batch Group in active project's Desktop
+    """ Create Batch Group in active project's Desktop
     """
     frame_start -= handle_start
     frame_duration += handle_start + handle_end

@@ -4,8 +4,6 @@ Will create a new workfile instance from current batch.
 """
 from typing import Optional, Dict, Any, List, Tuple
 
-import json
-
 from ayon_core.pipeline import CreatedInstance
 
 import ayon_flame.api as flapi
@@ -71,8 +69,7 @@ Publishing batch from Batch panel.
         """ Write instance data into the batch metadata Note node.
         """
         node = self._get_metadata_node()
-        node.note = json.dumps(data)
-        node.note_collapsed = True
+        flapi.write_node_metadata(node, data)
 
     def _load_instance_data(self) -> Dict[str, Any]:
         """ Read instance data from the batch metadata Note node.
@@ -81,15 +78,10 @@ Publishing batch from Batch panel.
         if not node:
             return {}
 
-        raw = node.note.get_value()
-
-        if not raw:
+        data = flapi.read_node_metadata(node)
+        if data is None:
             return {}
-        try:
-            return json.loads(raw)
-        except json.JSONDecodeError:
-            self.log.warning("Failed to parse AYON metadata from Note node.")
-            return {}
+        return data
 
     def create(
             self,
