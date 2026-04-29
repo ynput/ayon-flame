@@ -159,7 +159,8 @@ def save_batch_as_consolidated_json(
     tmp_dir = pathlib.Path(tmp.name if tmp else temporary_folder)
 
     try:
-        bgroup_file = tmp_dir / f"{batch.name}.batch"
+        batch_name = batch.name.get_value()
+        bgroup_file = tmp_dir / f"{batch_name}.batch"
         batch.save_setup(str(bgroup_file))
 
         if not tmp_dir.is_dir():

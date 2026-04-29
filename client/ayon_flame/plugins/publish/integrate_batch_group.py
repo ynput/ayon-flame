@@ -183,7 +183,7 @@ class IntegrateBatchGroup(pyblish.api.InstancePlugin):
         # check if parent batch group exists
         bgroup = ayfapi.get_batch_from_workspace(batchgroup_name)
         if bgroup:
-            self.log.info("Updating batch group: {batchgroup_name}")
+            self.log.info(f"Updating batch group: {batchgroup_name}")
             batch = ayfapi.update_batch(
                 bgroup,
                 frame_start=frame_start,

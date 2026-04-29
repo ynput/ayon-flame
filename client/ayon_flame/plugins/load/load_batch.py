@@ -72,8 +72,8 @@ class LoadBatchgroup(LoaderPlugin):
                 "warning",
                 ["OK"],
             )
-            batch_name = unique_batch_name
-            flame.batch.create_batch_group(batch_name)
+        batch_name = unique_batch_name
+        flame.batch.create_batch_group(batch_name)
 
         # Collect all versions sorted oldest → newest.
         all_versions = sorted(
