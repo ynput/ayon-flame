@@ -124,6 +124,7 @@ class LoadBatchgroup(LoaderPlugin):
             f"Loaded batch group with {iterations} versions as iterations."
         )
 
+        # Set requested version as current iteration.
         if current_iteration:
             flame.batch.replace_setup(current_iteration)
             self.log.debug(
