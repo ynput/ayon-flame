@@ -12,7 +12,7 @@ import flame
 
 
 class CreateBatchRender(flapi.FlameCreator):
-    """Create render product instances from selected Write File nodes.
+    """Create render product instances from selected Write File node.
     """
 
     settings_category = "flame"
@@ -25,7 +25,7 @@ class CreateBatchRender(flapi.FlameCreator):
     default_variant = "Main"
 
     detailed_description = """
-Create render product from selected Write File nodes in the
+Create render product from selected Write File node in the
 current batch group.
 """
 
@@ -66,7 +66,7 @@ current batch group.
             raise CreatorError("No 'Write File' nodes found from selection.")
 
         if len(nodes) > 1:
-            # TODO: How to handle multiple selected 'Write File' nodes?
+            # TODO: How to handle multiple selected 'Write File' nodes ?
             # Currently they'd all produce the same product name.
             raise CreatorError("Multiple selected 'Write File' nodes.")
 

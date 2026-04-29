@@ -55,14 +55,18 @@ class ExtractBatchRender(publish.Extractor):
             )
 
         # Render once per publish context across all render instances.
-        if not instance.context.data.get(self._RENDER_DONE_KEY):
+        render_context = instance.context.data.setdefault(
+            self._RENDER_DONE_KEY, {}
+        )
+        if not render_context.get(batch_name):
             self.log.info(f"Rendering batch '{batch_name}'.")
             success = batch.render()  # render_option='Foreground' (blocking)
             if not success:
-                raise RuntimeError(
+                raise PublishError(
                     f"Flame batch render failed for '{batch_name}'."
                 )
-            instance.context.data[self._RENDER_DONE_KEY] = True
+
+            render_context[batch_name] = True
             self.log.info(f"Batch '{batch_name}' rendered successfully.")
 
         else:
@@ -84,7 +88,7 @@ class ExtractBatchRender(publish.Extractor):
         if not is_sequence:
             single_file = Path(output_dir) / resolved_name
             if not single_file.exists():
-                raise RuntimeError(
+                raise PublishError(
                     f"Output file not found after render: {single_file}"
                 )
             written_files = [resolved_name]
@@ -92,7 +96,7 @@ class ExtractBatchRender(publish.Extractor):
         else:
             output_path = Path(output_dir)
             if not output_path.exists():
-                raise RuntimeError(
+                raise PublishError(
                     f"Output directory not found after render: {output_dir}"
                 )
 
@@ -110,7 +114,8 @@ class ExtractBatchRender(publish.Extractor):
             )
         if not written_files:
             raise ValueError(
-                f"Expected {resolved_path} files found in output directory."
+                f"Expected {resolved_path} files is not found "
+                "in output directory."
             )
 
         if "representations" not in instance.data:
