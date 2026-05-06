@@ -153,7 +153,7 @@ class FlameAppFramework(object):
             (self.prefs, self.prefs_user, self.prefs_global),
             self.get_pref_file_paths(),
         ):
-            with io_preferences_file(self, path, True) as prefs_file:
+            with io_preferences_file(self, path, write=save) as prefs_file:
                 if save:
                     pickle.dump(attr, prefs_file)
                 else:

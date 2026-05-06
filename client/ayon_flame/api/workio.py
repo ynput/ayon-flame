@@ -9,19 +9,19 @@ def file_extensions():
 
 
 def has_unsaved_changes():
-    raise NotImplementedError("Flame use native workfile management")
+    raise NotImplementedError("Flame uses native workfile management")
 
 
 def save_file(filepath):
-    raise NotImplementedError("Flame use native workfile management")
+    raise NotImplementedError("Flame uses native workfile management")
 
 
 def open_file(filepath):
-    raise NotImplementedError("Flame use native workfile management")
+    raise NotImplementedError("Flame uses native workfile management")
 
 
 def current_file():
-    raise NotImplementedError("Flame use native workfile management")
+    raise NotImplementedError("Flame uses native workfile management")
 
 
 def work_root(session):
