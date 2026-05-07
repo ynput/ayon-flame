@@ -1,4 +1,6 @@
+import os
 import subprocess
+import appdirs
 
 from ayon_applications import (
     PreLaunchHook, LaunchTypes, ApplicationLaunchFailed)
@@ -42,7 +44,23 @@ class InstallOpenTimelineIOToFlame(PreLaunchHook):
             self.log.info("OpenTimelineIO is installed within Flame env.")
             return
 
-        # Install it otherwise.
+        # secondly if OpenTimelineIO is installed in our custom site-packages
+        custom_site_path = self.get_custom_site_path()
+
+        # make sure the custom site-packages exists
+        os.makedirs(custom_site_path, exist_ok=True)
+
+        # add custom site-packages to PYTHONPATH
+        env["PYTHONPATH"] += f"{os.pathsep}{custom_site_path}"
+        result = subprocess.run(
+            [flame_py_exe, "-c", "import opentimelineio"], env=env
+        )
+        if result.returncode == 0:
+            self.log.info(
+                "OpenTimelineIO is installed within AYON Flame env.")
+            return
+
+        # lastly install OpenTimelineIO into our custom site-packages
         result = subprocess.run(
             [
                 flame_py_exe,
@@ -50,6 +68,8 @@ class InstallOpenTimelineIOToFlame(PreLaunchHook):
                 "pip",
                 "install",
                 "opentimelineio",
+                "-t",
+                custom_site_path,
             ]
         )
         if result.returncode == 0:
@@ -60,3 +80,6 @@ class InstallOpenTimelineIOToFlame(PreLaunchHook):
             return
 
         raise ApplicationLaunchFailed("Failed to install OpenTimelineIO")
+
+    def get_custom_site_path(self):
+        return appdirs.user_data_dir("ayon_flame", "Ynput")
