@@ -1,2 +1,0 @@
-[tool.poetry.dependencies]
-platformdirs = "^4.2"

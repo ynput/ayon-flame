@@ -1,9 +1,10 @@
 import os
 import subprocess
-import platformdirs
 
 from ayon_applications import (
     PreLaunchHook, LaunchTypes, ApplicationLaunchFailed)
+
+from ayon_core import lib
 
 
 class InstallOpenTimelineIOToFlame(PreLaunchHook):
@@ -81,5 +82,8 @@ class InstallOpenTimelineIOToFlame(PreLaunchHook):
 
         raise ApplicationLaunchFailed("Failed to install OpenTimelineIO")
 
-    def get_custom_site_path(self):
-        return platformdirs.user_data_dir("ayon_flame", "Ynput")
+    def get_custom_site_path(self) -> str:
+        return lib.get_addons_resources_dir(
+            "ayon_flame",
+            "otio_prehook"
+        )
