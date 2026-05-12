@@ -1,4 +1,5 @@
 import os
+import hashlib
 import subprocess
 
 from ayon_applications import (
@@ -46,7 +47,7 @@ class InstallOpenTimelineIOToFlame(PreLaunchHook):
             return
 
         # secondly if OpenTimelineIO is installed in our custom site-packages
-        custom_site_path = self.get_custom_site_path()
+        custom_site_path = self.get_custom_site_path(flame_py_exe)
 
         # make sure the custom site-packages exists
         os.makedirs(custom_site_path, exist_ok=True)
@@ -82,8 +83,10 @@ class InstallOpenTimelineIOToFlame(PreLaunchHook):
 
         raise ApplicationLaunchFailed("Failed to install OpenTimelineIO")
 
-    def get_custom_site_path(self) -> str:
+    def get_custom_site_path(self, flame_py_exe: str) -> str:
+        path_hash = hashlib.sha256(flame_py_exe.encode()).hexdigest()
         return lib.get_addons_resources_dir(
             "ayon_flame",
-            "otio_prehook"
+            "otio_prehook",
+            path_hash[:16],
         )
