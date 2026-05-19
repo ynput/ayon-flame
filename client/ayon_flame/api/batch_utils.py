@@ -1,5 +1,6 @@
 from typing import Optional, List, Dict, Any
 
+import base64
 import pathlib
 import json
 import tempfile
@@ -169,17 +170,19 @@ def save_batch_as_consolidated_json(
             )
 
         # Concatenate all intermediary files as 1 single consolidated JSON.
+        # Binary files (e.g. .mx presets are not utf-8) are base64-encoded
+        # using a "__b64__:" prefix so we can deserialize them.
         json_output = {}
         for file_path in tmp_dir.rglob("*"):
             if file_path.is_file():
                 relative_path = file_path.relative_to(tmp_dir)
                 try:
                     content = file_path.read_text(encoding="utf-8")
-                    json_output[str(relative_path)] = content
-                except Exception as error:
-                    raise RuntimeError(
-                        f"Could not encode file {file_path} as text: {error}"
-                    ) from error
+                except (UnicodeDecodeError, ValueError):
+                    content = "__b64__:" + base64.b64encode(
+                        file_path.read_bytes()
+                    ).decode("ascii")
+                json_output[str(relative_path)] = content
 
         with open(filepath, "w") as file_handler:
             json.dump(json_output, file_handler, indent=4)
@@ -210,7 +213,10 @@ def load_batch_from_consolidated_json(
         for relative_file, content in data.items():
             file_path = tmp_dir / relative_file
             file_path.parent.mkdir(parents=True, exist_ok=True)
-            file_path.write_text(content, encoding="utf-8")
+            if content.startswith("__b64__:"):
+                file_path.write_bytes(base64.b64decode(content[8:]))
+            else:
+                file_path.write_text(content, encoding="utf-8")
 
             if relative_file.endswith(".batch"):
                 batch_file = relative_file
