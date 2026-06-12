@@ -569,7 +569,7 @@ class ClipLoader(LoaderPlugin):
             "handles",
             label="Set handles",
             default=False,
-            help="Also set handles to clip as In/Out marks"
+            tooltip="Also set handles to clip as In/Out marks"
         )
     ]
 
