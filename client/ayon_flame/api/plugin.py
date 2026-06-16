@@ -8,13 +8,11 @@ from typing import Any, Optional
 from copy import deepcopy
 from xml.etree import ElementTree as ET
 
-import qargparse
-
 import flame
 
 import ayon_api
 
-from ayon_core.lib import Logger, StringTemplate
+from ayon_core.lib import Logger, StringTemplate, BoolDef
 from ayon_core.pipeline import (
     LoaderPlugin,
     Creator,
@@ -567,11 +565,11 @@ class ClipLoader(LoaderPlugin):
     log = log
 
     options = [
-        qargparse.Boolean(
+        BoolDef(
             "handles",
             label="Set handles",
-            default=0,
-            help="Also set handles to clip as In/Out marks"
+            default=False,
+            tooltip="Also set handles to clip as In/Out marks"
         )
     ]
 
