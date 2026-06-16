@@ -87,6 +87,9 @@ from .batch_utils import (
     get_batch_from_workspace,
     save_batch_as_consolidated_json,
     load_batch_from_consolidated_json,
+    read_node_metadata,
+    write_node_metadata,
+    clear_node_metadata,
 )
 
 __all__ = [
@@ -179,4 +182,7 @@ __all__ = [
     "get_batch_from_workspace",
     "save_batch_as_consolidated_json",
     "load_batch_from_consolidated_json",
+    "read_node_metadata",
+    "write_node_metadata",
+    "clear_node_metadata",
 ]
