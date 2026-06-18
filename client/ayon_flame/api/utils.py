@@ -90,7 +90,7 @@ def _sync_utility_scripts(env=None):
                     )
                 )
 
-    # copy scripts into Resolve's utility scripts dir
+    # copy scripts into Flame's utility scripts dir
     for dirpath, scriptlist in scripts.items():
         # directory and scripts list
         for _script in scriptlist:
@@ -101,10 +101,7 @@ def _sync_utility_scripts(env=None):
 
             try:
                 if os.path.isdir(src):
-                    shutil.copytree(
-                        src, dst, symlinks=False,
-                        ignore=None, ignore_dangling_symlinks=False
-                    )
+                    shutil.copytree(src, dst)
                 else:
                     shutil.copy2(src, dst)
             except (PermissionError, FileExistsError) as msg:
@@ -140,4 +137,5 @@ def get_flame_version():
 
 
 def get_flame_install_root():
+    # Enforced Autodesk install path (no Windows support)
     return "/opt/Autodesk"
