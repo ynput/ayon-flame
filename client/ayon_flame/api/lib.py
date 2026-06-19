@@ -801,6 +801,8 @@ class MediaInfoFile(object):
         if logger:
             self.log = logger
 
+        # could be windows path
+        path = path.replace("\\", "/")
         # test if `dl_get_media_info` path exists
         self._validate_media_script_path()
 
