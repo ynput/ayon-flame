@@ -788,10 +788,15 @@ class ClipLoader(LoaderPlugin):
                 )
             except RuntimeError as exc:
                 import traceback
+                trcbck_txt = "".join(
+                    traceback.format_exception(
+                        type(exc), exc, exc.__traceback__
+                    )
+                )
                 msg = (
                     "Unsupported Input: "
                     f"Flame does not support incoming media path {path} \n\n"
-                    f"{''.join(traceback.format_exception(type(exc), exc, exc.__traceback__))}"
+                    f"{trcbck_txt}"
                 )
                 raise LoadError(msg) from exc
 
