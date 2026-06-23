@@ -1,33 +1,28 @@
 from __future__ import annotations
 
+import logging
 import os
 import re
-import logging
 import shutil
-from typing import Any, Optional
 from copy import deepcopy
+from typing import Any, Optional
 from xml.etree import ElementTree as ET
 
-import flame
-
 import ayon_api
-
-from ayon_core.lib import Logger, StringTemplate, BoolDef
-from ayon_core.lib.transcoding import (
-    VIDEO_EXTENSIONS,
-    IMAGE_EXTENSIONS
-)
+import flame
+from ayon_core.lib import BoolDef, Logger, StringTemplate
+from ayon_core.lib.transcoding import IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
 from ayon_core.pipeline import (
-    LoaderPlugin,
     Creator,
-    HiddenCreator,
     CreatorError,
+    HiddenCreator,
+    LoaderPlugin,
 )
 from ayon_core.pipeline.colorspace import get_remapped_colorspace_to_native
 from ayon_core.pipeline.context_tools import get_current_project_settings
+from ayon_core.pipeline.load import LoadError
 
 from . import lib as flib
-
 
 log = Logger.get_logger(__name__)
 
@@ -694,6 +689,15 @@ class ClipLoader(LoaderPlugin):
         """
         From a specific clip representation, load it with all of
         its versions, connecting to Flame native OpenClip version support.
+
+        Args:
+            context (dict): Context to update the container to.
+            name (str): Name of the clip to load.
+            namespace (str): Namespace of the clip to load.
+            options (dict): Options for loading the clip.
+
+        Raises:
+            LoadError: If unsupported file type is encountered.
         """
         fproject = flame.project.current_project
         self.fpd = fproject.current_workspace.desktop
@@ -782,14 +786,16 @@ class ClipLoader(LoaderPlugin):
                     representation["context"],
                     layer_rename_template,
                 )
-            except RuntimeError:
-                flame.messages.show_in_dialog(
-                    "Unsupported Input",
-                    f"Flame does not support incoming media path {path}",
-                    "warning",
-                    ["OK"],
+            except RuntimeError as exc:
+                import traceback
+                msg = (
+                    "Unsupported Input: "
+                    f"Flame does not support incoming media path {path} \n\n"
+                    f"{''.join(traceback.format_exception(type(exc), exc, exc.__traceback__))}"
                 )
-                return
+                raise LoadError(msg) from exc
+
+
 
         version_entity = context["version"]
         clip_solver.set_current_version(
@@ -971,7 +977,7 @@ class OpenClipSolver:
     ) -> None:
         layer_uid = xml_track_data.get("uid")
         name_obj = (
-            xml_track_data.find("name")
+            xml_track_data.find("name") or xml_track_data.find("sourceName")
         )
         layer_name = name_obj.text if name_obj else None
 
