@@ -787,16 +787,9 @@ class ClipLoader(LoaderPlugin):
                     layer_rename_template,
                 )
             except RuntimeError as exc:
-                import traceback
-                trcbck_txt = "".join(
-                    traceback.format_exception(
-                        type(exc), exc, exc.__traceback__
-                    )
-                )
                 msg = (
                     "Unsupported Input: "
-                    f"Flame does not support incoming media path {path} \n\n"
-                    f"{trcbck_txt}"
+                    f"Flame does not support incoming media path {path}"
                 )
                 raise LoadError(msg) from exc
 
