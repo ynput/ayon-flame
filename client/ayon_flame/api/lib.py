@@ -6,9 +6,9 @@ import pickle
 import re
 import sys
 import tempfile
-
 from copy import copy, deepcopy
 from dataclasses import dataclass, field
+from pathlib import Path
 from pprint import pformat
 from xml.etree import ElementTree as ET
 
@@ -802,7 +802,8 @@ class MediaInfoFile(object):
             self.log = logger
 
         # could be windows path
-        path = path.replace("\\", "/")
+        path = Path(path).as_posix()
+
         # test if `dl_get_media_info` path exists
         self._validate_media_script_path()
 
@@ -812,7 +813,6 @@ class MediaInfoFile(object):
         feed_ext = os.path.splitext(feed_basename)[1][1:].lower()
 
         with maintained_temp_file_path(".clip") as tmp_path:
-            self.log.info("Temp File: {}".format(tmp_path))
             self._generate_media_info_file(tmp_path, feed_ext, feed_dir)
 
             # get collection containing feed_basename from path
