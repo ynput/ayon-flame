@@ -6,7 +6,6 @@ import pickle
 import re
 import sys
 import tempfile
-
 from copy import copy, deepcopy
 from dataclasses import dataclass, field
 from pprint import pformat
@@ -801,6 +800,17 @@ class MediaInfoFile(object):
         if logger:
             self.log = logger
 
+        # path could be a Windows-style path if an older project was imported
+        # into a database created by an older server version prior to
+        # migration. All current paths are stored in POSIX format, and all
+        # legacy project data has been migrated accordingly.
+        if not os.path.exists(path):
+            t_path = path.replace("\\", "/")
+            if os.path.exists(t_path):
+                path = t_path
+            else:
+                raise FileNotFoundError(f"Path does not exist: {path}")
+
         # test if `dl_get_media_info` path exists
         self._validate_media_script_path()
 
@@ -810,7 +820,6 @@ class MediaInfoFile(object):
         feed_ext = os.path.splitext(feed_basename)[1][1:].lower()
 
         with maintained_temp_file_path(".clip") as tmp_path:
-            self.log.info("Temp File: {}".format(tmp_path))
             self._generate_media_info_file(tmp_path, feed_ext, feed_dir)
 
             # get collection containing feed_basename from path
