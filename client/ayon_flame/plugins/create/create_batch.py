@@ -2,17 +2,11 @@
 
 Will create a new workfile instance from current batch.
 """
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple
 
 from ayon_core.pipeline import CreatedInstance
 
 import ayon_flame.api as flapi
-
-import flame
-
-
-# Name of the hidden Note node used to embed instance data inside the batch.
-_METADATA_NODE_NAME = "AYON_metadata"
 
 
 class CreateBatchWorkfile(flapi.FlameCreator):
@@ -36,45 +30,16 @@ Publishing batch from Batch panel.
         # Only active in Batch context.
         self.enabled = (flapi.CTX.context == "FlameMenuBatch")
 
-    @staticmethod
-    def _get_current_batch() -> flame.PyBatch:
-        """ Return the current flame.batch object or None.
-        """
-        try:
-            return flame.batch
-        except Exception as error:
-            raise RuntimeError(
-                "Cannot find current batch from context."
-            ) from error
-
-    def _get_metadata_node(
-            self,
-            create: bool = True
-        ) -> Optional[flame.PyNode]:
-        """ Find or create the AYON metadata Note node in the current batch.
-        """
-        batch = self._get_current_batch()
-        for node in batch.nodes:
-            if node.name.get_value() == _METADATA_NODE_NAME:
-                return node
-
-        if not create:
-            return None
-
-        node = batch.create_node("Note")
-        node.name.set_value(_METADATA_NODE_NAME)
-        return node
-
     def _dump_instance_data(self, data: Dict[str, Any]):
         """ Write instance data into the batch metadata Note node.
         """
-        node = self._get_metadata_node()
+        node = flapi.get_metadata_node(create=True)
         flapi.write_node_metadata(node, data)
 
     def _load_instance_data(self) -> Dict[str, Any]:
         """ Read instance data from the batch metadata Note node.
         """
-        node = self._get_metadata_node(create=False)
+        node = flapi.get_metadata_node()
         if not node:
             return {}
 
@@ -97,7 +62,7 @@ Publishing batch from Batch panel.
         instance_data["flame_context"] = flapi.CTX.context
 
         try:
-            batch = self._get_current_batch()
+            batch = flapi.get_current_batch()
         except RuntimeError:
             self.log.warning("No active batch group found, skipping.")
             return
@@ -147,6 +112,6 @@ Publishing batch from Batch panel.
         for instance in instances:
             self._remove_instance_from_context(instance)
 
-        node = self._get_metadata_node(create=False)
+        node = flapi.get_metadata_node()
         if node:
             node.delete()
