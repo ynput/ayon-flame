@@ -8,7 +8,6 @@ import sys
 import tempfile
 from copy import copy, deepcopy
 from dataclasses import dataclass, field
-from pathlib import Path
 from pprint import pformat
 from xml.etree import ElementTree as ET
 
