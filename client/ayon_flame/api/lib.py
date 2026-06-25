@@ -801,9 +801,9 @@ class MediaInfoFile(object):
             self.log = logger
 
         # path could be a Windows-style path if an older project was imported
-        # into a database created by an older server version prior to migration.
-        # All current paths are stored in POSIX format, and all legacy project
-        # data has been migrated accordingly.
+        # into a database created by an older server version prior to
+        # migration. All current paths are stored in POSIX format, and all
+        # legacy project data has been migrated accordingly.
         if not os.path.exists(path):
             t_path = path.replace("\\", "/")
             if os.path.exists(t_path):
