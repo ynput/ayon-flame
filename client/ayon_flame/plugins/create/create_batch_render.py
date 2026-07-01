@@ -1,7 +1,7 @@
 """Creates a render product instance per selected Write File node,
 storing instance metadata directly in the node's note attribute.
 """
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 
 from ayon_core.lib import BoolDef
 from ayon_core.pipeline import CreatedInstance, CreatorError
@@ -31,6 +31,10 @@ current batch group.
 
     def apply_settings(self, project_settings):
         super().apply_settings(project_settings)
+
+        create_settings = project_settings["flame"]["create"]
+        self.write_node_presets = create_settings[self.__class__.__name__]
+
         # Only active in Batch context.
         self.enabled = (flapi.CTX.context == "FlameMenuBatch")
 
@@ -41,6 +45,55 @@ current batch group.
         return [
             node for node in selected
             if isinstance(node, flame.PyWriteFileNode)
+        ]
+
+    @staticmethod
+    def _connect_clip_and_write_nodes(
+        clip_node: flame.PyClipNode,
+        write_node: flame.PyWriteFileNode,
+    ):
+        duration = clip_node.duration
+        write_node.source_timecode = clip_node.clip.start_time
+
+        start_frame = flame.batch.start_frame.get_value()
+        write_node.range_start = start_frame
+        write_node.range_end = start_frame + duration - 1
+
+        flame.batch.connect_nodes(
+            clip_node,
+            clip_node.output_sockets[0], # rgb
+            write_node,
+            "Front",
+        )
+
+    def _apply_metadata_on_write_node(
+        self,
+        write_node: flame.PyWriteFileNode,
+        node_name: Optional[str] = None,
+    ):
+        if node_name:
+            write_node.name = node_name
+
+        for attr, value in self.write_node_presets.items():
+            if attr == "node_name":
+                continue
+
+            if value not in (None, ""):
+                try:
+                    setattr(write_node, attr, value)
+                except RuntimeError as error:
+                    raise RuntimeError(
+                        f"Could not set attribute '{attr}' "
+                        f"value '{value}' on Write File node."
+                    ) from error
+
+    def get_pre_create_attr_defs(self) -> List[BoolDef]:
+        return [
+            BoolDef(
+                "use_selection",
+                default=True,
+                label="Use Selection"
+            )
         ]
 
     def get_instance_attr_defs(self) -> List[BoolDef]:
@@ -61,37 +114,57 @@ current batch group.
         """Create a render instance for each selected Write File node."""
         instance_data["flame_context"] = flapi.CTX.context
 
-        nodes = self._get_write_file_nodes()
-        if not nodes:
-            raise CreatorError("No 'Write File' nodes found from selection.")
+        use_selection = pre_create_data["use_selection"]
+        selected = flame.batch.selected_nodes.get_value()
 
+        if use_selection and not selected:
+            raise CreatorError("No nodes selected from batch.")
+
+        if use_selection and len(selected) > 1:
+            raise CreatorError("Multiple selected nodes.")
+
+        nodes = self._get_write_file_nodes()
         if len(nodes) > 1:
             # TODO: How to handle multiple selected 'Write File' nodes ?
             # Currently they'd all produce the same product name.
             raise CreatorError("Multiple selected 'Write File' nodes.")
 
+        if nodes:
+            node = nodes[0]
+        else:
+            node = flame.batch.create_node("Write File")
+
         batch_name = flame.batch.name.get_value()
 
-        for node in nodes:
-            node_name = node.name.get_value()
+        # Apply setting metadata on the write node
+        self._apply_metadata_on_write_node(
+            node,
+            node_name=self.write_node_presets.get("node_name"),
+        )
 
-            node_instance_data = dict(instance_data)
-            node_instance_data["batch_name"] = batch_name
-            node_instance_data["write_node_name"] = node_name
+        # Attempt to connect to select "Clip" node if exists
+        selected_node = selected[0] if selected else None
+        if selected_node and isinstance(selected_node, flame.PyClipNode):
+            self._connect_clip_and_write_nodes(selected_node, node)
 
-            instance = CreatedInstance(
-                product_base_type=self.product_base_type,
-                product_type=self.product_type,
-                product_name=product_name,
-                data=node_instance_data,
-                creator=self,
-            )
-            self._add_instance_to_context(instance)
-            flapi.write_node_metadata(node, instance.data_to_store())
-            self.log.info(
-                f"Created render instance '{product_name}' "
-                f"from node '{node_name}'."
-            )
+        node_name = node.name.get_value()
+        node_instance_data = dict(instance_data)
+        node_instance_data["batch_name"] = batch_name
+        node_instance_data["write_node_name"] = node_name
+
+        instance = CreatedInstance(
+            product_base_type=self.product_base_type,
+            product_type=self.product_type,
+            product_name=product_name,
+            data=node_instance_data,
+            creator=self,
+        )
+        self._add_instance_to_context(instance)
+        flapi.write_node_metadata(node, instance.data_to_store())
+        self.log.info(
+            f"Created render instance '{product_name}' "
+            f"from node '{node_name}'."
+        )
 
     def collect_instances(self):
         """ Collect existing instances from Write File node metadata. """
