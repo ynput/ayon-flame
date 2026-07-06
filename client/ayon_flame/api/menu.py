@@ -1,6 +1,7 @@
 import logging
-from copy import deepcopy
+
 from pprint import pformat
+from typing import Dict, Any
 
 from qtpy import QtWidgets
 
@@ -71,17 +72,6 @@ class _FlameMenuApp(object):
             self.name,
             {}
         )
-
-        project_name = get_current_project_name()
-        self.menu = {
-            "actions": [
-                {
-                    "name": f"0 - {project_name or 'project'}",
-                    "isEnabled": False
-                }
-            ],
-            "name": self.menu_group_name,
-        }
         self.tools_helper = host_tools.HostToolsHelper(
             parent=_get_main_window()
         )
@@ -106,39 +96,46 @@ class _FlameMenuApp(object):
     def refresh(self, *args, **kwargs):
         self.rescan()
 
+    def build_menu(self) -> Dict[str, Any]:
+        project_name = get_current_project_name()
+        return{
+            "actions": [
+                {
+                    "name": f"0 - {project_name or 'project'}",
+                    "isEnabled": False
+                }
+            ],
+            "name": self.menu_group_name,
+        }
+
 
 class FlameMenuProjectConnect(_FlameMenuApp):
     """ Takes care of the preferences dialog as well.
     """
 
-    def build_menu(self):
+    def build_menu(self) -> Dict[str, Any]:
         if not self.flame:
-            return []
+            return {}
 
-        menu = deepcopy(self.menu)
+        menu = super().build_menu()
 
         menu['actions'].append({
             "name": "1 - Load...",
             "execute": lambda x: self.tools_helper.show_loader()
         })
-        menu['actions'].append({
-            "name": "2 - Library...",
-            "execute": lambda x: self.tools_helper.show_library_loader()
-        })
 
         return menu
 
 
-class FlameMenuTimeline(_FlameMenuApp):
-    """ Menu that appears in the timeline context.
+class _FlameMenuContext(_FlameMenuApp):
+    """ Menu that appears in the timeline, batch and universal contexts.
     """
 
-    def build_menu(self):
+    def build_menu(self) -> Dict[str, Any]:
         if not self.flame:
-            return []
+            return {}
 
-        menu = deepcopy(self.menu)
-
+        menu = super().build_menu()
         menu['actions'].append(
             {
                 "name": "1 - Create...",
@@ -147,7 +144,7 @@ class FlameMenuTimeline(_FlameMenuApp):
                     host_tools.show_publisher(
                         tab="create", parent=_get_main_window()
                     ),
-                    context="FlameMenuTimeline"
+                    context=self.__class__.__name__
                 ),
             }
         )
@@ -159,7 +156,7 @@ class FlameMenuTimeline(_FlameMenuApp):
                     host_tools.show_publisher(
                         tab="publish", parent=_get_main_window()
                     ),
-                    context="FlameMenuTimeline"
+                    context=self.__class__.__name__
                 ),
             }
         )
@@ -167,113 +164,19 @@ class FlameMenuTimeline(_FlameMenuApp):
             "name": "3 - Load...",
             "execute": lambda x: self.tools_helper.show_loader()
         })
-        # TODO: enable once scene inventory is ready
-        # menu['actions'].append({
-        #     "name": "Manage...",
-        #     "execute": lambda x: self.tools_helper.show_scene_inventory()
-        # })
-        menu['actions'].append({
-            "name": "4 - Library...",
-            "execute": lambda x: self.tools_helper.show_library_loader()
-        })
-
         return menu
 
 
-class FlameMenuBatch(_FlameMenuApp):
-
-    def __init__(self, framework):
-        _FlameMenuApp.__init__(self, framework)
-
-    def build_menu(self):
-        if not self.flame:
-            return []
-
-        menu = deepcopy(self.menu)
-        menu['actions'].append(
-            {
-                "name": "1 - Create...",
-                "execute": lambda x: callback_selection(
-                    x,
-                    host_tools.show_publisher(
-                        tab="create", parent=_get_main_window()
-                    ),
-                    context="FlameMenuBatch"
-                ),
-            }
-        )
-        menu["actions"].append(
-            {
-                "name": "2 - Publish...",
-                "execute": lambda x: callback_selection(
-                    x,
-                    host_tools.show_publisher(
-                        tab="publish", parent=_get_main_window()
-                    ),
-                    context="FlameMenuBatch"
-                ),
-            }
-        )
-        menu['actions'].append({
-            "name": "3 - Load...",
-            "execute": lambda x: callback_selection(
-                x,
-                self.tools_helper.show_loader,
-                context="FlameMenuBatch"
-            )
-        })
-        menu['actions'].append({
-            "name": "4 - Library...",
-            "execute": lambda x: self.tools_helper.show_library_loader()
-        })
-
-        return menu
-
-
-class FlameMenuUniversal(_FlameMenuApp):
-    """ Menu that appears in the universal context.
+class FlameMenuTimeline(_FlameMenuContext):
+    """ Menu that appears in the timeline context.
     """
 
-    def build_menu(self):
-        if not self.flame:
-            return []
 
-        menu = deepcopy(self.menu)
-        menu['actions'].append(
-            {
-                "name": "1 - Create...",
-                "execute": lambda x: callback_selection(
-                    x,
-                    host_tools.show_publisher(
-                        tab="create", parent=_get_main_window()
-                    ),
-                    context="FlameMenuUniversal"
-                ),
-            }
-        )
-        menu["actions"].append(
-            {
-                "name": "2 - Publish...",
-                "execute": lambda x: callback_selection(
-                    x,
-                    host_tools.show_publisher(
-                        tab="publish", parent=_get_main_window()
-                    ),
-                    context="FlameMenuUniversal"
-                ),
-            }
-        )
-        menu['actions'].append({
-            "name": "3 - Load...",
-            "execute": lambda x: callback_selection(
-                x,
-                self.tools_helper.show_loader,
-                context="FlameMenuUniversal"
-            )
-        })
-        menu['actions'].append({
-            "name": "4 - Library...",
-            "execute": lambda x: self.tools_helper.show_library_loader()
-        })
+class FlameMenuBatch(_FlameMenuContext):
+    """ Menu that appears in the batch context.
+    """
 
-        return menu
+
+class FlameMenuUniversal(_FlameMenuContext):
+    """ Menu that appears in the universal context.
+    """

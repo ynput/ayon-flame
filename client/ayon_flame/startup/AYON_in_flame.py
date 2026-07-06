@@ -149,14 +149,10 @@ def _build_app_menu(app_name):
     """
     menu = []
 
-    # first find the relative appname
-    app = None
+    # Append specific app_name menu if any.
     for _app in flame_api.CTX.flame_apps:
         if _app.__class__.__name__ == app_name:
-            app = _app
-
-    if app:
-        menu.append(app.build_menu())
+            menu.append(_app.build_menu())
 
     if flame_api.CTX.app_framework:
         menu_auto_refresh = flame_api.CTX.app_framework.prefs_global.get(

@@ -5,6 +5,7 @@ from .imageio import FlameImageIOModel, DEFAULT_IMAGEIO_SETTINGS
 from .create_plugins import CreatePluginsModel, DEFAULT_CREATE_SETTINGS
 from .publish_plugins import PublishPluginsModel, DEFAULT_PUBLISH_SETTINGS
 from .loader_plugins import LoaderPluginsModel, DEFAULT_LOADER_SETTINGS
+from .script_menu import ScriptsmenuSettings, DEFAULT_SCRIPTSMENU_SETTINGS
 
 
 class InstallOpenTimelineIOToFlameModel(BaseSettingsModel):
@@ -49,6 +50,10 @@ class FlameSettings(BaseSettingsModel):
         default_factory=LoaderPluginsModel,
         title="Loader plugins"
     )
+    scriptsmenu: ScriptsmenuSettings = SettingsField(
+        default_factory=ScriptsmenuSettings,
+        title="Scripts Menu"
+    )
 
 
 DEFAULT_VALUES = {
@@ -56,5 +61,6 @@ DEFAULT_VALUES = {
     "imageio": DEFAULT_IMAGEIO_SETTINGS,
     "create": DEFAULT_CREATE_SETTINGS,
     "publish": DEFAULT_PUBLISH_SETTINGS,
-    "load": DEFAULT_LOADER_SETTINGS
+    "load": DEFAULT_LOADER_SETTINGS,
+    "scriptsmenu": DEFAULT_SCRIPTSMENU_SETTINGS
 }
