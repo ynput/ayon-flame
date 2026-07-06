@@ -6,6 +6,9 @@ from typing import Dict, Any
 from qtpy import QtWidgets
 
 from ayon_core.pipeline import get_current_project_name
+from ayon_core.settings import (
+    get_current_project_settings,
+)
 from ayon_core.tools.utils import host_tools
 
 
@@ -108,6 +111,9 @@ class _FlameMenuApp(object):
             "name": self.menu_group_name,
         }
 
+    def build_script_menu_from_settings(self) -> Dict[str, Any]:
+        return {}
+
 
 class FlameMenuProjectConnect(_FlameMenuApp):
     """ Takes care of the preferences dialog as well.
@@ -118,7 +124,6 @@ class FlameMenuProjectConnect(_FlameMenuApp):
             return {}
 
         menu = super().build_menu()
-
         menu['actions'].append({
             "name": "1 - Load...",
             "execute": lambda x: self.tools_helper.show_loader()
@@ -130,6 +135,39 @@ class FlameMenuProjectConnect(_FlameMenuApp):
 class _FlameMenuContext(_FlameMenuApp):
     """ Menu that appears in the timeline, batch and universal contexts.
     """
+
+    def build_script_menu_from_settings(self) -> Dict[str, Any]:
+        """ Load configuration of script menu from project settings.
+        """
+        project_settings = get_current_project_settings()
+        definitions = project_settings["flame"]["scriptsmenu"]["definitions"]
+        menu_name = project_settings["flame"]["scriptsmenu"]["name"]
+        enabled = project_settings["flame"]["scriptsmenu"]["enabled"]
+
+        if not enabled:
+            logger.warning("Script menu settings is disabled.")
+            return {}
+
+        if not definitions:
+            logger.warning("No script menu content, no definition found.")
+            return {}
+
+        actions = []
+        for definition in definitions:
+            if definition["flame_context"] != self.__class__.__name__:
+                continue
+
+            actions.append(
+                {
+                    "name": definition["title"],
+                    "execute": lambda _, d=definition: exec(d["command"])
+                }
+            )
+
+        return{
+            "actions": actions,
+            "name": menu_name,
+        }
 
     def build_menu(self) -> Dict[str, Any]:
         if not self.flame:
