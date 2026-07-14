@@ -90,8 +90,6 @@ from .batch_utils import (
     read_node_metadata,
     write_node_metadata,
     clear_node_metadata,
-    get_metadata_node,
-    get_current_batch,
 )
 
 __all__ = [
@@ -182,8 +180,6 @@ __all__ = [
     "add_reels_to_batch",
     "edit_batch_group_content",
     "get_batch_from_workspace",
-    "get_current_batch",
-    "get_metadata_node",
     "save_batch_as_consolidated_json",
     "load_batch_from_consolidated_json",
     "read_node_metadata",
