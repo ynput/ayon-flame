@@ -15,6 +15,9 @@ log = Logger.get_logger(__name__)
 # Helps to identify AYON-managed nodes.
 AYON_NOTE_MARKER = "__ayon__"
 
+# Name of the hidden Note node used to embed instance data inside the batch.
+_METADATA_NODE_NAME = "AYON_metadata"
+
 
 def read_node_metadata(node: flame.PyNode) -> Optional[Dict[str, Any]]:
     """ Read AYON instance data from a node's note attribute.
@@ -228,6 +231,36 @@ def save_batch_as_consolidated_json(
             tmp.cleanup()
 
     return filepath
+
+
+def get_current_batch() -> flame.PyBatch:
+    """ Return the current flame.batch object or None.
+    """
+    try:
+        return flame.batch
+    except Exception as error:
+        raise RuntimeError(
+            "Cannot find current batch from context."
+        ) from error
+
+
+def get_metadata_node(
+        batch: Optional[flame.PyBatch] = None,
+        create: bool = False
+    ) -> Optional[flame.PyNode]:
+    """ Find or create the AYON metadata Note node in the current batch.
+    """
+    batch = batch or get_current_batch()
+    for node in batch.nodes:
+        if node.name.get_value() == _METADATA_NODE_NAME:
+            return node
+
+    if not create:
+        return None
+
+    node = batch.create_node("Note")
+    node.name.set_value(_METADATA_NODE_NAME)
+    return node
 
 
 def load_batch_from_consolidated_json(
