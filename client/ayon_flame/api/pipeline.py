@@ -24,6 +24,7 @@ from .lib import (
     maintained_segment_selection,
     set_clip_data_marker,
     set_segment_data_marker,
+    CTX,
 )
 
 PLUGINS_DIR = os.path.join(FLAME_ADDON_ROOT, "plugins")
@@ -50,11 +51,37 @@ class FlameHost(HostBase, ILoadHost, IPublishHost):
         install()
 
     def get_context_data(self):
+        """required by IPublishHost"""
         return deepcopy(self._publish_context_data)
 
     def update_context_data(self, data, changes):
+        """required by IPublishHost"""
         self._publish_context_data = deepcopy(data)
 
+    def get_current_context(self):
+        current_ctx = super().get_current_context()
+
+        # Flame can be used as a multi-workfile host.
+        # When working with batch, we try to get the
+        # current context from the batch metadata.
+        if CTX.context == "FlameMenuBatch":
+            import ayon_flame.api as flapi
+            metadata_node = flapi.get_metadata_node()
+            if metadata_node:
+                data = flapi.read_node_metadata(metadata_node)
+                try:
+                    return {
+                        "project_name": current_ctx["project_name"],
+                        "folder_path": data["folderPath"],
+                        "task_name": data["task"]
+                    }
+                except (KeyError, TypeError) as error:
+                    log.warning(
+                        "Could not read context from batch metadata: %r",
+                        error
+                    )
+
+        return current_ctx
 
 def install():
     pyblish.register_host("flame")
