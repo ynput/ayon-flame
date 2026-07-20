@@ -6,7 +6,7 @@ import os
 from copy import deepcopy
 import flame
 
-from ayon_core.host import HostBase, ILoadHost, IPublishHost
+from ayon_core.host import HostBase, ILoadHost, IPublishHost, IWorkfileHost
 from ayon_core.lib import Logger
 from ayon_core.pipeline import (
     AYON_CONTAINER_ID,
@@ -35,8 +35,9 @@ CREATE_PATH = os.path.join(PLUGINS_DIR, "create")
 
 log = Logger.get_logger(__name__)
 
+_WORKFILE_NODE_NAME = "AYON_workfile"
 
-class FlameHost(HostBase, ILoadHost, IPublishHost):
+class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
     name = "flame"
 
     def __init__(self):
@@ -82,6 +83,60 @@ class FlameHost(HostBase, ILoadHost, IPublishHost):
                     )
 
         return current_ctx
+
+    # The Flame "workfile" is the current batch group (json file)
+    def get_workfile_extensions(self):
+        return [".json"]
+
+    def save_workfile(self, dst_path=None):
+        import ayon_flame.api as flapi
+
+        dst_path = dst_path or self.get_current_workfile()
+        if not dst_path:
+            raise RuntimeError(
+                "No destination path provided to save workfile."
+            )
+
+        workdir = os.path.dirname(dst_path)
+        if workdir and not os.path.exists(workdir):
+            os.makedirs(workdir, exist_ok=True)
+
+        batch = flapi.get_current_batch()
+        flapi.save_batch_as_consolidated_json(batch, dst_path)
+        self._stamp_workfile_path(dst_path)
+        return dst_path
+
+    def open_workfile(self, filepath):
+        import ayon_flame.api as flapi
+
+        flapi.load_batch_from_consolidated_json(filepath)
+        self._stamp_workfile_path(filepath)
+        return filepath
+
+    def get_current_workfile(self):
+        import ayon_flame.api as flapi
+
+        try:
+            node = flapi.get_metadata_node(node_name=_WORKFILE_NODE_NAME)
+        except RuntimeError:
+            return None
+
+        if not node:
+            return None
+
+        data = flapi.read_node_metadata(node) or {}
+        return data.get("workfile_path")
+
+    def _stamp_workfile_path(self, filepath):
+        import ayon_flame.api as flapi
+
+        node = flapi.get_metadata_node(
+            create=True, node_name=_WORKFILE_NODE_NAME
+        )
+        data = flapi.read_node_metadata(node) or {}
+        data["workfile_path"] = filepath
+        flapi.write_node_metadata(node, data)
+
 
 def install():
     pyblish.register_host("flame")

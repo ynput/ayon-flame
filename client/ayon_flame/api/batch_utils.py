@@ -35,6 +35,9 @@ def read_node_metadata(node: flame.PyNode) -> Optional[Dict[str, Any]]:
     except json.JSONDecodeError:
         return None
 
+    if not isinstance(data, dict):
+        return None
+
     return data if data.get(AYON_NOTE_MARKER) else None
 
 
@@ -246,20 +249,21 @@ def get_current_batch() -> flame.PyBatch:
 
 def get_metadata_node(
         batch: Optional[flame.PyBatch] = None,
-        create: bool = False
+        create: bool = False,
+        node_name: str = _METADATA_NODE_NAME,
     ) -> Optional[flame.PyNode]:
-    """ Find or create the AYON metadata Note node in the current batch.
+    """ Find or create an AYON Note node (by name) in the current batch.
     """
     batch = batch or get_current_batch()
     for node in batch.nodes:
-        if node.name.get_value() == _METADATA_NODE_NAME:
+        if node.name.get_value() == node_name:
             return node
 
     if not create:
         return None
 
     node = batch.create_node("Note")
-    node.name.set_value(_METADATA_NODE_NAME)
+    node.name.set_value(node_name)
     return node
 
 

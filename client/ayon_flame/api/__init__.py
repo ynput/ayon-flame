@@ -66,14 +66,6 @@ from .plugin import (
     FlameEditorialCreator,
     HiddenFlameCreator,
 )
-from .workio import (
-    open_file,
-    save_file,
-    current_file,
-    has_unsaved_changes,
-    file_extensions,
-    work_root
-)
 from .render_utils import (
     export_clip,
     get_preset_path_by_xml_name,
@@ -162,14 +154,6 @@ __all__ = [
     "FlameCreator",
     "FlameEditorialCreator",
     "HiddenFlameCreator",
-
-    # workio
-    "open_file",
-    "save_file",
-    "current_file",
-    "has_unsaved_changes",
-    "file_extensions",
-    "work_root",
 
     # render utils
     "export_clip",

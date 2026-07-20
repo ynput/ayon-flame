@@ -226,6 +226,12 @@ class FlameMenuBatch(_FlameMenuApp):
             "name": "4 - Library...",
             "execute": lambda x: self.tools_helper.show_library_loader()
         })
+        menu['actions'].append({
+            "name": "5 - Workfiles...",
+            "execute": lambda x: self.tools_helper.show_workfiles(
+                parent=_get_main_window()
+            )
+        })
 
         return menu
 

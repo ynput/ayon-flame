@@ -1,6 +1,7 @@
 from __future__ import print_function  # noqa: UP010
 
 import atexit
+import os
 import sys
 import types
 from pprint import pformat
@@ -19,8 +20,11 @@ except ImportError:
 import traceback
 
 import ayon_flame.api as flame_api
-from ayon_core.pipeline import install_host
-from ayon_flame.api import FlameHost
+from ayon_core.lib import env_value_to_bool
+from ayon_core.pipeline import get_global_context, install_host
+from ayon_core.tools.utils import host_tools
+from ayon_flame.api import FlameHost, batch_utils
+from ayon_flame.api.menu import _get_main_window
 from qtpy import QtWidgets
 
 
@@ -100,6 +104,64 @@ def project_changed_dict(info):
     cleanup()
 
 
+_LAUNCH_WORKFILE_ACTIONS_DONE = False
+
+
+def _open_last_workfile():
+    import flame
+
+    if not env_value_to_bool("AVALON_OPEN_LAST_WORKFILE"):
+        return
+
+    context = get_global_context()
+    folder_path = context.get("folder_path")
+    task_name = context.get("task_name")
+    if not folder_path or not task_name:
+        return
+
+    # each task its own batch group to avoid mixing with other tasks
+    folder_name = folder_path.rsplit("/", 1)[-1]
+    batch_name = f"{folder_name}_{task_name}"
+
+    # reuse an existing batch if it's already on the desktop
+    existing_batch = batch_utils.get_batch_from_workspace(batch_name)
+    if existing_batch is not None:
+        existing_batch.open()
+        return
+
+    # load the last workfile into a task-specific batch group
+    filepath = os.environ.get("AYON_LAST_WORKFILE")
+    if filepath and os.path.exists(filepath):
+        flame.batch.create_batch_group(batch_name)
+        batch_utils.load_batch_from_consolidated_json(
+            filepath, name=batch_name
+        )
+        return
+
+    # start fresh batch group for this task
+    flame.batch.create_batch_group(batch_name)
+
+
+def _show_workfiles_tool():
+    if not env_value_to_bool("AYON_WORKFILE_TOOL_ON_START"):
+        return
+
+    host_tools.show_workfiles(parent=_get_main_window())
+
+
+def _run_launch_workfile_actions():
+    global _LAUNCH_WORKFILE_ACTIONS_DONE
+    if _LAUNCH_WORKFILE_ACTIONS_DONE:
+        return
+    _LAUNCH_WORKFILE_ACTIONS_DONE = True
+
+    for action in (_open_last_workfile, _show_workfiles_tool):
+        try:
+            action()
+        except Exception as error:
+            print(f"!!!! AYON: {action.__name__} failed: {error} !!!!")
+
+
 def app_initialized(parent=None):
     """Inicialization of Framework
 
@@ -111,6 +173,12 @@ def app_initialized(parent=None):
     print(f"{flame_api.CTX.app_framework.bundle_name} initializing")
 
     load_apps()
+
+    try:
+        import flame  # noqa
+        flame.schedule_idle_event(_run_launch_workfile_actions)
+    except ImportError:
+        print("!!!! not able to import flame module !!!!")
 
 
 """
