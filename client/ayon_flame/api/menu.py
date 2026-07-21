@@ -144,9 +144,10 @@ class _FlameMenuContext(_FlameMenuApp):
         """
         project_settings = get_current_project_settings()
 
-        defs = project_settings["flame"]["scriptsmenu"]["definition"]
-        menu_name = project_settings["flame"]["scriptsmenu"]["name"]
-        enabled = project_settings["flame"]["scriptsmenu"]["enabled"]
+        custom_menu = project_settings["flame"]["custom_menu"]
+        defs = custom_menu["definition"]
+        menu_name = custom_menu["name"]
+        enabled = custom_menu["enabled"]
 
         if not enabled:
             logger.info("Script menu settings is disabled.")
