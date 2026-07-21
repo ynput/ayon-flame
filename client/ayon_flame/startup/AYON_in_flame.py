@@ -120,8 +120,7 @@ def _open_last_workfile():
         return
 
     # each task its own batch group to avoid mixing with other tasks
-    folder_name = folder_path.rsplit("/", 1)[-1]
-    batch_name = f"{folder_name}_{task_name}"
+    batch_name = batch_utils.get_task_batch_name(folder_path, task_name)
 
     # reuse an existing batch if it's already on the desktop
     existing_batch = batch_utils.get_batch_from_workspace(batch_name)
@@ -136,6 +135,7 @@ def _open_last_workfile():
         batch_utils.load_batch_from_consolidated_json(
             filepath, name=batch_name
         )
+        batch_utils.stamp_workfile_path(filepath)
         return
 
     # start fresh batch group for this task
@@ -154,6 +154,13 @@ def _run_launch_workfile_actions():
     if _LAUNCH_WORKFILE_ACTIONS_DONE:
         return
     _LAUNCH_WORKFILE_ACTIONS_DONE = True
+
+    # Idle events keep firing until unscheduled; run these only once.
+    try:
+        import flame
+        flame.unschedule_idle_event(_run_launch_workfile_actions)
+    except Exception as error:
+        print(f"!!!! AYON: could not unschedule idle event: {error} !!!!")
 
     for action in (_open_last_workfile, _show_workfiles_tool):
         try:

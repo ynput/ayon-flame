@@ -84,6 +84,9 @@ from .batch_utils import (
     clear_node_metadata,
     get_metadata_node,
     get_current_batch,
+    get_task_batch_name,
+    stamp_workfile_path,
+    get_workfile_path,
 )
 
 __all__ = [
@@ -172,5 +175,8 @@ __all__ = [
     "load_batch_from_consolidated_json",
     "read_node_metadata",
     "write_node_metadata",
+    "get_task_batch_name",
+    "stamp_workfile_path",
+    "get_workfile_path",
     "clear_node_metadata",
 ]

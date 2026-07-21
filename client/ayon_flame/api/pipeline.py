@@ -12,6 +12,7 @@ from ayon_core.pipeline import (
     AYON_CONTAINER_ID,
     deregister_creator_plugin_path,
     deregister_loader_plugin_path,
+    get_global_context,
     register_creator_plugin_path,
     register_loader_plugin_path,
 )
@@ -35,7 +36,6 @@ CREATE_PATH = os.path.join(PLUGINS_DIR, "create")
 
 log = Logger.get_logger(__name__)
 
-_WORKFILE_NODE_NAME = "AYON_workfile"
 
 class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
     name = "flame"
@@ -97,45 +97,54 @@ class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
                 "No destination path provided to save workfile."
             )
 
-        workdir = os.path.dirname(dst_path)
-        if workdir and not os.path.exists(workdir):
-            os.makedirs(workdir, exist_ok=True)
-
         batch = flapi.get_current_batch()
+        # stamp the path before serializing so the saved file records it
+        flapi.stamp_workfile_path(dst_path, batch)
         flapi.save_batch_as_consolidated_json(batch, dst_path)
-        self._stamp_workfile_path(dst_path)
         return dst_path
 
     def open_workfile(self, filepath):
         import ayon_flame.api as flapi
 
-        flapi.load_batch_from_consolidated_json(filepath)
-        self._stamp_workfile_path(filepath)
+        batch_name = self._get_task_batch_name()
+        if not batch_name:
+            batch_name = os.path.splitext(os.path.basename(filepath))[0]
+
+        existing_batch = flapi.get_batch_from_workspace(batch_name)
+        if existing_batch is None:
+            flame.batch.create_batch_group(batch_name)
+        else:
+            existing_batch.open()
+
+        batch = flapi.load_batch_from_consolidated_json(
+            filepath, name=batch_name
+        )
+        flapi.stamp_workfile_path(filepath, batch)
         return filepath
 
     def get_current_workfile(self):
         import ayon_flame.api as flapi
 
-        try:
-            node = flapi.get_metadata_node(node_name=_WORKFILE_NODE_NAME)
-        except RuntimeError:
-            return None
+        return flapi.get_workfile_path(self._get_task_batch())
 
-        if not node:
-            return None
-
-        data = flapi.read_node_metadata(node) or {}
-        return data.get("workfile_path")
-
-    def _stamp_workfile_path(self, filepath):
+    def _get_task_batch_name(self):
         import ayon_flame.api as flapi
 
-        node = flapi.get_metadata_node(
-            create=True, node_name=_WORKFILE_NODE_NAME
-        )
-        data = flapi.read_node_metadata(node) or {}
-        data["workfile_path"] = filepath
-        flapi.write_node_metadata(node, data)
+        context = get_global_context()
+        folder_path = context.get("folder_path")
+        task_name = context.get("task_name")
+
+        if folder_path and task_name:
+            return flapi.get_task_batch_name(folder_path, task_name)
+        return None
+
+    def _get_task_batch(self):
+        import ayon_flame.api as flapi
+
+        batch_name = self._get_task_batch_name()
+        if not batch_name:
+            return None
+        return flapi.get_batch_from_workspace(batch_name)
 
 
 def install():

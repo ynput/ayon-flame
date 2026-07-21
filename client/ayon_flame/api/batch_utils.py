@@ -18,6 +18,9 @@ AYON_NOTE_MARKER = "__ayon__"
 # Name of the hidden Note node used to embed instance data inside the batch.
 _METADATA_NODE_NAME = "AYON_metadata"
 
+# Name of the hidden Note node used to record the current workfile path.
+_WORKFILE_NODE_NAME = "AYON_workfile"
+
 
 def read_node_metadata(node: flame.PyNode) -> Optional[Dict[str, Any]]:
     """ Read AYON instance data from a node's note attribute.
@@ -202,7 +205,8 @@ def save_batch_as_consolidated_json(
 
     try:
         batch_name = batch.name.get_value()
-        bgroup_file = tmp_dir / f"{batch_name}.batch"
+        safe_name = batch_name.replace("/", "_").strip("_") or "batch"
+        bgroup_file = tmp_dir / f"{safe_name}.batch"
         batch.save_setup(str(bgroup_file))
 
         if not tmp_dir.is_dir():
@@ -265,6 +269,37 @@ def get_metadata_node(
     node = batch.create_node("Note")
     node.name.set_value(node_name)
     return node
+
+
+def get_task_batch_name(folder_path: str, task_name: str) -> str:
+    return f"{folder_path}_{task_name}"
+
+
+def stamp_workfile_path(
+    filepath: str,
+    batch: Optional[flame.PyBatch] = None,
+):
+    node = get_metadata_node(
+        batch=batch, create=True, node_name=_WORKFILE_NODE_NAME
+    )
+    data = read_node_metadata(node) or {}
+    data["workfile_path"] = filepath
+    write_node_metadata(node, data)
+
+
+def get_workfile_path(
+    batch: Optional[flame.PyBatch] = None,
+) -> Optional[str]:
+    try:
+        node = get_metadata_node(batch=batch, node_name=_WORKFILE_NODE_NAME)
+    except RuntimeError:
+        return None
+
+    if not node:
+        return None
+
+    data = read_node_metadata(node) or {}
+    return data.get("workfile_path")
 
 
 def load_batch_from_consolidated_json(
