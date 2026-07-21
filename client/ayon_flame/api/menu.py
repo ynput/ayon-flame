@@ -1,7 +1,7 @@
 import logging
 
 from pprint import pformat
-from typing import Dict, Any
+from typing import Any
 
 from qtpy import QtWidgets
 
@@ -99,7 +99,7 @@ class _FlameMenuApp(object):
     def refresh(self, *args, **kwargs):
         self.rescan()
 
-    def build_menu(self) -> Dict[str, Any]:
+    def build_menu(self) -> dict[str, Any]:
         project_name = get_current_project_name()
         return{
             "actions": [
@@ -119,7 +119,7 @@ class FlameMenuProjectConnect(_FlameMenuApp):
     """ Takes care of the preferences dialog as well.
     """
 
-    def build_menu(self) -> Dict[str, Any]:
+    def build_menu(self) -> dict[str, Any]:
         if not self.flame:
             return {}
 
@@ -136,7 +136,7 @@ class _FlameMenuContext(_FlameMenuApp):
     """ Menu that appears in the timeline, batch and universal contexts.
     """
 
-    def build_script_menu_from_settings(self) -> Dict[str, Any]:
+    def build_script_menu_from_settings(self) -> dict[str, Any]:
         """ Load configuration of script menu from project settings.
         """
         project_settings = get_current_project_settings()
@@ -145,11 +145,11 @@ class _FlameMenuContext(_FlameMenuApp):
         enabled = project_settings["flame"]["scriptsmenu"]["enabled"]
 
         if not enabled:
-            logger.warning("Script menu settings is disabled.")
+            logger.info("Script menu settings is disabled.")
             return {}
 
         if not definitions:
-            logger.warning("No script menu content, no definition found.")
+            logger.info("No script menu content, no definition found.")
             return {}
 
         actions = []
@@ -164,7 +164,10 @@ class _FlameMenuContext(_FlameMenuApp):
                 }
             )
 
-        return{
+        if not actions:
+            return {}
+
+        return {
             "actions": actions,
             "name": menu_name,
         }

@@ -5,8 +5,8 @@ class ScriptsmenuSubmodel(BaseSettingsModel):
     """Item Definition"""
     _isGroup = True
 
-    title: str = SettingsField(title="Title")
-    command: str = SettingsField(title="Command")
+    title: str = SettingsField("", title="Title")
+    command: str = SettingsField("", title="Command")
     flame_context: str = SettingsField(
         default_factory=str,
         title="Flame Context",
@@ -19,10 +19,10 @@ class ScriptsmenuSubmodel(BaseSettingsModel):
 
 
 class ScriptsmenuSettings(BaseSettingsModel):
-    """Nuke script menu project settings."""
+    """Flame script menu project settings."""
     _isGroup = True
 
-    name: str = SettingsField(title="Script Menu Name")
+    name: str = SettingsField("Custom Tools", title="Script Menu Name")
     enabled: bool = SettingsField(title="enabled", default=False)
     definitions: list[ScriptsmenuSubmodel] = SettingsField(
         default_factory=list,
