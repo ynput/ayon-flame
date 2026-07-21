@@ -91,7 +91,7 @@ class CustomMenuItemDefinition(BaseSettingsModel):
 
 
 
-class ScriptsmenuSettings(BaseSettingsModel):
+class CustomMenuSettings(BaseSettingsModel):
     """Flame script menu project settings."""
     _isGroup = True
 
@@ -104,7 +104,7 @@ class ScriptsmenuSettings(BaseSettingsModel):
     )
 
 
-DEFAULT_SCRIPTSMENU_SETTINGS = {
+DEFAULT_CUSTOM_MENU_SETTINGS = {
     "name": "Custom Tools",
     "definition": [
         {
