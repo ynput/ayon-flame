@@ -111,7 +111,7 @@ class _FlameMenuApp(object):
             "name": self.menu_group_name,
         }
 
-    def build_script_menu_from_settings(self) -> Dict[str, Any]:
+    def build_script_menu_from_settings(self) -> dict[str, Any]:
         return {}
 
 
@@ -172,7 +172,7 @@ class _FlameMenuContext(_FlameMenuApp):
             "name": menu_name,
         }
 
-    def build_menu(self) -> Dict[str, Any]:
+    def build_menu(self) -> dict[str, Any]:
         if not self.flame:
             return {}
 
