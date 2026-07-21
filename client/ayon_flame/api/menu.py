@@ -6,6 +6,7 @@ from pprint import pformat
 from typing import Any
 
 from qtpy import QtWidgets
+from scriptsmenu import action as script_action
 
 from ayon_core.pipeline import get_current_project_name
 from ayon_core.settings import (
@@ -138,11 +139,12 @@ class _FlameMenuContext(_FlameMenuApp):
     """ Menu that appears in the timeline, batch and universal contexts.
     """
 
-    def build_script_menu_from_settings(self) -> dict[str, Any]:
+    def build_script_menu_from_settings(self) -> list[dict[str, Any]]:
         """ Load configuration of script menu from project settings.
         """
         project_settings = get_current_project_settings()
-        definitions = project_settings["flame"]["scriptsmenu"]["definitions"]
+
+        defs = project_settings["flame"]["scriptsmenu"]["definition"]
         menu_name = project_settings["flame"]["scriptsmenu"]["name"]
         enabled = project_settings["flame"]["scriptsmenu"]["enabled"]
 
@@ -150,29 +152,68 @@ class _FlameMenuContext(_FlameMenuApp):
             logger.info("Script menu settings is disabled.")
             return {}
 
-        if not definitions:
+        if not defs:
             logger.info("No script menu content, no definition found.")
             return {}
 
-        actions = []
-        for definition in definitions:
-            if definition["flame_context"] != self.__class__.__name__:
-                continue
-
-            actions.append(
-                {
-                    "name": definition["title"],
-                    "execute": lambda _, d=definition: exec(d["command"])
-                }
+        def add_action(action_def: dict[str, Any]):
+            """ Add an action to the menu based on the given definition.
+            """
+            action = script_action.Action()
+            action.sourcetype = action_def["source_type"]
+            action.command = (
+                action_def["python"]
+                if action_def["source_type"] == "python"
+                else action_def["file"]
             )
 
-        if not actions:
-            return {}
+            return {
+                "name": action_def["title"],
+                "execute": lambda x, d=action: callback_selection(
+                    x,  # selection
+                    exec(action.process_command()),
+                    context=self.__class__.__name__
+                ),
+            }
 
-        return {
-            "actions": actions,
-            "name": menu_name,
-        }
+        def is_valid_action(action_def: dict[str, Any]) -> bool:
+            """ Check if the action definition is valid for this menu context.
+            """
+            return (
+                action_def["item_type"] == "action"
+                and action_def["action"]["flame_context"] in (
+                    self.__class__.__name__,
+                    "ALL",
+                )
+            )
+
+        menu_items = [
+            {
+                "name": menu_name,
+                "actions": [
+                    add_action(item["action"])
+                    for item in defs
+                    if is_valid_action(item)
+                ],
+                "hierarchy": []
+            }
+        ]
+        for item in defs:
+            if item["item_type"] == "menu":
+                menu_items.append(
+                    {
+                        "name": item["menu"]["title"],
+                        "actions": [
+                            add_action(sitem["action"])
+                            for sitem in item["menu"]["items"]
+                            if is_valid_action(sitem)
+                        ],
+                        "hierarchy": [menu_name]
+                    }
+                )
+
+        return menu_items
+
 
     def build_menu(self) -> dict[str, Any]:
         if not self.flame:

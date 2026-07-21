@@ -1,44 +1,121 @@
 from ayon_server.settings import BaseSettingsModel, SettingsField
 
 
-class ScriptsmenuSubmodel(BaseSettingsModel):
-    """Item Definition"""
-    _isGroup = True
+def item_type_enum_resolver():
+    return [
+        {"value": "action", "label": "Action"},
+        {"value": "menu", "label": "Menu"},
+    ]
 
+
+def menu_item_type_enum_resolver():
+    return [
+        {"value": "action", "label": "Action"},
+    ]
+
+
+def source_type_enum_resolver():
+    return [
+        {"value": "python", "label": "Python"},
+        {"value": "file", "label": "Python file (set filepath as command)"},
+    ]
+
+
+class ActionModel(BaseSettingsModel):
+    """Action Definition"""
     title: str = SettingsField("", title="Title")
-    command: str = SettingsField("", title="Command")
     flame_context: str = SettingsField(
-        default_factory=str,
+        "FlameMenuUniversal",
         title="Flame Context",
         enum_resolver=lambda: [
+            "ALL",
             "FlameMenuUniversal",
             "FlameMenuTimeline",
             "FlameMenuBatch",
         ]
     )
+    source_type: str = SettingsField(
+        "file",
+        title="Source Type",
+        enum_resolver=source_type_enum_resolver,
+        conditional_enum=True,
+    )
+    python: str = SettingsField(
+        "",
+        title="Python",
+        widget="textarea",
+        syntax="python",
+    )
+    file: str = SettingsField("", title="Filepath")
+
+
+class MenuItemDefinition(BaseSettingsModel):
+    """Item Definition"""
+    _layout = "expanded"
+
+    item_type: str = SettingsField(
+        "action",
+        title="Type",
+        enum_resolver=menu_item_type_enum_resolver,
+        conditional_enum=True,
+    )
+    action: ActionModel = ActionModel(
+        default_factory=ActionModel,
+    )
+
+
+class MenuItemModel(BaseSettingsModel):
+    _layout = "expanded"
+    title: str = SettingsField("", title="Title")
+    items: list[MenuItemDefinition] = SettingsField(
+        default_factory=list,
+    )
+
+
+class CustomMenuItemDefinition(BaseSettingsModel):
+    """Custom item Definition"""
+    _layout = "expanded"
+
+    item_type: str = SettingsField(
+        "action",
+        title="Type",
+        enum_resolver=item_type_enum_resolver,
+        conditional_enum=True,
+    )
+    action: ActionModel = ActionModel(
+        default_factory=ActionModel,
+    )
+    menu: MenuItemModel = SettingsField(
+        default_factory=MenuItemModel,
+    )
+
 
 
 class ScriptsmenuSettings(BaseSettingsModel):
     """Flame script menu project settings."""
     _isGroup = True
 
-    name: str = SettingsField("Custom Tools", title="Script Menu Name")
+    name: str = SettingsField(title="Menu name")
     enabled: bool = SettingsField(title="enabled", default=False)
-    definitions: list[ScriptsmenuSubmodel] = SettingsField(
+    definition: list[CustomMenuItemDefinition] = SettingsField(
         default_factory=list,
-        title="Definitions",
-        description="Script Menu Definition"
+        title="Definition",
+        description="Scriptmenu Items Definition"
     )
 
 
 DEFAULT_SCRIPTSMENU_SETTINGS = {
     "name": "Custom Tools",
-    "enabled": False,
-    "definitions": [
+    "definition": [
         {
-            "title": "Ayon Flame Docs",
-            "flame_context": "FlameMenuUniversal",
-            "command": "import webbrowser;webbrowser.open(url='https://docs.ayon.dev/features?addons=flame')",  # noqa
+            "item_type": "action",
+            "action": {
+                "title": "AYON Flame Docs",
+                "flame_context": "ALL",
+                "source_type": "python",
+                "python": "import webbrowser\n\nwebbrowser.open(url='https://docs.ayon.dev/features?addons=flame')",
+                "file": "",
+            }
         }
     ]
 }
