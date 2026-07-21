@@ -121,10 +121,6 @@ class FlameMenuProjectConnect(_FlameMenuApp):
             "name": "1 - Load...",
             "execute": lambda x: self.tools_helper.show_loader()
         })
-        menu['actions'].append({
-            "name": "2 - Library...",
-            "execute": lambda x: self.tools_helper.show_library_loader()
-        })
 
         return menu
 
@@ -172,10 +168,6 @@ class FlameMenuTimeline(_FlameMenuApp):
         #     "name": "Manage...",
         #     "execute": lambda x: self.tools_helper.show_scene_inventory()
         # })
-        menu['actions'].append({
-            "name": "4 - Library...",
-            "execute": lambda x: self.tools_helper.show_library_loader()
-        })
 
         return menu
 
@@ -222,10 +214,6 @@ class FlameMenuBatch(_FlameMenuApp):
                 context="FlameMenuBatch"
             )
         })
-        menu['actions'].append({
-            "name": "4 - Library...",
-            "execute": lambda x: self.tools_helper.show_library_loader()
-        })
 
         return menu
 
@@ -270,10 +258,6 @@ class FlameMenuUniversal(_FlameMenuApp):
                 self.tools_helper.show_loader,
                 context="FlameMenuUniversal"
             )
-        })
-        menu['actions'].append({
-            "name": "4 - Library...",
-            "execute": lambda x: self.tools_helper.show_library_loader()
         })
 
         return menu
