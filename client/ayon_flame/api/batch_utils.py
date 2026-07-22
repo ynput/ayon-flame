@@ -175,6 +175,11 @@ def edit_batch_group_content(
     return all_batch_nodes
 
 
+def normalized_batch_name(name: str) -> str:
+    """avoid batch duplicates by sanitizing name"""
+    return name.replace("/", "_").strip("_")
+
+
 def get_batch_from_workspace(
     name: str,
     workspace: Optional[flame.PyWorkspace] = None
@@ -185,9 +190,10 @@ def get_batch_from_workspace(
         project = flame.project.current_project
         workspace = project.current_workspace
 
+    target = normalized_batch_name(name)
     desktop = workspace.desktop
     for batchgroup in desktop.batch_groups:
-        if batchgroup.name.get_value() == name:
+        if normalized_batch_name(batchgroup.name.get_value()) == target:
             return batchgroup
 
     return None

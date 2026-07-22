@@ -254,7 +254,7 @@ def project_saved(project_name, save_time, is_auto_save):
     if is_auto_save:
         return
     try:
-        flame_api.request_workfile_sync()
+        flame_api.sync_workfile_to_current_iteration()
     except Exception as error:
         print(f"!!!! AYON: could not sync workfile on save: {error} !!!!")
 
@@ -269,7 +269,7 @@ def batch_setup_iterated_post(info, userData):
             f"({info.get('abortMessage')}); saving AYON workfile anyway !!!!"
         )
     try:
-        flame_api.request_workfile_sync()
+        flame_api.sync_workfile_to_current_iteration()
     except Exception as error:
         print(f"!!!! AYON: could not sync workfile on iterate: {error} !!!!")
 
@@ -281,7 +281,7 @@ def batch_setup_saved(setupPath):
     if setupPath and setupPath.startswith(tempfile.gettempdir()):
         return
     try:
-        flame_api.request_workfile_sync()
+        flame_api.sync_workfile_to_current_iteration()
     except Exception as error:
         print(f"!!!! AYON: could not sync workfile on batch save: {error} !!!!")
 

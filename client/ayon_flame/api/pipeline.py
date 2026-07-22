@@ -169,23 +169,6 @@ def uninstall():
 
 
 _syncing_workfile = False
-_sync_scheduled = False
-
-
-def request_workfile_sync():
-    """Merges save/iterate hooks into a single deferred workfile save."""
-    global _sync_scheduled
-    if _syncing_workfile or _sync_scheduled:
-        return
-
-    _sync_scheduled = True
-    flame.schedule_idle_event(_deferred_workfile_sync)
-
-
-def _deferred_workfile_sync(*args):
-    global _sync_scheduled
-    _sync_scheduled = False
-    sync_workfile_to_current_iteration()
 
 
 def sync_workfile_to_current_iteration():

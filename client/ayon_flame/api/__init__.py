@@ -52,7 +52,6 @@ from .pipeline import (
     imprint,
     maintained_selection,
     sync_workfile_to_current_iteration,
-    request_workfile_sync,
 )
 from .menu import (
     FlameMenuProjectConnect,
@@ -140,7 +139,6 @@ __all__ = [
     "imprint",
     "maintained_selection",
     "sync_workfile_to_current_iteration",
-    "request_workfile_sync",
 
     # utils
     "setup",
