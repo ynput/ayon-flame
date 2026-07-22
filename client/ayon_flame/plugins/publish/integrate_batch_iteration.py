@@ -40,3 +40,5 @@ class IntegrateBatchIteration(
             f"Created new batch iteration after publish "
             f"(total: {len(batch.batch_iterations)})."
         )
+
+        flapi.sync_workfile_to_current_iteration()
