@@ -278,7 +278,7 @@ def get_metadata_node(
 
 
 def get_task_batch_name(folder_path: str, task_name: str) -> str:
-    return f"{folder_path}_{task_name}"
+    return normalized_batch_name(f"{folder_path}_{task_name}")
 
 
 def stamp_workfile_path(
