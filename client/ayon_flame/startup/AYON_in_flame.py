@@ -104,9 +104,6 @@ def project_changed_dict(info):
     cleanup()
 
 
-_LAUNCH_WORKFILE_ACTIONS_DONE = False
-
-
 def _open_last_workfile():
     import flame
 
@@ -150,23 +147,15 @@ def _show_workfiles_tool():
 
 
 def _run_launch_workfile_actions():
-    global _LAUNCH_WORKFILE_ACTIONS_DONE
-    if _LAUNCH_WORKFILE_ACTIONS_DONE:
-        return
-    _LAUNCH_WORKFILE_ACTIONS_DONE = True
-
-    # Idle events keep firing until unscheduled; run these only once.
     try:
-        import flame
-        flame.unschedule_idle_event(_run_launch_workfile_actions)
+        _open_last_workfile()
     except Exception as error:
-        print(f"!!!! AYON: could not unschedule idle event: {error} !!!!")
+        print(f"!!!! AYON: could not open last workfile: {error} !!!!")
 
-    for action in (_open_last_workfile, _show_workfiles_tool):
-        try:
-            action()
-        except Exception as error:
-            print(f"!!!! AYON: {action.__name__} failed: {error} !!!!")
+    try:
+        _show_workfiles_tool()
+    except Exception as error:
+        print(f"!!!! AYON: could not show workfiles tool: {error} !!!!")
 
 
 def app_initialized(parent=None):
