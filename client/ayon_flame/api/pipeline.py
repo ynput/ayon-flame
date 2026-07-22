@@ -15,6 +15,7 @@ from ayon_core.pipeline import (
     get_global_context,
     register_creator_plugin_path,
     register_loader_plugin_path,
+    registered_host,
 )
 from pyblish import api as pyblish
 
@@ -165,6 +166,75 @@ def uninstall():
     deregister_creator_plugin_path(CREATE_PATH)
 
     log.info("AYON Flame host uninstalled.")
+
+
+_syncing_workfile = False
+_sync_scheduled = False
+
+
+def request_workfile_sync():
+    """Merges save/iterate hooks into a single deferred workfile save."""
+    global _sync_scheduled
+    if _syncing_workfile or _sync_scheduled:
+        return
+
+    _sync_scheduled = True
+    flame.schedule_idle_event(_deferred_workfile_sync)
+
+
+def _deferred_workfile_sync(*args):
+    global _sync_scheduled
+    _sync_scheduled = False
+    sync_workfile_to_current_iteration()
+
+
+def sync_workfile_to_current_iteration():
+    """Save the current batch as the matching AYON workfile version."""
+    global _syncing_workfile
+    if _syncing_workfile:
+        return
+
+    host = registered_host()
+    if not isinstance(host, FlameHost):
+        return
+
+    try:
+        iteration = int(flame.batch.current_iteration_number)
+    except Exception as error:
+        log.warning("Could not read batch iteration number: %r", error)
+        return
+
+    log.info("Workfile sync requested (batch iteration = %s)", iteration)
+
+    try:
+        from ayon_core.pipeline.workfile import save_next_version
+    except ImportError:
+        log.warning(
+            "`save_next_version` unavailable; update ayon-core to sync "
+            "Flame iterations to workfile versions."
+        )
+        return
+
+    # brand-new batch that has never been iterated reports 0.
+    # this let core assign the first version (v1)
+    version = iteration if iteration >= 1 else None
+
+    _syncing_workfile = True
+    try:
+        save_next_version(
+            version=version,
+            comment="",
+            description="Synced from Flame batch iteration",
+        )
+        log.info(
+            "Synced AYON workfile (batch iteration %s -> version %s)",
+            iteration,
+            "start" if version is None else f"v{version}",
+        )
+    except Exception as error:
+        log.warning("Could not sync AYON workfile version: %r", error)
+    finally:
+        _syncing_workfile = False
 
 
 def containerise(flame_clip_segment,

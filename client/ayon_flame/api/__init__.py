@@ -50,7 +50,9 @@ from .pipeline import (
     remove_instance,
     list_instances,
     imprint,
-    maintained_selection
+    maintained_selection,
+    sync_workfile_to_current_iteration,
+    request_workfile_sync,
 )
 from .menu import (
     FlameMenuProjectConnect,
@@ -137,6 +139,8 @@ __all__ = [
     "list_instances",
     "imprint",
     "maintained_selection",
+    "sync_workfile_to_current_iteration",
+    "request_workfile_sync",
 
     # utils
     "setup",
