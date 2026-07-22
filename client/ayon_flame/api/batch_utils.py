@@ -211,7 +211,7 @@ def save_batch_as_consolidated_json(
 
     try:
         batch_name = batch.name.get_value()
-        safe_name = batch_name.replace("/", "_").strip("_") or "batch"
+        safe_name = normalized_batch_name(batch_name) or "batch"
         bgroup_file = tmp_dir / f"{safe_name}.batch"
         batch.save_setup(str(bgroup_file))
 

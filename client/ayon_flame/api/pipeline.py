@@ -21,6 +21,7 @@ from pyblish import api as pyblish
 
 from ayon_flame import FLAME_ADDON_ROOT
 
+from . import batch_utils
 from .lib import (
     get_current_sequence,
     maintained_segment_selection,
@@ -67,10 +68,9 @@ class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         # When working with batch, we try to get the
         # current context from the batch metadata.
         if CTX.context == "FlameMenuBatch":
-            import ayon_flame.api as flapi
-            metadata_node = flapi.get_metadata_node()
+            metadata_node = batch_utils.get_metadata_node()
             if metadata_node:
-                data = flapi.read_node_metadata(metadata_node)
+                data = batch_utils.read_node_metadata(metadata_node)
                 try:
                     return {
                         "project_name": current_ctx["project_name"],
@@ -90,62 +90,52 @@ class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         return [".json"]
 
     def save_workfile(self, dst_path=None):
-        import ayon_flame.api as flapi
-
         dst_path = dst_path or self.get_current_workfile()
         if not dst_path:
             raise RuntimeError(
                 "No destination path provided to save workfile."
             )
 
-        batch = flapi.get_current_batch()
+        batch = batch_utils.get_current_batch()
         # stamp the path before serializing so the saved file records it
-        flapi.stamp_workfile_path(dst_path, batch)
-        flapi.save_batch_as_consolidated_json(batch, dst_path)
+        batch_utils.stamp_workfile_path(dst_path, batch)
+        batch_utils.save_batch_as_consolidated_json(batch, dst_path)
         return dst_path
 
     def open_workfile(self, filepath):
-        import ayon_flame.api as flapi
-
         batch_name = self._get_task_batch_name()
         if not batch_name:
             batch_name = os.path.splitext(os.path.basename(filepath))[0]
 
-        existing_batch = flapi.get_batch_from_workspace(batch_name)
+        existing_batch = batch_utils.get_batch_from_workspace(batch_name)
         if existing_batch is None:
             flame.batch.create_batch_group(batch_name)
         else:
             existing_batch.open()
 
-        batch = flapi.load_batch_from_consolidated_json(
+        batch = batch_utils.load_batch_from_consolidated_json(
             filepath, name=batch_name
         )
-        flapi.stamp_workfile_path(filepath, batch)
+        batch_utils.stamp_workfile_path(filepath, batch)
         return filepath
 
     def get_current_workfile(self):
-        import ayon_flame.api as flapi
-
-        return flapi.get_workfile_path(self._get_task_batch())
+        return batch_utils.get_workfile_path(self._get_task_batch())
 
     def _get_task_batch_name(self):
-        import ayon_flame.api as flapi
-
         context = get_global_context()
         folder_path = context.get("folder_path")
         task_name = context.get("task_name")
 
         if folder_path and task_name:
-            return flapi.get_task_batch_name(folder_path, task_name)
+            return batch_utils.get_task_batch_name(folder_path, task_name)
         return None
 
     def _get_task_batch(self):
-        import ayon_flame.api as flapi
-
         batch_name = self._get_task_batch_name()
         if not batch_name:
             return None
-        return flapi.get_batch_from_workspace(batch_name)
+        return batch_utils.get_batch_from_workspace(batch_name)
 
 
 def install():
