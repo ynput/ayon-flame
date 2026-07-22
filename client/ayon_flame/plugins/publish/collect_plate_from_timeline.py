@@ -56,7 +56,7 @@ class CollectTimelinePlate(pyblish.api.InstancePlugin):
         if review_switch is True:
             if reviewable_source == "clip_media":
                 instance.data["families"].append("review")
-                # Tell 'CollectOTIOReviewClips' to use the current clip
+                # Tell 'CollectOTIOReviewTrack' to use the current clip
                 instance.data["otioReviewClips"] = [otio_clip]
                 instance.data.pop("reviewTrack", None)
             else:
