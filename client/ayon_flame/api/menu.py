@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import logging
+import os
 
 from pprint import pformat
 from typing import Any
 
 from qtpy import QtWidgets
-from scriptsmenu import action as script_action
 
 from ayon_core.pipeline import get_current_project_name
 from ayon_core.settings import (
@@ -160,19 +160,36 @@ class _FlameMenuContext(_FlameMenuApp):
         def add_action(action_def: dict[str, Any]):
             """ Add an action to the menu based on the given definition.
             """
-            action = script_action.Action()
-            action.sourcetype = action_def["source_type"]
-            action.command = (
-                action_def["python"]
-                if action_def["source_type"] == "python"
-                else action_def["file"]
-            )
+
+            def execute_action(action_def: dict[str, Any]):
+                """ Execute the action.
+                """
+                if action_def["source_type"] == "python":
+                    command = action_def["python"]
+                else:
+                    file_path = action_def["file"]
+                    dirname = os.path.dirname(file_path)
+                    basename = os.path.basename(file_path)
+                    module_name, _ = os.path.splitext(basename)
+
+                    command = f"""
+import importlib.util
+spec = importlib.util.spec_from_file_location(
+"{module_name}",
+"{dirname}/{module_name}.py"
+)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+getattr(module, "{module_name}")()
+"""
+
+                exec(command, {})
 
             return {
                 "name": action_def["title"],
-                "execute": lambda x, d=action: callback_selection(
+                "execute": lambda x, d=action_def: callback_selection(
                     x,  # selection
-                    exec(action.process_command()),
+                    lambda: execute_action(d),
                     context=self.__class__.__name__
                 ),
             }
