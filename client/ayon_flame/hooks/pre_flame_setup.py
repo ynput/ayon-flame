@@ -117,6 +117,15 @@ class FlamePrelaunch(PreLaunchHook):
             data_to_script["color_policy"] = str(
                 imageio_flame["project"]["colourPolicy"])
 
+        # flame 2026 replaced the colour policy by an OCIO config
+        ocio_config_path = _env.get("OCIO")
+        if ocio_config_path:
+            data_to_script["ocio_config_path"] = ocio_config_path
+        else:
+            self.log.info(
+                "'OCIO' is not set, flame keeps its default config."
+                )
+
         self.log.info(pformat(dict(_env)))
         self.log.info(pformat(data_to_script))
 
@@ -207,7 +216,8 @@ class FlamePrelaunch(PreLaunchHook):
                 "env": env
             }
 
-            run_subprocess(args, **process_kwargs)
+            output = run_subprocess(args, **process_kwargs)
+            self.log.info("wiretap_com.py output:\n{}".format(output))
 
             # process returned json file to pass launch args
             return_json_data = open(tmp_json_path).read()
