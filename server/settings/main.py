@@ -5,7 +5,7 @@ from .imageio import FlameImageIOModel, DEFAULT_IMAGEIO_SETTINGS
 from .create_plugins import CreatePluginsModel, DEFAULT_CREATE_SETTINGS
 from .publish_plugins import PublishPluginsModel, DEFAULT_PUBLISH_SETTINGS
 from .loader_plugins import LoaderPluginsModel, DEFAULT_LOADER_SETTINGS
-from .script_menu import CustomMenuSettings, DEFAULT_CUSTOM_MENU_SETTINGS
+from .custom_menu import CustomMenuSettings, DEFAULT_CUSTOM_MENU_SETTINGS
 
 
 class InstallOpenTimelineIOToFlameModel(BaseSettingsModel):

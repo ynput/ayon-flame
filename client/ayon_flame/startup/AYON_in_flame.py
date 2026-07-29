@@ -155,9 +155,9 @@ def _build_app_menu(app_name):
             app_menu = _app.build_menu()
             if app_menu:
                 menu.append(app_menu)
-            app_script_menu = _app.build_script_menu_from_settings()
-            if app_script_menu:
-                menu.extend(app_script_menu)
+            app_custom_menu = _app.build_custom_menu_from_settings()
+            if app_custom_menu:
+                menu.extend(app_custom_menu)
 
     if flame_api.CTX.app_framework:
         menu_auto_refresh = flame_api.CTX.app_framework.prefs_global.get(

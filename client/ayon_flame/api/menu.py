@@ -114,7 +114,7 @@ class _FlameMenuApp(object):
             "name": self.menu_group_name,
         }
 
-    def build_script_menu_from_settings(self) -> dict[str, Any]:
+    def build_custom_menu_from_settings(self) -> dict[str, Any]:
         return {}
 
 
@@ -139,7 +139,7 @@ class _FlameMenuContext(_FlameMenuApp):
     """ Menu that appears in the timeline, batch and universal contexts.
     """
 
-    def build_script_menu_from_settings(self) -> list[dict[str, Any]]:
+    def build_custom_menu_from_settings(self) -> list[dict[str, Any]]:
         """ Load configuration of script menu from project settings.
         """
         project_settings = get_current_project_settings()
