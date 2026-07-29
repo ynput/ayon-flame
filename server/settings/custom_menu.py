@@ -100,7 +100,7 @@ class CustomMenuSettings(BaseSettingsModel):
     definition: list[CustomMenuItemDefinition] = SettingsField(
         default_factory=list,
         title="Definition",
-        description="Scriptmenu Items Definition"
+        description="Custom Menu Items Definition"
     )
 
 
