@@ -2,11 +2,14 @@
 """
 import pyblish.api
 
-import ayon_flame.api as flapi
-
 
 class CollectBatchInstance(pyblish.api.InstancePlugin):
-    """Collect batch render instances and handle the review attribute."""
+    """Pin the batch workfile product to the AYON workfile version.
+
+    Overrides the studio `follow_workfile_version` setting: the publish
+    has to advance with the workfile, or `IntegrateBatchIteration` cannot
+    keep a second publish from overwriting the first.
+    """
 
     order = pyblish.api.CollectorOrder - 0.48
     label = "Collect Batch instance"
@@ -20,11 +23,8 @@ class CollectBatchInstance(pyblish.api.InstancePlugin):
             )
             return
 
-        batch_name = instance.data["batch_name"]
-        batch = flapi.get_batch_from_workspace(batch_name)
-        if not batch:
-            raise ValueError(f"Batch group not found: {batch_name}")
-
-        instance.data["version"] = batch.current_iteration_number
-        instance.data["followWorkfileVersion"] = False
-        self.log.debug(f"Collected batch version: {instance.data['version']}")
+        # `CollectBatchVersion` reads the version off the AYON workfile
+        # name; core applies the context version from there
+        # (collect_anatomy_instance_data.py), falling back to the next
+        # available version when there is no workfile to read it from
+        instance.data["followWorkfileVersion"] = True

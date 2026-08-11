@@ -1,29 +1,23 @@
-""" Offer to iterate after a successful batch publish."""
+""" Iterate the batch group after a successful batch publish."""
 import pyblish.api
-
-from ayon_core.pipeline.publish import OptionalPyblishPluginMixin
 
 import ayon_flame.api as flapi
 
 
-class IntegrateBatchIteration(
-    pyblish.api.InstancePlugin,
-    OptionalPyblishPluginMixin,
-):
-    """Offer to save batch as new iteration after publishing is done.
+class IntegrateBatchIteration(pyblish.api.InstancePlugin):
+    """Save the batch as a new iteration once publishing is done.
+
+    Not optional: the published version is pinned to the workfile version
+    by `CollectBatchInstance`, so the workfile has to advance after every
+    publish. Without it, a second publish would overwrite the first.
     """
 
     label = "Iterate Batch After Publish"
     order = pyblish.api.IntegratorOrder + 0.5
     families = ["workfile"]
     hosts = ["flame"]
-    optional = True
-    active = True
 
     def process(self, instance):
-        if not self.is_active(instance.data):
-            return
-
         if instance.data.get("batch_name") is None:
             self.log.info(
                 "Instance is not a batch workfile, skipping."
@@ -35,10 +29,8 @@ class IntegrateBatchIteration(
         if not batch:
             raise ValueError(f"Batch group not found: {batch_name}")
 
+        # `batch_setup_iterated_post` fires here too, and that hook is what
+        # saves the next AYON workfile version, bumping again would make
+        # a publish produce two of them
         batch.iterate()
-        self.log.info(
-            f"Created new batch iteration after publish "
-            f"(total: {len(batch.batch_iterations)})."
-        )
-
-        flapi.sync_workfile_to_current_iteration()
+        self.log.info("Created new batch iteration after publish.")

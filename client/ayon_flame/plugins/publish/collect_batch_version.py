@@ -1,10 +1,13 @@
+import os
+
 import pyblish.api
 
-import ayon_flame.api as flapi
+from ayon_core.lib import get_version_from_path
+from ayon_core.pipeline import registered_host
 
 
 class CollectBatchVersion(pyblish.api.ContextPlugin):
-    """ Collect "version" from current batch if any.
+    """ Collect "version" from the current batch workfile, if any.
     """
 
     order = pyblish.api.CollectorOrder
@@ -21,12 +24,21 @@ class CollectBatchVersion(pyblish.api.ContextPlugin):
             self.log.debug("No instances related to batch found in context.")
             return
 
-        # Flame batch as its own iteration management,
-        # Note that current iteration might or might not
-        # have been published through AYON.
-        batch = flapi.get_current_batch()
-        context.data["version"] = batch.current_iteration_number
+        # AYON workfile name carries the version. Flame's own iteration
+        # index cannot: it is re-usable and re-indexable, so publishing from
+        # it can overwrite an existing published version
+        filepath = registered_host().get_current_workfile()
+        if not filepath:
+            self.log.debug("No AYON workfile for the current task.")
+            return
+
+        version = get_version_from_path(os.path.basename(filepath))
+        if version is None:
+            self.log.debug(f"No version in workfile name: {filepath}")
+            return
+
+        context.data["version"] = int(version)
         self.log.debug(
             f"Collected context version: {context.data['version']} "
-            f"from batch"
+            f"from {filepath}"
         )
