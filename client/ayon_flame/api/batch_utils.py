@@ -87,7 +87,7 @@ def update_batch(
     """ Update provided batch with new values.
     """
     if name:
-        batch.name = name
+        rename_batch(batch, name)
     if frame_start is not None:
         batch.start_frame = frame_start - handle_start
     if frame_duration is not None:
@@ -180,11 +180,13 @@ def normalized_batch_name(name: str) -> str:
     return name.replace("/", "_").strip("_")
 
 
-def get_batch_from_workspace(
+def get_batches_from_workspace(
     name: str,
     workspace: Optional[flame.PyWorkspace] = None
-) -> Optional[flame.PyBatch]:
-    """ Get batch group from name and workspace.
+) -> List[flame.PyBatch]:
+    """ Get every batch group matching a name.
+
+    Names are compared normalized, so "/X", "_X" and "X" all match.
     """
     if workspace is None:
         project = flame.project.current_project
@@ -192,11 +194,34 @@ def get_batch_from_workspace(
 
     target = normalized_batch_name(name)
     desktop = workspace.desktop
-    for batchgroup in desktop.batch_groups:
-        if normalized_batch_name(batchgroup.name.get_value()) == target:
-            return batchgroup
+    return [
+        batchgroup
+        for batchgroup in desktop.batch_groups
+        if normalized_batch_name(batchgroup.name.get_value()) == target
+    ]
 
-    return None
+
+def get_batch_from_workspace(
+    name: str,
+    workspace: Optional[flame.PyWorkspace] = None
+) -> Optional[flame.PyBatch]:
+    """ Get the first batch group matching a name."""
+    batches = get_batches_from_workspace(name, workspace)
+    return batches[0] if batches else None
+
+
+def rename_batch(batch: flame.PyBatch, name: str):
+    """ Rename a batch group, keeping AYON instance data pointing at it."""
+    batch.name.set_value(name)
+
+    node = get_metadata_node(batch=batch)
+    if node is None:
+        return
+
+    data = read_node_metadata(node)
+    if data and data.get("batch_name"):
+        data["batch_name"] = name
+        write_node_metadata(node, data)
 
 
 def save_batch_as_consolidated_json(
@@ -257,6 +282,21 @@ def get_current_batch() -> flame.PyBatch:
         ) from error
 
 
+def set_current_batch(
+    batch: flame.PyBatch,
+    workspace: Optional[flame.PyWorkspace] = None,
+):
+    if workspace is None:
+        project = flame.project.current_project
+        workspace = project.current_workspace
+
+    workspace.desktop.current_batch_group = batch
+
+
+def show_batch_page():
+    flame.set_current_tab("Batch")
+
+
 def get_metadata_node(
         batch: Optional[flame.PyBatch] = None,
         create: bool = False,
@@ -296,11 +336,7 @@ def stamp_workfile_path(
 def get_workfile_path(
     batch: Optional[flame.PyBatch] = None,
 ) -> Optional[str]:
-    try:
-        node = get_metadata_node(batch=batch, node_name=_WORKFILE_NODE_NAME)
-    except RuntimeError:
-        return None
-
+    node = get_metadata_node(batch=batch, node_name=_WORKFILE_NODE_NAME)
     if not node:
         return None
 
@@ -312,9 +348,13 @@ def load_batch_from_consolidated_json(
     filepath: str,
     name: Optional[str] = None,
     temporary_folder: Optional[str] = None,
+    batch: Optional[flame.PyBatch] = None,
 ) -> Optional[flame.PyBatch]:
-    """ Load a batch from a consolidated json file.
-    """
+    """ Load a batch from a consolidated json file."""
+    batch = batch or get_current_batch()
+    # the only handle that survives `load_setup` is the group's name
+    previous_name = batch.name.get_value()
+
     with open(filepath, "r", encoding="utf-8") as file_:
         data = json.load(file_)
 
@@ -339,14 +379,22 @@ def load_batch_from_consolidated_json(
                 f"No valid batch found in consolidated json: {filepath}"
             )
 
-        flame.batch.load_setup(str(tmp_dir / batch_file))
+        batch.load_setup(str(tmp_dir / batch_file))
 
-        # Restore the batch group name from the provided name
-        # or use the .batch filename stem otherwise.
-        batch_name = name or pathlib.Path(batch_file).stem
-        flame.batch.name = batch_name
+        target_name = name or previous_name
+        batch = get_batch_from_workspace(target_name)
+        if batch is None:
+            log.warning(
+                "No batch group named %r after loading the setup; "
+                "falling back to the current batch group.",
+                target_name,
+            )
+            batch = get_current_batch()
 
-        return flame.batch
+        if name:
+            rename_batch(batch, name)
+
+        return batch
 
     finally:
         if tmp is not None:
