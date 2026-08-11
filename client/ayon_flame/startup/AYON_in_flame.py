@@ -105,16 +105,17 @@ def project_changed_dict(info):
 
 
 def _open_last_workfile():
+    """Return the batch group holding this task's workfile, or None."""
     import flame
 
     if not env_value_to_bool("AVALON_OPEN_LAST_WORKFILE"):
-        return
+        return None
 
     context = get_global_context()
     folder_path = context.get("folder_path")
     task_name = context.get("task_name")
     if not folder_path or not task_name:
-        return
+        return None
 
     # each task its own batch group to avoid mixing with other tasks
     batch_name = batch_utils.get_task_batch_name(folder_path, task_name)
@@ -122,21 +123,38 @@ def _open_last_workfile():
     # reuse an existing batch if it's already on the desktop
     existing_batch = batch_utils.get_batch_from_workspace(batch_name)
     if existing_batch is not None:
-        existing_batch.open()
-        return
+        print(f"AYON: reusing batch group '{batch_name}'")
+        return existing_batch
 
     # load the last workfile into a task-specific batch group
     filepath = os.environ.get("AYON_LAST_WORKFILE")
     if filepath and os.path.exists(filepath):
-        flame.batch.create_batch_group(batch_name)
-        batch_utils.load_batch_from_consolidated_json(
-            filepath, name=batch_name
-        )
-        batch_utils.stamp_workfile_path(filepath)
-        return
+        print(f"AYON: loading {filepath} into batch group '{batch_name}'")
+        batch = flame.batch.create_batch_group(batch_name)
+
+        batch_utils.set_current_batch(batch)
+        try:
+            batch = batch_utils.load_batch_from_consolidated_json(
+                filepath, batch=batch
+            )
+        except Exception as error:
+            print(
+                f"!!!! AYON: could not load {filepath} into batch group "
+                f"'{batch_name}': {error} !!!!"
+            )
+            flame_api.show_artist_message(
+                f"could not open the last workfile. Batch group "
+                f"'{batch_name}' is empty - delete it and open a version "
+                "from the Work Files tool instead of saving over it.",
+                "error",
+                seconds=20,
+            )
+            return None
+        return batch
 
     # start fresh batch group for this task
-    flame.batch.create_batch_group(batch_name)
+    print(f"AYON: no workfile yet, creating batch group '{batch_name}'")
+    return flame.batch.create_batch_group(batch_name)
 
 
 def _show_workfiles_tool():
@@ -147,8 +165,13 @@ def _show_workfiles_tool():
 
 
 def _run_launch_workfile_actions():
+    """Open this task's workfile and bring it in front of the artist."""
     try:
-        _open_last_workfile()
+        batch = _open_last_workfile()
+        if batch is not None:
+            batch_utils.set_current_batch(batch)
+            # Flame opens on the Timeline page
+            batch_utils.show_batch_page()
     except Exception as error:
         print(f"!!!! AYON: could not open last workfile: {error} !!!!")
 
@@ -158,23 +181,22 @@ def _run_launch_workfile_actions():
         print(f"!!!! AYON: could not show workfiles tool: {error} !!!!")
 
 
-def app_initialized(parent=None):
-    """Inicialization of Framework
-
-    Args:
-        parent (obj, optional): Parent object. Defaults to None.
-    """
+def app_initialized(project_name=None):
+    """Flame hook: the application is fully initialized, project loaded."""
     flame_api.CTX.app_framework = flame_api.FlameAppFramework()
 
     print(f"{flame_api.CTX.app_framework.bundle_name} initializing")
 
     load_apps()
 
+    if not project_name:
+        return
+
     try:
-        import flame  # noqa
+        import flame
         flame.schedule_idle_event(_run_launch_workfile_actions)
-    except ImportError:
-        print("!!!! not able to import flame module !!!!")
+    except Exception as error:
+        print(f"!!!! AYON: could not run project load actions: {error} !!!!")
 
 
 """
@@ -192,7 +214,7 @@ except ImportError:
     print("!!!! not able to import flame module !!!!")
 
 try:
-    app_initialized(parent=None)
+    app_initialized()
 except Exception as error:
     print(f"!!!! not able to initialize the app: {error} !!!!")
 
@@ -247,43 +269,36 @@ def project_saved(project_name, save_time, is_auto_save):
         save_time (str): time when it was saved
         is_auto_save (bool): autosave is on or off
     """
+
     if flame_api.CTX.app_framework:
         flame_api.CTX.app_framework.save_prefs()
 
     # ignore Flame's periodic auto-save
     if is_auto_save:
         return
-    try:
-        flame_api.sync_workfile_to_current_iteration()
-    except Exception as error:
-        print(f"!!!! AYON: could not sync workfile on save: {error} !!!!")
+
+    flame_api.refresh_workfile()
 
 
 def batch_setup_iterated_post(info, userData):
     """Hook to activate after a batch group iteration.
-    A Flame iterate advances AYON workfile version"""
+    A Flame iterate makes a new AYON workfile version"""
 
     if isinstance(info, dict) and info.get("abort"):
+        # the AYON workfile still has to be attempted: its versions do not
+        # come from Flame's iteration backups
         print(
             "!!!! AYON: Flame could not back up the iteration natively "
-            f"({info.get('abortMessage')}); saving AYON workfile anyway !!!!"
+            f"({info.get('abortMessage')}). AYON versions its workfiles "
+            "separately !!!!"
         )
-    try:
-        flame_api.sync_workfile_to_current_iteration()
-    except Exception as error:
-        print(f"!!!! AYON: could not sync workfile on iterate: {error} !!!!")
+
+    flame_api.bump_workfile_version()
 
 
 def batch_setup_saved(setupPath):
     """Hook to activate when a batch setup is saved to disk."""
-    import tempfile
-
-    if setupPath and setupPath.startswith(tempfile.gettempdir()):
-        return
-    try:
-        flame_api.sync_workfile_to_current_iteration()
-    except Exception as error:
-        print(f"!!!! AYON: could not sync workfile on batch save: {error} !!!!")
+    flame_api.refresh_workfile()
 
 
 def get_main_menu_custom_ui_actions():
