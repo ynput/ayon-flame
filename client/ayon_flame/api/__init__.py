@@ -51,7 +51,9 @@ from .pipeline import (
     list_instances,
     imprint,
     maintained_selection,
-    sync_workfile_to_current_iteration,
+    bump_workfile_version,
+    refresh_workfile,
+    show_artist_message,
 )
 from .menu import (
     FlameMenuProjectConnect,
@@ -85,9 +87,6 @@ from .batch_utils import (
     clear_node_metadata,
     get_metadata_node,
     get_current_batch,
-    get_task_batch_name,
-    stamp_workfile_path,
-    get_workfile_path,
 )
 
 __all__ = [
@@ -132,13 +131,13 @@ __all__ = [
     "ls",
     "containerise",
     "update_container",
-    "reload_pipeline",
-    "maintained_selection",
     "remove_instance",
     "list_instances",
     "imprint",
     "maintained_selection",
-    "sync_workfile_to_current_iteration",
+    "bump_workfile_version",
+    "refresh_workfile",
+    "show_artist_message",
 
     # utils
     "setup",
@@ -152,7 +151,6 @@ __all__ = [
     "FlameMenuUniversal",
 
     # plugin
-    "Creator",
     "PublishableClip",
     "ClipLoader",
     "OpenClipSolver",
@@ -177,8 +175,5 @@ __all__ = [
     "load_batch_from_consolidated_json",
     "read_node_metadata",
     "write_node_metadata",
-    "get_task_batch_name",
-    "stamp_workfile_path",
-    "get_workfile_path",
     "clear_node_metadata",
 ]

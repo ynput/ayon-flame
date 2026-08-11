@@ -3,7 +3,10 @@ Basic AYON integration
 """
 import contextlib
 import os
+import time
 from copy import deepcopy
+from dataclasses import dataclass
+from typing import NoReturn
 import flame
 
 from ayon_core.host import HostBase, ILoadHost, IPublishHost, IWorkfileHost
@@ -17,7 +20,10 @@ from ayon_core.pipeline import (
     register_loader_plugin_path,
     registered_host,
 )
+from ayon_core.pipeline.workfile import save_next_version
+from ayon_core.tools.utils import show_message_dialog
 from pyblish import api as pyblish
+from qtpy import QtWidgets
 
 from ayon_flame import FLAME_ADDON_ROOT
 
@@ -37,6 +43,50 @@ CREATE_PATH = os.path.join(PLUGINS_DIR, "create")
 
 
 log = Logger.get_logger(__name__)
+
+
+def _show_artist_dialog(message, title):
+    """Show a blocking message to the artist"""
+    try:
+        # Flame's own dialog renders behind AYON's Qt windows
+        parent = QtWidgets.QApplication.activeWindow()
+        if parent is None:
+            flame.messages.show_in_dialog(title, message, "warning", ["OK"])
+        else:
+            show_message_dialog(title, message, level="warning", parent=parent)
+    except Exception as error:
+        log.debug("Could not show dialog: %r", error)
+
+
+def show_artist_message(message, level="info", seconds=10):
+    """Show a message in Flame's message bar."""
+    try:
+        flame.messages.show_in_console(f"AYON: {message}", level, seconds)
+    except Exception as error:
+        log.debug("Could not show console message: %r", error)
+
+
+def _refuse_workfile_action(message, title) -> NoReturn:
+    """Tell the artist why a workfile action was refused"""
+    log.error(message)
+    _show_artist_dialog(message, title)
+    raise RuntimeError(message)
+
+
+@dataclass
+class WorkfileSkip:
+    """Why a save did not sync."""
+    message: str
+    # a state the artist has to fix, not an expected one
+    is_error: bool
+
+
+def _duplicate_batch_message(count, batch_name, advice):
+    """Explain that a task's workfile batch group cannot be identified."""
+    return (
+        f"{count} batch groups are named '{batch_name}'. Delete the "
+        f"duplicates so this task has a single workfile batch group. {advice}"
+    )
 
 
 class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
@@ -90,16 +140,25 @@ class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         return [".json"]
 
     def save_workfile(self, dst_path=None):
-        dst_path = dst_path or self.get_current_workfile()
+        # the interface allows no path: keep the one the batch group
+        # already points at
         if not dst_path:
-            raise RuntimeError(
-                "No destination path provided to save workfile."
-            )
+            dst_path = self.get_current_workfile()
+        if not dst_path:
+            raise RuntimeError("No workfile path to save the batch group to.")
 
-        batch = batch_utils.get_current_batch()
-        # stamp the path before serializing so the saved file records it
+        # the workfile is the task batch group, not the active one
+        batch = self._acquire_workfile_batch()
+
+        log.info("Writing AYON workfile %r", dst_path)
+
+        # stamp the path before serializing so the file records it
         batch_utils.stamp_workfile_path(dst_path, batch)
         batch_utils.save_batch_as_consolidated_json(batch, dst_path)
+
+        _SyncState.last_skip = None
+
+        show_artist_message(f"saved {os.path.basename(dst_path)}")
         return dst_path
 
     def open_workfile(self, filepath):
@@ -107,20 +166,32 @@ class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         if not batch_name:
             batch_name = os.path.splitext(os.path.basename(filepath))[0]
 
-        existing_batch = batch_utils.get_batch_from_workspace(batch_name)
-        if existing_batch is None:
-            flame.batch.create_batch_group(batch_name)
-        else:
-            existing_batch.open()
+        log.info("Opening AYON workfile %r into %r", filepath, batch_name)
+
+        # by name, so a duplicate is refused before anything is loaded
+        batches = batch_utils.get_batches_from_workspace(batch_name)
+        self._refuse_if_batch_duplicated(
+            batches, batch_name, "Then open the workfile again."
+        )
+
+        batch = batches[0] if batches else None
+        if batch is None:
+            batch = flame.batch.create_batch_group(batch_name)
+
+        batch_utils.set_current_batch(batch)
+        batch_utils.show_batch_page()
 
         batch = batch_utils.load_batch_from_consolidated_json(
-            filepath, name=batch_name
+            filepath, name=batch_name, batch=batch
         )
         batch_utils.stamp_workfile_path(filepath, batch)
         return filepath
 
     def get_current_workfile(self):
-        return batch_utils.get_workfile_path(self._get_task_batch())
+        batches = self._get_task_batches()
+        if not batches:
+            return None
+        return batch_utils.get_workfile_path(batches[0])
 
     def _get_task_batch_name(self):
         context = get_global_context()
@@ -131,11 +202,118 @@ class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
             return batch_utils.get_task_batch_name(folder_path, task_name)
         return None
 
-    def _get_task_batch(self):
+    def _get_task_batches(self):
         batch_name = self._get_task_batch_name()
         if not batch_name:
-            return None
-        return batch_utils.get_batch_from_workspace(batch_name)
+            return []
+        return batch_utils.get_batches_from_workspace(batch_name)
+
+    @staticmethod
+    def _refuse_if_batch_duplicated(batches, batch_name, advice):
+        if len(batches) > 1:
+            _refuse_workfile_action(
+                _duplicate_batch_message(len(batches), batch_name, advice),
+                "AYON: Ambiguous Workfile Batch Group",
+            )
+
+    def _workfile_batch_skip_reason(self):
+        batch_name = self._get_task_batch_name()
+        if not batch_name:
+            return WorkfileSkip(
+                "No folder/task in the current context "
+                "(AYON_FOLDER_PATH / AYON_TASK_NAME are not both set).",
+                is_error=False,
+            )
+
+        task_batches = self._get_task_batches()
+        if len(task_batches) > 1:
+            return WorkfileSkip(
+                _duplicate_batch_message(
+                    len(task_batches), batch_name, "Nothing has been saved."
+                ),
+                is_error=True,
+            )
+
+        if not task_batches:
+            return WorkfileSkip(
+                f"No batch group named '{batch_name}' on the desktop yet. "
+                "Save once through the Workfiles tool to create it; "
+                "after that, Flame's own save gestures keep it in sync.",
+                is_error=False,
+            )
+
+        try:
+            current = batch_utils.get_current_batch()
+        except RuntimeError as error:
+            return WorkfileSkip(
+                f"No active batch group ({error}).", is_error=False
+            )
+
+        current_name = batch_utils.normalized_batch_name(
+            current.name.get_value()
+        )
+        if current_name != batch_name:
+            return WorkfileSkip(
+                f"Active batch group '{current_name}' is not the workfile "
+                f"batch group '{batch_name}'.",
+                is_error=False,
+            )
+
+        context = self.get_current_context()
+        global_context = get_global_context()
+        if (
+            context.get("folder_path") != global_context.get("folder_path")
+            or context.get("task_name") != global_context.get("task_name")
+        ):
+            return WorkfileSkip(
+                "This batch group holds AYON instance data for "
+                f"'{context.get('folder_path')} / {context.get('task_name')}' "
+                "but the session is on "
+                f"'{global_context.get('folder_path')} / "
+                f"{global_context.get('task_name')}'. Open the Publisher and "
+                "point the batch instance at the current task, so a save "
+                "cannot land in another task's work area.",
+                is_error=True,
+            )
+
+        return None
+
+    def _acquire_workfile_batch(self):
+        """Return the batch group to serialize as the AYON workfile."""
+        batch_name = self._get_task_batch_name()
+        current = batch_utils.get_current_batch()
+
+        if not batch_name:
+            # no folder/task context, nothing to enforce against
+            return current
+
+        # refuse before writing anything
+        task_batches = self._get_task_batches()
+        self._refuse_if_batch_duplicated(
+            task_batches, batch_name, "Then save again."
+        )
+
+        current_name = batch_utils.normalized_batch_name(
+            current.name.get_value()
+        )
+        if current_name == batch_name:
+            return current
+
+        if not task_batches:
+            log.info(
+                "Adopting batch group %r as the workfile batch %r",
+                current_name,
+                batch_name,
+            )
+            batch_utils.rename_batch(current, batch_name)
+            return current
+
+        _refuse_workfile_action(
+            f"Active batch group '{current_name}' is not the AYON workfile "
+            f"batch group '{batch_name}'. Switch to '{batch_name}' before "
+            "saving, or publish the active batch instead.",
+            "AYON: Wrong Batch Group",
+        )
 
 
 def install():
@@ -158,56 +336,116 @@ def uninstall():
     log.info("AYON Flame host uninstalled.")
 
 
-_syncing_workfile = False
+# how long a version bump stays recognisable to the refresh that trails it
+_SYNC_DEDUP_WINDOW = 5.0
 
 
-def sync_workfile_to_current_iteration():
-    """Save the current batch as the matching AYON workfile version."""
-    global _syncing_workfile
-    if _syncing_workfile:
+class _SyncState:
+    last_skip = None
+    last_bump = None
+
+
+def _report_skip(skip):
+    """Log a skip, and tell the artist once per state."""
+    log.info("Skipping AYON workfile sync. %s", skip.message)
+
+    if skip.message == _SyncState.last_skip:
         return
+    _SyncState.last_skip = skip.message
 
+    if skip.is_error:
+        _show_artist_dialog(skip.message, "AYON: Workfile Not Saved")
+    else:
+        show_artist_message(skip.message, "warning")
+
+
+def _host_for_sync():
+    """The host to sync through, or None if this gesture must not sync."""
     host = registered_host()
     if not isinstance(host, FlameHost):
-        return
+        return None
 
+    skip = host._workfile_batch_skip_reason()
+    if skip:
+        _report_skip(skip)
+        return None
+
+    return host
+
+
+def _is_trailing_bump_rewrite(filepath):
+    """Whether a version bump just wrote this exact file."""
+    if _SyncState.last_bump is None:
+        return False
+
+    last_path, last_time = _SyncState.last_bump
+    _SyncState.last_bump = None
+
+    elapsed = time.monotonic() - last_time
+    if last_path != filepath or elapsed >= _SYNC_DEDUP_WINDOW:
+        return False
+
+    log.info(
+        "Version bump wrote %r %.2fs ago; skipping the refresh behind it.",
+        filepath,
+        elapsed,
+    )
+    return True
+
+
+def bump_workfile_version():
+    """Save the batch group as a new AYON workfile version.
+
+    Core picks the number: Flame's iteration index is a pointer that can
+    be re-used and re-indexed, so it cannot drive versions.
+
+    Called from a Flame hook, so it reports failures instead of raising.
+    """
     try:
-        iteration = int(flame.batch.current_iteration_number)
-    except Exception as error:
-        log.warning("Could not read batch iteration number: %r", error)
-        return
+        host = _host_for_sync()
+        if host is None:
+            return
 
-    log.info("Workfile sync requested (batch iteration = %s)", iteration)
-
-    try:
-        from ayon_core.pipeline.workfile import save_next_version
-    except ImportError:
-        log.warning(
-            "`save_next_version` unavailable; update ayon-core to sync "
-            "Flame iterations to workfile versions."
-        )
-        return
-
-    # brand-new batch that has never been iterated reports 0.
-    # this let core assign the first version (v1)
-    version = iteration if iteration >= 1 else None
-
-    _syncing_workfile = True
-    try:
         save_next_version(
-            version=version,
+            version=None,
             comment="",
-            description="Synced from Flame batch iteration",
+            description="Saved from a Flame batch iteration",
         )
-        log.info(
-            "Synced AYON workfile (batch iteration %s -> version %s)",
-            iteration,
-            "start" if version is None else f"v{version}",
+        filepath = host.get_current_workfile()
+        # stamped after the save, so a failed save leaves the refresh
+        # behind it free to write
+        _SyncState.last_bump = (filepath, time.monotonic())
+        log.info("Saved AYON workfile %r", filepath)
+    except Exception:
+        log.warning(
+            "Could not save a new AYON workfile version.", exc_info=True
         )
-    except Exception as error:
-        log.warning("Could not sync AYON workfile version: %r", error)
-    finally:
-        _syncing_workfile = False
+
+
+def refresh_workfile():
+    """Rewrite the AYON workfile the batch group already points at."""
+    try:
+        host = _host_for_sync()
+        if host is None:
+            return
+
+        filepath = host.get_current_workfile()
+        if not filepath:
+            _report_skip(WorkfileSkip(
+                "This batch group has no AYON workfile yet. Save once "
+                "through the Work Files tool to create one; after that, "
+                "Flame's own save gestures keep it up to date.",
+                is_error=False,
+            ))
+            return
+
+        if _is_trailing_bump_rewrite(filepath):
+            return
+
+        host.save_workfile(filepath)
+        log.info("Refreshed AYON workfile %r", filepath)
+    except Exception:
+        log.warning("Could not refresh the AYON workfile.", exc_info=True)
 
 
 def containerise(flame_clip_segment,
