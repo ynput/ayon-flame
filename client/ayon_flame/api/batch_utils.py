@@ -21,6 +21,9 @@ _METADATA_NODE_NAME = "AYON_metadata"
 # Name of the hidden Note node used to record the current workfile path.
 _WORKFILE_NODE_NAME = "AYON_workfile"
 
+# Name of the Flame page holding batch groups.
+_BATCH_PAGE = "Batch"
+
 
 def read_node_metadata(node: flame.PyNode) -> Optional[Dict[str, Any]]:
     """ Read AYON instance data from a node's note attribute.
@@ -294,7 +297,11 @@ def set_current_batch(
 
 
 def show_batch_page():
-    flame.set_current_tab("Batch")
+    flame.set_current_tab(_BATCH_PAGE)
+
+
+def is_batch_page() -> bool:
+    return flame.get_current_tab() == _BATCH_PAGE
 
 
 def get_metadata_node(

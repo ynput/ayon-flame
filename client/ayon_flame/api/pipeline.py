@@ -33,7 +33,6 @@ from .lib import (
     maintained_segment_selection,
     set_clip_data_marker,
     set_segment_data_marker,
-    CTX,
 )
 
 PLUGINS_DIR = os.path.join(FLAME_ADDON_ROOT, "plugins")
@@ -117,21 +116,21 @@ class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         # Flame can be used as a multi-workfile host.
         # When working with batch, we try to get the
         # current context from the batch metadata.
-        if CTX.context == "FlameMenuBatch":
-            metadata_node = batch_utils.get_metadata_node()
-            if metadata_node:
-                data = batch_utils.read_node_metadata(metadata_node)
-                try:
+        if batch_utils.is_batch_page():
+            try:
+                metadata_node = batch_utils.get_metadata_node()
+                if metadata_node:
+                    data = batch_utils.read_node_metadata(metadata_node)
                     return {
                         "project_name": current_ctx["project_name"],
                         "folder_path": data["folderPath"],
                         "task_name": data["task"]
                     }
-                except (KeyError, TypeError) as error:
-                    log.warning(
-                        "Could not read context from batch metadata: %r",
-                        error
-                    )
+            except (KeyError, TypeError, RuntimeError) as error:
+                log.warning(
+                    "Could not read context from batch metadata: %r",
+                    error
+                )
 
         return current_ctx
 
@@ -216,7 +215,7 @@ class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
                 "AYON: Ambiguous Workfile Batch Group",
             )
 
-    def _workfile_batch_skip_reason(self):
+    def _workfile_sync_skip_reason(self):
         batch_name = self._get_task_batch_name()
         if not batch_name:
             return WorkfileSkip(
@@ -270,9 +269,10 @@ class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
                 f"'{context.get('folder_path')} / {context.get('task_name')}' "
                 "but the session is on "
                 f"'{global_context.get('folder_path')} / "
-                f"{global_context.get('task_name')}'. Open the Publisher and "
-                "point the batch instance at the current task, so a save "
-                "cannot land in another task's work area.",
+                f"{global_context.get('task_name')}'. Relaunch on "
+                f"'{context.get('folder_path')} / {context.get('task_name')}' "
+                "to work on this batch group, or switch to a batch group "
+                "belonging to the current task.",
                 is_error=True,
             )
 
@@ -365,7 +365,7 @@ def _host_for_sync():
     if not isinstance(host, FlameHost):
         return None
 
-    skip = host._workfile_batch_skip_reason()
+    skip = host._workfile_sync_skip_reason()
     if skip:
         _report_skip(skip)
         return None
