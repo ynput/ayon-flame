@@ -4,7 +4,8 @@ Will create a new workfile instance from current batch.
 """
 from typing import Dict, Any, List, Tuple
 
-from ayon_core.pipeline import CreatedInstance
+from ayon_core.pipeline import CreatedInstance, get_global_context
+from ayon_core.pipeline.create import CreatorError
 
 import ayon_flame.api as flapi
 
@@ -29,6 +30,26 @@ Publishing batch from Batch panel.
         super().apply_settings(project_settings)
         # Only active in Batch context.
         self.enabled = (flapi.CTX.context == "FlameMenuBatch")
+
+    @staticmethod
+    def _refuse_foreign_batch(batch_name: str):
+        """Refuse an instance outside this task's workfile batch group."""
+        context = get_global_context()
+        folder_path = context.get("folder_path")
+        task_name = context.get("task_name")
+        if not folder_path or not task_name:
+            return
+
+        task_batch = flapi.get_task_batch_name(folder_path, task_name)
+        if flapi.normalized_batch_name(batch_name) == task_batch:
+            return
+
+        raise CreatorError(
+            f"Batch group '{batch_name}' is not the workfile batch group "
+            f"of '{folder_path} / {task_name}'. Switch to '{task_batch}' "
+            "before creating, or relaunch on the task this batch group "
+            "belongs to."
+        )
 
     def _dump_instance_data(self, data: Dict[str, Any]):
         """ Write instance data into the batch metadata Note node.
@@ -67,6 +88,8 @@ Publishing batch from Batch panel.
             self.log.warning("No active batch group found, skipping.")
             return
         batch_name = batch.name.get_value()
+        self._refuse_foreign_batch(batch_name)
+
         self.log.info(f"Creating batch workfile instance for: {batch_name}")
         instance_data["batch_name"] = batch_name
 
