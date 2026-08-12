@@ -94,14 +94,15 @@ current batch group.
                 default=True,
                 label="Use Selection"
             )
-        ]
+        ] + self.get_instance_attr_defs()
 
     def get_instance_attr_defs(self) -> List[BoolDef]:
         return [
             BoolDef(
                 "review",
-                default=True,
-                label="Review"
+                label="Review",
+                tooltip="Switch to reviewable instance",
+                default=False,
             )
         ]
 
@@ -113,6 +114,10 @@ current batch group.
     ):
         """Create a render instance for each selected Write File node."""
         instance_data["flame_context"] = flapi.CTX.context
+
+        instance_data["creator_attributes"] = {
+            "review": pre_create_data["review"]
+        }
 
         use_selection = pre_create_data["use_selection"]
         selected = flame.batch.selected_nodes.get_value()

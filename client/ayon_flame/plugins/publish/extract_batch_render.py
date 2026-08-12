@@ -24,30 +24,19 @@ class ExtractBatchRender(publish.Extractor):
     _RENDER_DONE_KEY = "_batch_render_done"
 
     def process(self, instance):
-        import flame
-
         write_node_name = instance.data.get("write_node_name")
         if not write_node_name:
-            self.log.warning("No write_node_name in instance data, skipping.")
+            self.log.debug("No valid batch render instance, skipping.")
             return
 
-        # Find the batch group by name.
-        batch_name = instance.data.get("batch_name")
+        batch_name = instance.data["batch_name"]
         batch = flapi.get_batch_from_workspace(batch_name)
-        if not batch:
+        if batch is None:
             raise PublishError(
                 f"Batch group not found in workspace: '{batch_name}'."
             )
 
-        # Find the Write File node by name.
-        write_node = next(
-            (
-                n for n in batch.nodes
-                if isinstance(n, flame.PyWriteFileNode)
-                and n.name.get_value() == write_node_name
-            ),
-            None,
-        )
+        write_node = flapi.get_write_node_from_batch(batch, write_node_name)
         if write_node is None:
             raise PublishError(
                 f"Write File node '{write_node_name}' not found "
@@ -113,13 +102,15 @@ class ExtractBatchRender(publish.Extractor):
                 and f.name.startswith(name_prefix)
             )
         if not written_files:
-            raise ValueError(
+            raise PublishError(
                 f"Expected {resolved_path} files is not found "
                 "in output directory."
             )
 
         if "representations" not in instance.data:
             instance.data["representations"] = []
+
+        review = "review" in instance.data["families"]
 
         representation = {
             "name": ext,
@@ -129,7 +120,7 @@ class ExtractBatchRender(publish.Extractor):
                 written_files if len(written_files) > 1 else written_files[0]
             ),
             "stagingDir": output_dir,
-            "tags": [],
+            "tags": ["review"] if review else [],
         }
         instance.data["representations"].append(representation)
         self.log.info(
