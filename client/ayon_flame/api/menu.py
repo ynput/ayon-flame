@@ -144,7 +144,7 @@ class FlameMenuTimeline(_FlameMenuApp):
                 "name": "1 - Create...",
                 "execute": lambda x: callback_selection(
                     x,
-                    host_tools.show_publisher(
+                    lambda: host_tools.show_publisher(
                         tab="create", parent=_get_main_window()
                     ),
                     context="FlameMenuTimeline"
@@ -156,7 +156,7 @@ class FlameMenuTimeline(_FlameMenuApp):
                 "name": "2 - Publish...",
                 "execute": lambda x: callback_selection(
                     x,
-                    host_tools.show_publisher(
+                    lambda: host_tools.show_publisher(
                         tab="publish", parent=_get_main_window()
                     ),
                     context="FlameMenuTimeline"
@@ -195,7 +195,7 @@ class FlameMenuBatch(_FlameMenuApp):
                 "name": "1 - Create...",
                 "execute": lambda x: callback_selection(
                     x,
-                    host_tools.show_publisher(
+                    lambda: host_tools.show_publisher(
                         tab="create", parent=_get_main_window()
                     ),
                     context="FlameMenuBatch"
@@ -207,7 +207,7 @@ class FlameMenuBatch(_FlameMenuApp):
                 "name": "2 - Publish...",
                 "execute": lambda x: callback_selection(
                     x,
-                    host_tools.show_publisher(
+                    lambda: host_tools.show_publisher(
                         tab="publish", parent=_get_main_window()
                     ),
                     context="FlameMenuBatch"
@@ -244,7 +244,7 @@ class FlameMenuUniversal(_FlameMenuApp):
                 "name": "1 - Create...",
                 "execute": lambda x: callback_selection(
                     x,
-                    host_tools.show_publisher(
+                    lambda: host_tools.show_publisher(
                         tab="create", parent=_get_main_window()
                     ),
                     context="FlameMenuUniversal"
@@ -256,7 +256,7 @@ class FlameMenuUniversal(_FlameMenuApp):
                 "name": "2 - Publish...",
                 "execute": lambda x: callback_selection(
                     x,
-                    host_tools.show_publisher(
+                    lambda: host_tools.show_publisher(
                         tab="publish", parent=_get_main_window()
                     ),
                     context="FlameMenuUniversal"
