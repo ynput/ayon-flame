@@ -26,7 +26,15 @@ class CollectTimelinePlate(pyblish.api.InstancePlugin):
             self.log.debug("Current plate instance is not part of a timeline.")
             return
 
-        instance.data["families"].append("clip")
+        instance.data["families"].extend([
+            "clip",
+            # Mark for 'CollectOTIORanges' in core
+            "otio.clip.ranges",
+            # Mark for 'CollectOTIOReviewTrack' in core
+            "otio.review.track",
+            # Mark for 'CollectOTIOProductResources' in core
+            "otio.clip.resources",
+        ])
 
         # Adjust instance data from parent otio timeline.
         otio_timeline = instance.context.data["otioTimeline"]
@@ -48,6 +56,8 @@ class CollectTimelinePlate(pyblish.api.InstancePlugin):
         if review_switch is True:
             if reviewable_source == "clip_media":
                 instance.data["families"].append("review")
+                # Tell 'CollectOTIOReviewTrack' to use the current clip
+                instance.data["otioReviewClips"] = [otio_clip]
                 instance.data.pop("reviewTrack", None)
             else:
                 instance.data["reviewTrack"] = reviewable_source
