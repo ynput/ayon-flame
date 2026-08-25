@@ -200,7 +200,7 @@ class FlamePrelaunch(PreLaunchHook):
                 self.wtc_script_path,
                 tmp_json_path
             ]
-            self.log.info("Executing: {}".format(" ".join(args)))
+            self.log.info("Executing: %s", " ".join(args))
 
             process_kwargs = {
                 "logger": self.log,
@@ -208,13 +208,13 @@ class FlamePrelaunch(PreLaunchHook):
             }
 
             output = run_subprocess(args, **process_kwargs)
-            self.log.info("wiretap_com.py output:\n{}".format(output))
+            self.log.debug("wiretap_com.py output:\n %r", output)
 
             # process returned json file to pass launch args
             return_json_data = open(tmp_json_path).read()
             returned_data = json.loads(return_json_data)
             app_args = returned_data.get("app_args")
-            self.log.info("____ app_args: `{}`".format(app_args))
+            self.log.info("____ app_args: `%r`", app_args)
 
             if not app_args:
                 RuntimeError("App arguments were not solved")

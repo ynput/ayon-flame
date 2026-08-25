@@ -487,8 +487,8 @@ class WireTapCom(object):
             project_name (str): name of project
             color_policy (str): name of policy
 
-        Raise:
-            RuntimeError: Not able to set colorspace policy.
+        Raises:
+            RuntimeError: Not able to set colorspace policy
 
         """
         color_policy = color_policy or "Legacy"
