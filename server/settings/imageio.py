@@ -59,10 +59,6 @@ class ImageIOProjectModel(BaseSettingsModel):
     colourPolicy: str = SettingsField(
         "ACES 1.1",
         title="Colour Policy (name or path)",
-        description=(
-            "Only used by Flame 2025 and older. Flame 2026 replaced SynColor "
-            "policies with OCIO."
-        ),
         section="Project"
     )
     frameDepth: str = SettingsField(

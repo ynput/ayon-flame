@@ -75,31 +75,15 @@ class WireTapCom(object):
             project_data (dict): Flame compatible project data
             user_name (str): name of user
 
-        Keyword Args:
-            workspace_name (str): name of workspace
-            color_policy (str): colour policy name, before flame 2026
-            ocio_config_path (str): OCIO config path, flame 2026 and above
-
         Returns:
             list: arguments
         """
 
         workspace_name = kwargs.get("workspace_name")
         color_policy = kwargs.get("color_policy")
-        ocio_config_path = kwargs.get("ocio_config_path")
 
         project_exists = self._project_prep(project_name)
         if not project_exists:
-            # colour management is only set on a new project
-            if self._get_flame_year() >= 2026:
-                if ocio_config_path:
-                    project_data["OCIOConfigFile"] = ocio_config_path
-                else:
-                    print(
-                        "WARNING: no OCIO config resolved, '{}' is created "
-                        "with flame's default config.".format(project_name)
-                    )
-
             self._set_project_settings(project_name, project_data)
             self._set_project_colorspace(project_name, color_policy)
 
@@ -153,9 +137,7 @@ class WireTapCom(object):
         return self._flame_year
 
     def _workspace_prep(self, project_name, workspace_name):
-        """Preparing a workspace
-
-        In case it doesn not exists it will create one
+        """Prepare a workspace, create it if needed.
 
         Args:
             project_name (str): project name
@@ -183,12 +165,11 @@ class WireTapCom(object):
                 )
 
         print(
-            "Workspace `{}` is successfully created".format(workspace_name))
+            "Workspace `{}` is successfully created".format(workspace_name)
+        )
 
     def _project_prep(self, project_name):
-        """Preparing a project
-
-        In case it doesn not exists it will create one
+        """Prepare a project, create it needed.
 
         Args:
             project_name (str): project name
@@ -502,20 +483,14 @@ class WireTapCom(object):
     def _set_project_colorspace(self, project_name, color_policy):
         """Set project's colorspace policy.
 
-        A policy which cannot be applied is reported but not raised, the
-        project stays usable with the default policy and it can be changed
-        from the flame UI.
-
         Args:
             project_name (str): name of project
             color_policy (str): name of policy
-        """
-        # flame 2026 uses OCIO configs, not syncolor anymore
-        if self._get_flame_year() >= 2026:
-            print("Skipping colour policy '{}', flame 2026 uses OCIO".format(
-                color_policy))
-            return
 
+        Raise:
+            RuntimeError: Not able to set colorspace policy.
+
+        """
         color_policy = color_policy or "Legacy"
 
         # check if the colour policy in custom dir
@@ -550,7 +525,7 @@ class WireTapCom(object):
         )
 
         if exit_code != 0:
-            print("Cannot set colorspace {} on project {}".format(
+            RuntimeError("Cannot set colorspace {} on project {}".format(
                 color_policy, project_name
             ))
 
