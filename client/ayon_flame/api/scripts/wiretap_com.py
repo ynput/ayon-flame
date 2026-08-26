@@ -19,10 +19,6 @@ from adsk.libwiretapPythonClientAPI import (  # noqa
 )
 
 
-# project attributes which flame 2026 resolves itself at project creation
-LEGACY_PROJECT_ATTRIBUTES = ("SetupDir",)
-
-
 class WireTapCom(object):
     """
     Comunicator class wrapper for talking to WireTap db.
@@ -41,25 +37,32 @@ class WireTapCom(object):
             volume_name (str, optional): Name of volume. Defaults to None.
             group_name (str, optional): Name of user group. Defaults to None.
         """
-        # set main attributes of server
-        # if there are none set the default installation
-        self.host_name = host_name or "localhost"
-        self.volume_name = volume_name or "stonefs"
-        # without a group the created nodes keep the current user group
-        self.group_name = group_name
+        self._flame_version = None
 
         # wiretap tools dir path
         self.wiretap_tools_dir = os.getenv("AYON_WIRETAP_TOOLS")
-
-        self._flame_year = None
+        self.host_name = host_name or "localhost"
 
         # initialize WireTap client
         WireTapClientInit()
-
-        # add the server to shared variable
         self._server = WireTapServerHandle("{}:IFFFS".format(self.host_name))
-        print("WireTap connected at '{}'...".format(
-            self.host_name))
+        if not self._server.ping():
+            raise RuntimeError(
+                "Failed to ping WireTap server, check host: {}".format(
+                    self.host_name
+                )
+            )
+
+        print("WireTap connected at '{}'...".format(self.host_name))
+
+        # Stone+Wire (Flame < 2026)
+        # Default to installation values.
+        if self._get_flame_version()[0] < 2026:
+            self.volume_name = volume_name or "stonefs"
+            self.group_name = group_name or "staff"
+        else:
+            self.volume_name = None  # no volumes in Flame>2026
+            self.group_name = group_name  # current user group if None
 
     def close(self):
         self._server = None
@@ -68,7 +71,7 @@ class WireTapCom(object):
 
     def get_launch_args(
             self, project_name, project_data, user_name, **kwargs):
-        """Forming launch arguments for AYON launcher.
+        """Return Flame launch arguments to be used by AYON launcher.
 
         Args:
             project_name (str): name of project
@@ -93,7 +96,7 @@ class WireTapCom(object):
         ]
 
         # user profiles have been removed in flame 2025
-        if self._get_flame_year() < 2025:
+        if self._get_flame_version()[0] < 2025:
             user_name = self._user_prep(user_name)
             launch_args.append("--start-user={}".format(user_name))
 
@@ -104,28 +107,29 @@ class WireTapCom(object):
 
         else:
             print("Using a custom workspace '{}'".format(workspace_name))
-
             self._workspace_prep(project_name, workspace_name)
             launch_args.append("--start-workspace={}".format(workspace_name))
             return launch_args
 
-    def _get_flame_year(self):
-        """Get the flame release year.
+    def _get_flame_version(self):
+        """Get the flame version.
 
         Returns:
             int: The flame year, e.g. 2025
+            int: The flame minor version, e.g. 2
 
         Raises:
-            AttributeError: unable to retrieve the flame version number.
+            AttributeError: unable to retrieve the flame version.
         """
-        if self._flame_year is not None:
-            return self._flame_year
+        if self._flame_version is not None:
+            return self._flame_version
 
         version_major = WireTapInt(0)
         version_minor = WireTapInt(0)
-
         version_exists = self._server.getVersion(version_major, version_minor)
 
+        # Note: this usually happens when the wiretap server is broken
+        # due to conflicting installations. Best re-install Flame from scratch.
         if not version_exists:
             raise AttributeError(
                     "Cannot get flame version details: {}".format(
@@ -133,8 +137,8 @@ class WireTapCom(object):
                     )
                 )
 
-        self._flame_year = int(version_major)
-        return self._flame_year
+        self._flame_version = int(version_major), int(version_minor)
+        return self._flame_version
 
     def _workspace_prep(self, project_name, workspace_name):
         """Prepare a workspace, create it if needed.
@@ -189,72 +193,74 @@ class WireTapCom(object):
             print("Project '{}' already exists.".format(project_name))
             return True
 
-        if self._get_flame_year() < 2026:
-            # projects used to be created into a Stone+Wire volume
+        # Flame < 2025: Stone+Wire,
+        # create project in provided volume name
+        if self._get_flame_version()[0] < 2026:
             volumes = self._get_all_volumes()
 
             if len(volumes) == 0:
                 raise AttributeError(
-                    "Not able to create new project. No Volumes existing"
+                    "Not able to create new project: no volumes available."
+                    "Do create a volume '{}' in Flame.".format(
+                        self.volume_name
+                    )
                 )
 
             # check if volumes exists
             if self.volume_name not in volumes:
                 raise AttributeError(
-                    ("Volume '{}' does not exist in '{}'").format(
-                        self.volume_name, volumes)
+                    (
+                        "Not able to create new project: volume '{}' does not "
+                        "exist in Flame. Available volumes are: {}"
+                    ).format(self.volume_name, volumes)
                 )
 
             parent_args = ["-n", os.path.join("/volumes", self.volume_name)]
+
+        # Flame >= 2026: Postgres + filesystem
         else:
-            # volumes removed in flame 2026
             parent_args = ["-n", "/projects", "-t", "PROJECT"]
 
         # form cmd arguments
-        project_create_cmd = [
+        project_create_cmd_args = [
             os.path.join(self.wiretap_tools_dir, "wiretap_create_node")
         ]
-        project_create_cmd.extend(parent_args)
-        project_create_cmd.extend(["-d", project_name])
+        project_create_cmd_args.extend(parent_args)
+        project_create_cmd_args.extend(["-d", project_name])
 
-        group_name = self.group_name
-        if not group_name and self._get_flame_year() < 2026:
-            group_name = "staff"
+        if self.group_name:
+            project_create_cmd_args.extend(["-g", self.group_name])
 
-        if group_name:
-            project_create_cmd.extend(["-g", group_name])
-
-        print(project_create_cmd)
-
+        print(
+            "Project creation cmd line: {}".format(
+                " ".join(project_create_cmd_args)
+            )
+        )
         process = subprocess.Popen(
-            project_create_cmd,
+            project_create_cmd_args,
             cwd=os.path.expanduser('~'),
             preexec_fn=_subprocess_preexec_fn,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             universal_newlines=True
         )
-        output = process.communicate()[0]
+        output, stderr = process.communicate()
 
         if process.returncode != 0:
-            message = "Cannot create project '{}' in flame db: {}".format(
-                project_name, output.strip())
-
-            if group_name:
-                if self.group_name:
-                    group_source = "the 'FLAME_WIRETAP_GROUP' setting"
-                else:
-                    group_source = "the pre-2026 default"
-
-                message += (
-                    "\nProject group '{}' comes from {} and has to exist on "
-                    "the wiretap host.".format(group_name, group_source)
+            message = (
+                (
+                    "Cannot create project '{}' (project_group: {}) "
+                    "in Flame: {}, {}"
+                ).format(
+                    project_name,
+                    self.group_name,
+                    output.strip(),
+                    stderr.strip()
                 )
-
+            )
             raise RuntimeError(message)
 
-        print(
-            "A new project '{}' is created.".format(project_name))
+        print("New project '{}' is created.".format(project_name))
         return False
 
     def _get_all_volumes(self):
@@ -451,13 +457,18 @@ class WireTapCom(object):
         Raises:
             AttributeError: Not able to set project attributes
         """
-        if self._get_flame_year() >= 2026:
-            # keep the paths resolved at project creation time
-            project_data = {
-                key: value
-                for key, value in project_data.items()
-                if key not in LEGACY_PROJECT_ATTRIBUTES
-            }
+        flame_year, flame_minor = self._get_flame_version()
+
+        # Flame 2026.0 has an inconsistent project creation
+        # XML API (still uses SetupDir but no description field)
+        if flame_year == 2026 and flame_minor == 0:
+            project_data = project_data.copy()
+            project_data.pop("Description", None)
+
+        # No more SetupDir required from Flame 2026.1
+        elif flame_year >= 2026:
+            project_data = project_data.copy()
+            project_data.pop("SetupDir", None)
 
         # generated xml from project_data dict
         _xml = "<Project>"
@@ -489,7 +500,6 @@ class WireTapCom(object):
 
         Raises:
             RuntimeError: Not able to set colorspace policy
-
         """
         color_policy = color_policy or "Legacy"
 

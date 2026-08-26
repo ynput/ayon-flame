@@ -2,7 +2,6 @@ import os
 import json
 import tempfile
 import contextlib
-import socket
 from pprint import pformat
 
 from ayon_core.lib import (
@@ -73,8 +72,6 @@ class FlamePrelaunch(PreLaunchHook):
         user_name = get_ayon_username()
         user_name = user_name.replace(".", "_")
 
-        hostname = socket.gethostname()  # not returning wiretap host name
-
         self.log.debug("Collected user \"{}\"".format(user_name))
         self.log.info(pformat(project_entity))
         project_attribs = project_entity["attrib"]
@@ -86,7 +83,7 @@ class FlamePrelaunch(PreLaunchHook):
             "Name": project_entity["name"],
             "Nickname": project_entity["code"],
             "Description": "Created by AYON",
-            "SetupDir": project_entity["name"],
+            "SetupDir": project_entity["name"],  # Flame < 2026
             "FrameWidth": int(width),
             "FrameHeight": int(height),
             "AspectRatio": float(
@@ -97,7 +94,7 @@ class FlamePrelaunch(PreLaunchHook):
 
         data_to_script = {
             # from settings
-            "host_name": _env.get("FLAME_WIRETAP_HOSTNAME") or hostname,
+            "host_name": _env.get("FLAME_WIRETAP_HOSTNAME"),
             "volume_name": volume_name,
             "group_name": _env.get("FLAME_WIRETAP_GROUP"),
 
