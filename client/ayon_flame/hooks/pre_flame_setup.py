@@ -111,8 +111,13 @@ class FlamePrelaunch(PreLaunchHook):
                 "FieldDominance": str(
                     imageio_flame["project"]["fieldDominance"])
             })
-            data_to_script["color_policy"] = str(
-                imageio_flame["project"]["colourPolicy"])
+            data_to_script["syncolor_policy"] = str(
+                imageio_flame["project"]["colourPolicy"]
+            )
+            data_to_script["ocio_config"] = _env.get("OCIO")
+            data_to_script["default_ocio_config"] = str(
+                imageio_flame["project"]["defaultOcioConfig"]
+            )
 
         self.log.info(pformat(dict(_env)))
         self.log.info(pformat(data_to_script))

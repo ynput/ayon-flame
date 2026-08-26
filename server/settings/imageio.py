@@ -6,6 +6,11 @@ from ayon_server.settings import (
 )
 
 
+_DEFAULT_FLAME_OCIO_CONFIG = (
+    "/opt/Autodesk/colour_mgmt/configs/legacy_configs/syncolor_aces1.1_config/config.ocio"
+)
+
+
 class ImageIOFileRuleModel(BaseSettingsModel):
     name: str = SettingsField("", title="Rule name")
     pattern: str = SettingsField("", title="Regex pattern")
@@ -58,8 +63,20 @@ class ProfileNamesMappingModel(BaseSettingsModel):
 class ImageIOProjectModel(BaseSettingsModel):
     colourPolicy: str = SettingsField(
         "ACES 1.1",
-        title="Colour Policy (name or path)",
-        section="Project"
+        title="SyncColor Policy (name or path)",
+        description=(
+            "Define SynColor preset to use when creating a new project "
+            "(Flame < 2026)."
+        )
+    )
+    defaultOcioConfig: str = SettingsField(
+        _DEFAULT_FLAME_OCIO_CONFIG,
+        title="OCIO default config",
+        description=(
+            "Path to a default OCIO config to use when creating a new project "
+            "(Flame >= 2026)\n"
+            "Only used if **no global OCIO environment variable is set**"
+        ),
     )
     frameDepth: str = SettingsField(
         "16-bit fp",
@@ -101,6 +118,7 @@ class FlameImageIOModel(BaseSettingsModel):
 DEFAULT_IMAGEIO_SETTINGS = {
     "project": {
         "colourPolicy": "ACES 1.1",
+        "defaultOcioConfig": _DEFAULT_FLAME_OCIO_CONFIG,
         "frameDepth": "16-bit fp",
         "fieldDominance": "PROGRESSIVE"
     },
