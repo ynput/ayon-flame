@@ -2,7 +2,6 @@ import os
 import json
 import tempfile
 import contextlib
-import socket
 from pprint import pformat
 
 from ayon_core.lib import (
@@ -73,8 +72,6 @@ class FlamePrelaunch(PreLaunchHook):
         user_name = get_ayon_username()
         user_name = user_name.replace(".", "_")
 
-        hostname = socket.gethostname()  # not returning wiretap host name
-
         self.log.debug("Collected user \"{}\"".format(user_name))
         self.log.info(pformat(project_entity))
         project_attribs = project_entity["attrib"]
@@ -86,7 +83,7 @@ class FlamePrelaunch(PreLaunchHook):
             "Name": project_entity["name"],
             "Nickname": project_entity["code"],
             "Description": "Created by AYON",
-            "SetupDir": project_entity["name"],
+            "SetupDir": project_entity["name"],  # Flame < 2026
             "FrameWidth": int(width),
             "FrameHeight": int(height),
             "AspectRatio": float(
@@ -97,7 +94,7 @@ class FlamePrelaunch(PreLaunchHook):
 
         data_to_script = {
             # from settings
-            "host_name": _env.get("FLAME_WIRETAP_HOSTNAME") or hostname,
+            "host_name": _env.get("FLAME_WIRETAP_HOSTNAME"),
             "volume_name": volume_name,
             "group_name": _env.get("FLAME_WIRETAP_GROUP"),
 
@@ -200,20 +197,21 @@ class FlamePrelaunch(PreLaunchHook):
                 self.wtc_script_path,
                 tmp_json_path
             ]
-            self.log.info("Executing: {}".format(" ".join(args)))
+            self.log.info("Executing: %s", " ".join(args))
 
             process_kwargs = {
                 "logger": self.log,
                 "env": env
             }
 
-            run_subprocess(args, **process_kwargs)
+            output = run_subprocess(args, **process_kwargs)
+            self.log.debug("wiretap_com.py output:\n %r", output)
 
             # process returned json file to pass launch args
             return_json_data = open(tmp_json_path).read()
             returned_data = json.loads(return_json_data)
             app_args = returned_data.get("app_args")
-            self.log.info("____ app_args: `{}`".format(app_args))
+            self.log.info("____ app_args: `%r`", app_args)
 
             if not app_args:
                 RuntimeError("App arguments were not solved")
