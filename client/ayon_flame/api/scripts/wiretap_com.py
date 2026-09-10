@@ -81,14 +81,23 @@ class WireTapCom(object):
         Returns:
             list: arguments
         """
-
+        flame_major_version, _ = self._get_flame_version()
         workspace_name = kwargs.get("workspace_name")
-        color_policy = kwargs.get("color_policy")
 
         project_exists = self._project_prep(project_name)
         if not project_exists:
+            if flame_major_version < 2026:
+                self._set_project_syncolor_colorspace(
+                    project_name,
+                    sync_color_policy=kwargs.get("syncolor_policy")
+                )
+            else:
+                self._set_project_ocio_config(
+                    project_data,
+                    kwargs.get("ocio_config"),
+                    default_config=kwargs.get("default_ocio_config")
+                )
             self._set_project_settings(project_name, project_data)
-            self._set_project_colorspace(project_name, color_policy)
 
         launch_args = [
             "--start-project={}".format(project_name),
@@ -96,7 +105,7 @@ class WireTapCom(object):
         ]
 
         # user profiles have been removed in flame 2025
-        if self._get_flame_version()[0] < 2025:
+        if flame_major_version < 2025:
             user_name = self._user_prep(user_name)
             launch_args.append("--start-user={}".format(user_name))
 
@@ -491,21 +500,60 @@ class WireTapCom(object):
 
         print("Project settings successfully set.")
 
-    def _set_project_colorspace(self, project_name, color_policy):
-        """Set project's colorspace policy.
+
+    def _set_project_ocio_config(
+        self,
+        project_data,
+        ocio_config,
+        default_config=None,
+    ):
+        """Set project's OCIO config (Flame >= 2026 only).
+
+        Args:
+            project_data (dict): project data,
+            ocio_config (str or None): name of config
+            default_config (str or None): optional path to default config
+        """
+        if ocio_config:
+            if not os.path.exists(ocio_config):
+                print(
+                    "Ignored OCIO config (not found): {}".format(ocio_config)
+                )
+                return
+        elif default_config:
+            if not os.path.exists(default_config):
+                print(
+                    "Ignored default OCIO config (not found): {}".format(
+                        default_config
+                    )
+                )
+                return
+            ocio_config = default_config
+
+        if ocio_config:
+            print("Set project OCIO config: {}".format(ocio_config))
+            project_data["OCIOConfigFile"] = ocio_config
+
+
+    def _set_project_syncolor_colorspace(
+            self,
+            project_name,
+            sync_color_policy=None,
+    ):
+        """Set project's syncolor policy (Flame < 2026 only).
 
         Args:
             project_name (str): name of project
-            color_policy (str): name of policy
+            sync_color_policy (str or None): name of policy
 
         Raises:
             RuntimeError: Not able to set colorspace policy
         """
-        color_policy = color_policy or "Legacy"
+        color_policy = sync_color_policy or "Legacy"
 
         # check if the colour policy in custom dir
         if "/" in color_policy:
-            # if unlikelly full path was used make it redundant
+            # if unlikely full path was used make it redundant
             color_policy = color_policy.replace("/syncolor/policies/", "")
             # expecting input is `Shared/NameOfPolicy`
             color_policy = "/syncolor/policies/{}".format(
@@ -514,7 +562,28 @@ class WireTapCom(object):
             color_policy = "/syncolor/policies/Autodesk/{}".format(
                 color_policy)
 
-        # create arguments
+        # ensure color policy exists
+        try:
+            subprocess.run(
+                [
+                    os.path.join(
+                        self.wiretap_tools_dir,
+                        "wiretap_resolve_path"
+                    ),
+                    "-p",
+                    color_policy,
+                ],
+                check=True,
+            )
+        except subprocess.CalledProcessError:
+            print(
+                "Ignored invalid provided color policy: {}".format(
+                    color_policy
+                )
+            )
+            return
+
+        # set color policy on project
         project_colorspace_cmd = [
             os.path.join(
                 self.wiretap_tools_dir,
