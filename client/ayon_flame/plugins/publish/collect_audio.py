@@ -7,7 +7,7 @@ class CollectShotAudio(pyblish.api.InstancePlugin):
     """Collect new audio."""
 
     order = pyblish.api.CollectorOrder - 0.48
-    label = "Collect ShotAudio"
+    label = "Collect Shot Audio"
     hosts = ["flame"]
     families = ["audio"]
 
