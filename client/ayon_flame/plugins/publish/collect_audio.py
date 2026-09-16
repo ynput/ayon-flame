@@ -3,11 +3,11 @@ import pyblish.api
 from ayon_flame.otio import utils
 
 
-class CollectAudio(pyblish.api.InstancePlugin):
+class CollectShotAudio(pyblish.api.InstancePlugin):
     """Collect new audio."""
 
     order = pyblish.api.CollectorOrder - 0.48
-    label = "Collect Audio"
+    label = "Collect ShotAudio"
     hosts = ["flame"]
     families = ["audio"]
 
