@@ -19,7 +19,7 @@ class CollectRenderFromBatch(pyblish.api.InstancePlugin):
             instance.data.get("flame_context") != "FlameMenuBatch"
             or not instance.data.get("write_node_name")
         ):
-            self.log.debug("No valid batch render instance, skipping.")
+            self.log.warning("No valid batch render instance, skipping.")
             return
 
         batch_name = instance.data["batch_name"]
@@ -44,22 +44,26 @@ class CollectRenderFromBatch(pyblish.api.InstancePlugin):
                 f"Review enabled for render instance '{instance.name}'."
             )
 
-        frame_start = write_node.range_start.get_value()
-        frame_end = write_node.range_end.get_value()
+        handle_start = instance.context.data["handleStart"]
+        handle_end = instance.context.data["handleEnd"]
+
+        frame_start_handle = write_node.range_start.get_value()
+        frame_end_handle = write_node.range_end.get_value()
 
         instance.data.update({
-            "frameStart": frame_start,
-            "frameEnd": frame_end,
-            "frameStartHandle": frame_start,
-            "frameEndHandle": frame_end,
-            "handleStart": 0,
-            "handleEnd": 0,
+            "frameStart": frame_start_handle + handle_start,
+            "frameEnd": frame_end_handle - handle_end,
+            "frameStartHandle": frame_start_handle,
+            "frameEndHandle": frame_end_handle,
+            "handleStart": handle_start,
+            "handleEnd": handle_end,
             "fps": instance.context.data["fps"],
         })
 
         self.log.debug(
             f"Collected render instance '{instance.name}' "
             f"from Write File node '{write_node_name}' "
-            f"({frame_start}-{frame_end}). "
+            f"({frame_start_handle}-{frame_end_handle}, "
+            f"handles {handle_start}/{handle_end}). "
             f"Families: {instance.data['families']}"
         )
