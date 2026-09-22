@@ -26,7 +26,7 @@ class ExtractBatchRender(publish.Extractor):
     def process(self, instance):
         write_node_name = instance.data.get("write_node_name")
         if not write_node_name:
-            self.log.debug("No valid batch render instance, skipping.")
+            self.log.warning("No valid batch render instance, skipping.")
             return
 
         batch_name = instance.data["batch_name"]
@@ -110,7 +110,8 @@ class ExtractBatchRender(publish.Extractor):
         if "representations" not in instance.data:
             instance.data["representations"] = []
 
-        review = "review" in instance.data["families"]
+        review = instance.data.get(
+            "creator_attributes", {}).get("review")
 
         representation = {
             "name": ext,
