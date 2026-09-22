@@ -50,6 +50,14 @@ class CollectRenderFromBatch(pyblish.api.InstancePlugin):
         frame_start_handle = write_node.range_start.get_value()
         frame_end_handle = write_node.range_end.get_value()
 
+        fps = flapi.parse_frame_rate(write_node.frame_rate.get_value())
+        context_fps = instance.context.data["fps"]
+        if fps != context_fps:
+            self.log.warning(
+                f"Write File node '{write_node_name}' renders at {fps} fps "
+                f"but the folder is set to {context_fps} fps."
+            )
+
         instance.data.update({
             "frameStart": frame_start_handle + handle_start,
             "frameEnd": frame_end_handle - handle_end,
@@ -57,13 +65,13 @@ class CollectRenderFromBatch(pyblish.api.InstancePlugin):
             "frameEndHandle": frame_end_handle,
             "handleStart": handle_start,
             "handleEnd": handle_end,
-            "fps": instance.context.data["fps"],
+            "fps": fps,
         })
 
         self.log.debug(
             f"Collected render instance '{instance.name}' "
             f"from Write File node '{write_node_name}' "
             f"({frame_start_handle}-{frame_end_handle}, "
-            f"handles {handle_start}/{handle_end}). "
+            f"handles {handle_start}/{handle_end}, {fps} fps). "
             f"Families: {instance.data['families']}"
         )
