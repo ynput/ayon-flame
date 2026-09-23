@@ -2,9 +2,11 @@
 
 Will create a new workfile instance from current batch.
 """
+import re
 from typing import Dict, Any, List, Tuple
 
 from ayon_core.pipeline import CreatedInstance
+from ayon_core.pipeline.create import PRODUCT_NAME_ALLOWED_SYMBOLS
 
 import ayon_flame.api as flapi
 
@@ -71,7 +73,9 @@ Publishing batch from Batch panel.
         instance_data["batch_name"] = batch_name
 
         # TODO: check this logic with prod use-cases.
-        product_name = batch_name.replace(" ", "")
+        product_name = re.sub(
+            "[^{}]+".format(PRODUCT_NAME_ALLOWED_SYMBOLS), "", batch_name
+        )
 
         instance = CreatedInstance(
             product_base_type=self.product_base_type,
