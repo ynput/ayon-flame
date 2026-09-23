@@ -199,6 +199,7 @@ specs/*/*
 !specs/*/spec.md
 !specs/*/plan.md
 !specs/*/tasks.md
+!specs/*/research.md
 
 # Common agent config dirs (add any further agent config here)
 .claude/
