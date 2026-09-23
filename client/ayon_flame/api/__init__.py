@@ -93,6 +93,11 @@ from .batch_utils import (
     get_metadata_node,
     get_current_batch,
 )
+from .workfile import (
+    FlameWorkfileHost,
+    FlameBatchWorkfileHost,
+    get_flame_workfile_host,
+)
 
 __all__ = [
     # constants
@@ -189,4 +194,9 @@ __all__ = [
     "read_node_metadata",
     "write_node_metadata",
     "clear_node_metadata",
+
+    # workfile host
+    "FlameWorkfileHost",
+    "FlameBatchWorkfileHost",
+    "get_flame_workfile_host",
 ]
