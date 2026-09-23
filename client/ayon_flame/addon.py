@@ -44,4 +44,4 @@ class FlameAddon(AYONAddon, IHostAddon):
         ]
 
     def get_workfile_extensions(self):
-        return [".otoc"]
+        return [".json"]
