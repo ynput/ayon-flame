@@ -106,8 +106,8 @@ negation exception keeps the addon constitution tracked). The shared
 ## Where the instructions live
 
 - `AGENTS.md` (root) — committed, self-sufficient repo guidance; read it
-  regardless of harness. ([STATE_WHETHER_SUBTREE_AGENTS_FILES_EXIST —
-  usually: no subtree `AGENTS.md` files exist in this repository.])
+  regardless of harness. (No subtree `AGENTS.md` files exist in this
+  repository.)
 
   Nested `AGENTS.md` files are allowed only when a subtree truly needs its own
   guidance. Coding agents resolve the **closest** file first regardless of
@@ -163,7 +163,7 @@ above and `.gitignore`):
 3. `/speckit-bug-test slug=<slug>` → `test.md` — verdict
    `verified` / `partial` / `failed`; evidence only — never edit code to
    make a failing test pass. Note: run the repo's tests
-   (`[REPO_TEST_COMMAND]`) *and* exercise the original
+   (`ruff check .`; this repo has no test suite) *and* exercise the original
    reproduction manually (see root `AGENTS.md`, Verification) — a
    passing test suite alone is not enough.
 
