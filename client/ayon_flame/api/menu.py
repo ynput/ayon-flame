@@ -278,6 +278,21 @@ class FlameMenuBatch(_FlameMenuContext):
     """ Menu that appears in the batch context.
     """
 
+    def build_menu(self) -> dict[str, Any]:
+        menu = super().build_menu()
+        if not menu:
+            return menu
+
+        menu["actions"].append({
+            "name": "4 - Workfiles...",
+            "execute": lambda x: callback_selection(
+                x,
+                host_tools.show_workfiles(parent=_get_main_window()),
+                context=self.__class__.__name__
+            )
+        })
+        return menu
+
 
 class FlameMenuUniversal(_FlameMenuContext):
     """ Menu that appears in the universal context.
