@@ -37,22 +37,32 @@ class WireTapCom(object):
             volume_name (str, optional): Name of volume. Defaults to None.
             group_name (str, optional): Name of user group. Defaults to None.
         """
-        # set main attributes of server
-        # if there are none set the default installation
-        self.host_name = host_name or "localhost"
-        self.volume_name = volume_name or "stonefs"
-        self.group_name = group_name or "staff"
+        self._flame_version = None
 
         # wiretap tools dir path
         self.wiretap_tools_dir = os.getenv("AYON_WIRETAP_TOOLS")
+        self.host_name = host_name or "localhost"
 
         # initialize WireTap client
         WireTapClientInit()
-
-        # add the server to shared variable
         self._server = WireTapServerHandle("{}:IFFFS".format(self.host_name))
-        print("WireTap connected at '{}'...".format(
-            self.host_name))
+        if not self._server.ping():
+            raise RuntimeError(
+                "Failed to ping WireTap server, check host: {}".format(
+                    self.host_name
+                )
+            )
+
+        print("WireTap connected at '{}'...".format(self.host_name))
+
+        # Stone+Wire (Flame < 2026)
+        # Default to installation values.
+        if self._get_flame_version()[0] < 2026:
+            self.volume_name = volume_name or "stonefs"
+            self.group_name = group_name or "staff"
+        else:
+            self.volume_name = None  # no volumes in Flame>2026
+            self.group_name = group_name  # current user group if None
 
     def close(self):
         self._server = None
@@ -60,8 +70,8 @@ class WireTapCom(object):
         print("WireTap closed...")
 
     def get_launch_args(
-            self, project_name, project_data, user_name, *args, **kwargs):
-        """Forming launch arguments for AYON launcher.
+            self, project_name, project_data, user_name, **kwargs):
+        """Return Flame launch arguments to be used by AYON launcher.
 
         Args:
             project_name (str): name of project
@@ -71,14 +81,23 @@ class WireTapCom(object):
         Returns:
             list: arguments
         """
-
+        flame_major_version, _ = self._get_flame_version()
         workspace_name = kwargs.get("workspace_name")
-        color_policy = kwargs.get("color_policy")
 
         project_exists = self._project_prep(project_name)
         if not project_exists:
+            if flame_major_version < 2026:
+                self._set_project_syncolor_colorspace(
+                    project_name,
+                    sync_color_policy=kwargs.get("syncolor_policy")
+                )
+            else:
+                self._set_project_ocio_config(
+                    project_data,
+                    kwargs.get("ocio_config"),
+                    default_config=kwargs.get("default_ocio_config")
+                )
             self._set_project_settings(project_name, project_data)
-            self._set_project_colorspace(project_name, color_policy)
 
         launch_args = [
             "--start-project={}".format(project_name),
@@ -86,7 +105,7 @@ class WireTapCom(object):
         ]
 
         # user profiles have been removed in flame 2025
-        if self._get_flame_year() < 2025:
+        if flame_major_version < 2025:
             user_name = self._user_prep(user_name)
             launch_args.append("--start-user={}".format(user_name))
 
@@ -96,39 +115,42 @@ class WireTapCom(object):
             return launch_args
 
         else:
-            print(
-                "Using a custom workspace '{}'".format(workspace_name))
-
+            print("Using a custom workspace '{}'".format(workspace_name))
             self._workspace_prep(project_name, workspace_name)
             launch_args.append("--start-workspace={}".format(workspace_name))
             return launch_args
 
-    def _get_flame_year(self):
-        """Get the flame release year.
+    def _get_flame_version(self):
+        """Get the flame version.
 
         Returns:
             int: The flame year, e.g. 2025
+            int: The flame minor version, e.g. 2
 
         Raises:
-            AttributeError: unable to retrieve the flame version number.
+            AttributeError: unable to retrieve the flame version.
         """
+        if self._flame_version is not None:
+            return self._flame_version
+
         version_major = WireTapInt(0)
         version_minor = WireTapInt(0)
-
         version_exists = self._server.getVersion(version_major, version_minor)
 
+        # Note: this usually happens when the wiretap server is broken
+        # due to conflicting installations. Best re-install Flame from scratch.
         if not version_exists:
             raise AttributeError(
                     "Cannot get flame version details: {}".format(
                         self._server.lastError()
                     )
                 )
-        return int(version_major)
+
+        self._flame_version = int(version_major), int(version_minor)
+        return self._flame_version
 
     def _workspace_prep(self, project_name, workspace_name):
-        """Preparing a workspace
-
-        In case it doesn not exists it will create one
+        """Prepare a workspace, create it if needed.
 
         Args:
             project_name (str): project name
@@ -156,74 +178,99 @@ class WireTapCom(object):
                 )
 
         print(
-            "Workspace `{}` is successfully created".format(workspace_name))
+            "Workspace `{}` is successfully created".format(workspace_name)
+        )
 
     def _project_prep(self, project_name):
-        """Preparing a project
-
-        In case it doesn not exists it will create one
+        """Prepare a project, create it needed.
 
         Args:
             project_name (str): project name
 
+        Returns:
+            bool: True if the project already existed
+
         Raises:
             AttributeError: unable to create project
+            RuntimeError: project creation command failed
         """
-        # test if projeft exists
+        # test if project exists
         project_exists = self._child_is_in_parent_path(
             "/projects", project_name, "PROJECT")
 
-        # volumes were removed in flame 2026
-        correct_flame_version = self._get_flame_year() < 2026
-
-        if not correct_flame_version:
-            # flame 2026 does not use /volumes anymore
+        if project_exists:
+            print("Project '{}' already exists.".format(project_name))
             return True
 
-        if not project_exists:
+        # Flame < 2025: Stone+Wire,
+        # create project in provided volume name
+        if self._get_flame_version()[0] < 2026:
             volumes = self._get_all_volumes()
 
-            if len(volumes) == 0 and correct_flame_version:
+            if len(volumes) == 0:
                 raise AttributeError(
-                    "Not able to create new project. No Volumes existing"
+                    "Not able to create new project: no volumes available."
+                    "Do create a volume '{}' in Flame.".format(
+                        self.volume_name
+                    )
                 )
 
             # check if volumes exists
             if self.volume_name not in volumes:
                 raise AttributeError(
-                    ("Volume '{}' does not exist in '{}'").format(
-                        self.volume_name, volumes)
+                    (
+                        "Not able to create new project: volume '{}' does not "
+                        "exist in Flame. Available volumes are: {}"
+                    ).format(self.volume_name, volumes)
                 )
 
-            # form cmd arguments
-            project_create_cmd = [
-                os.path.join(
-                    self.wiretap_tools_dir,
-                    "wiretap_create_node"
-                ),
-                '-n',
-                os.path.join("/volumes", self.volume_name),
-                '-d',
-                project_name,
-                '-g',
-            ]
+            parent_args = ["-n", os.path.join("/volumes", self.volume_name)]
 
-            project_create_cmd.append(self.group_name)
+        # Flame >= 2026: Postgres + filesystem
+        else:
+            parent_args = ["-n", "/projects", "-t", "PROJECT"]
 
-            print(project_create_cmd)
+        # form cmd arguments
+        project_create_cmd_args = [
+            os.path.join(self.wiretap_tools_dir, "wiretap_create_node")
+        ]
+        project_create_cmd_args.extend(parent_args)
+        project_create_cmd_args.extend(["-d", project_name])
 
-            exit_code = subprocess.call(
-                project_create_cmd,
-                cwd=os.path.expanduser('~'),
-                preexec_fn=_subprocess_preexec_fn
+        if self.group_name:
+            project_create_cmd_args.extend(["-g", self.group_name])
+
+        print(
+            "Project creation cmd line: {}".format(
+                " ".join(project_create_cmd_args)
             )
+        )
+        process = subprocess.Popen(
+            project_create_cmd_args,
+            cwd=os.path.expanduser('~'),
+            preexec_fn=_subprocess_preexec_fn,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True
+        )
+        output, stderr = process.communicate()
 
-            if exit_code != 0:
-                RuntimeError("Cannot create project in flame db")
+        if process.returncode != 0:
+            message = (
+                (
+                    "Cannot create project '{}' (project_group: {}) "
+                    "in Flame: {}, {}"
+                ).format(
+                    project_name,
+                    self.group_name,
+                    output.strip(),
+                    stderr.strip()
+                )
+            )
+            raise RuntimeError(message)
 
-            print(
-                "A new project '{}' is created.".format(project_name))
-        return project_exists
+        print("New project '{}' is created.".format(project_name))
+        return False
 
     def _get_all_volumes(self):
         """Request all available volumens from WireTap
@@ -419,6 +466,19 @@ class WireTapCom(object):
         Raises:
             AttributeError: Not able to set project attributes
         """
+        flame_year, flame_minor = self._get_flame_version()
+
+        # Flame 2026.0 has an inconsistent project creation
+        # XML API (still uses SetupDir but no description field)
+        if flame_year == 2026 and flame_minor == 0:
+            project_data = project_data.copy()
+            project_data.pop("Description", None)
+
+        # No more SetupDir required from Flame 2026.1
+        elif flame_year >= 2026:
+            project_data = project_data.copy()
+            project_data.pop("SetupDir", None)
+
         # generated xml from project_data dict
         _xml = "<Project>"
         for key, value in project_data.items():
@@ -440,21 +500,60 @@ class WireTapCom(object):
 
         print("Project settings successfully set.")
 
-    def _set_project_colorspace(self, project_name, color_policy):
-        """Set project's colorspace policy.
+
+    def _set_project_ocio_config(
+        self,
+        project_data,
+        ocio_config,
+        default_config=None,
+    ):
+        """Set project's OCIO config (Flame >= 2026 only).
+
+        Args:
+            project_data (dict): project data,
+            ocio_config (str or None): name of config
+            default_config (str or None): optional path to default config
+        """
+        if ocio_config:
+            if not os.path.exists(ocio_config):
+                print(
+                    "Ignored OCIO config (not found): {}".format(ocio_config)
+                )
+                return
+        elif default_config:
+            if not os.path.exists(default_config):
+                print(
+                    "Ignored default OCIO config (not found): {}".format(
+                        default_config
+                    )
+                )
+                return
+            ocio_config = default_config
+
+        if ocio_config:
+            print("Set project OCIO config: {}".format(ocio_config))
+            project_data["OCIOConfigFile"] = ocio_config
+
+
+    def _set_project_syncolor_colorspace(
+            self,
+            project_name,
+            sync_color_policy=None,
+    ):
+        """Set project's syncolor policy (Flame < 2026 only).
 
         Args:
             project_name (str): name of project
-            color_policy (str): name of policy
+            sync_color_policy (str or None): name of policy
 
         Raises:
             RuntimeError: Not able to set colorspace policy
         """
-        color_policy = color_policy or "Legacy"
+        color_policy = sync_color_policy or "Legacy"
 
         # check if the colour policy in custom dir
         if "/" in color_policy:
-            # if unlikelly full path was used make it redundant
+            # if unlikely full path was used make it redundant
             color_policy = color_policy.replace("/syncolor/policies/", "")
             # expecting input is `Shared/NameOfPolicy`
             color_policy = "/syncolor/policies/{}".format(
@@ -463,7 +562,28 @@ class WireTapCom(object):
             color_policy = "/syncolor/policies/Autodesk/{}".format(
                 color_policy)
 
-        # create arguments
+        # ensure color policy exists
+        try:
+            subprocess.run(
+                [
+                    os.path.join(
+                        self.wiretap_tools_dir,
+                        "wiretap_resolve_path"
+                    ),
+                    "-p",
+                    color_policy,
+                ],
+                check=True,
+            )
+        except subprocess.CalledProcessError:
+            print(
+                "Ignored invalid provided color policy: {}".format(
+                    color_policy
+                )
+            )
+            return
+
+        # set color policy on project
         project_colorspace_cmd = [
             os.path.join(
                 self.wiretap_tools_dir,

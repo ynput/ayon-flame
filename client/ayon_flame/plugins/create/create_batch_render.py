@@ -81,11 +81,13 @@ current batch group.
             if value not in (None, ""):
                 try:
                     setattr(write_node, attr, value)
+
+                # WriteFile node attributes change based on Flame version.
                 except RuntimeError as error:
-                    raise RuntimeError(
+                    self.log.warning(
                         f"Could not set attribute '{attr}' "
-                        f"value '{value}' on Write File node."
-                    ) from error
+                        f"value '{value}' on Write File node: {error}."
+                    )
 
     def get_pre_create_attr_defs(self) -> List[BoolDef]:
         return [
