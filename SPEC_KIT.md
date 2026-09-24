@@ -115,6 +115,11 @@ negation exception keeps the addon constitution tracked). The shared
   silently override or contradict the root file or `.agents-main/`. Report a
   conflict instead of relying on tool precedence.
 - `.agents-main/` — linked shared guidance (enrichment; never commit it).
+  Root `AGENTS.md` pulls it in with bare `@./.agents-main/...` import lines
+  (Claude Code, Goose, Gemini CLI) plus Markdown links (Copilot). Gemini CLI
+  and Claude Code need a one-time, per-machine step to see `AGENTS.md` at
+  all; see "Cross-harness file referencing" in
+  [.agents-main/addon_repo_setup/README.md](.agents-main/addon_repo_setup/README.md).
 - `.specify/memory/constitution.md`, `ayon-constitution.md`,
   `ayon-constitution-evidence.md` — machine-local symlinks to
   `.agents-main/.specify/memory/…`; the actual files come from the shared

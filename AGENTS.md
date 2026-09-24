@@ -1,9 +1,15 @@
 # Flame addon
 
-**Primary guidance:** [`.agents-main/AGENTS.md`](.agents-main/AGENTS.md) and
-its `fragments/host-integration.md` — read that first. This file extends the
-shared guidance with repository-specific facts only; it never replaces,
-overrides, or contradicts it.
+**Primary guidance:** the shared instructions in
+[.agents-main/AGENTS.md](.agents-main/AGENTS.md) and
+[.agents-main/fragments/host-integration.md](.agents-main/fragments/host-integration.md).
+Agents that support `@` imports load them from the lines below. If their
+content is not already in your context, open and read both files before
+doing anything else. This file only adds repository-specific facts on top of
+that shared guidance. It never replaces, overrides or contradicts it.
+
+@./.agents-main/AGENTS.md
+@./.agents-main/fragments/host-integration.md
 
 ## What this addon is
 
