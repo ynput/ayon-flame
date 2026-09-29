@@ -254,6 +254,8 @@ class WireTapCom(object):
             universal_newlines=True
         )
         output, stderr = process.communicate()
+        output = output or ""
+        stderr = stderr or ""
 
         if process.returncode != 0:
             message = (
@@ -264,7 +266,7 @@ class WireTapCom(object):
                     project_name,
                     self.group_name,
                     output.strip(),
-                    stderr.strip()
+                    stderr.strip(),
                 )
             )
             raise RuntimeError(message)
