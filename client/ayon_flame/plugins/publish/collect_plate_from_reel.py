@@ -26,7 +26,15 @@ class CollectReelPlate(pyblish.api.InstancePlugin):
             return
 
         # Adjust instance families
-        instance.data["families"].append("clip")
+        instance.data["families"].extend([
+            "clip",
+            # Mark for 'CollectOTIORanges' in core
+            "otio.clip.ranges",
+            # Mark for 'CollectOTIOReviewTrack' in core
+            "otio.review.track",
+            # Mark for 'CollectOTIOProductResources' in core
+            "otio.clip.resources",
+        ])
         if instance.data["creator_attributes"].get("review"):
             instance.data["families"].append("review")
 

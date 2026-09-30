@@ -771,9 +771,10 @@ class ClipLoader(LoaderPlugin):
                     "output", "representation"
                 )
 
-            # convert colorspace with ocio to flame mapping
-            # in imageio flame section
-            colorspace = self.get_native_colorspace(colorspace)
+            # convert colorspace with ocio to syncolor mapping from presets
+            # Flame < 2026 only, already OCIO otherwise.
+            if int(flame.get_version_major()) < 2026:
+                colorspace = self.get_native_colorspace(colorspace)
 
             # prepare clip data from context ad send it to openClipLoader
             path = self.filepath_from_context(version_context)

@@ -57,6 +57,8 @@ class CollectShot(pyblish.api.InstancePlugin):
         Args:
             instance (obj): The publishing instance.
         """
+        # Mark for 'CollectOTIORanges' in core
+        instance.data["families"].append("otio.clip.ranges")
         context = instance.context
         instance_id = instance.data["instance_id"]
 
