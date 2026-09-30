@@ -19,7 +19,7 @@ class CollectRenderFromBatch(pyblish.api.InstancePlugin):
             instance.data.get("flame_context") != "FlameMenuBatch"
             or not instance.data.get("write_node_name")
         ):
-            self.log.warning("No valid batch render instance, skipping.")
+            self.log.debug("No valid batch render instance, skipping.")
             return
 
         batch_name = instance.data["batch_name"]

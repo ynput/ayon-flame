@@ -110,8 +110,7 @@ class ExtractBatchRender(publish.Extractor):
         if "representations" not in instance.data:
             instance.data["representations"] = []
 
-        review = instance.data.get(
-            "creator_attributes", {}).get("review")
+        review = "review" in instance.data["families"]
 
         representation = {
             "name": ext,
