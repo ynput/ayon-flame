@@ -8,24 +8,6 @@ from ayon_core.pipeline import LoaderPlugin
 from ayon_flame.api import batch_utils
 
 
-def _unique_batch_name(name: str) -> str:
-    """Return a unique batch group name, appending (2), (3)… if needed."""
-    import flame
-
-    existing = {
-        bg.name.get_value()
-        for bg in flame.project.current_project.current_workspace
-            .desktop.batch_groups
-    }
-    if name not in existing:
-        return name
-
-    counter = 2
-    while f"{name} ({counter})" in existing:
-        counter += 1
-    return f"{name} ({counter})"
-
-
 class LoadBatchgroup(LoaderPlugin):
     product_types = {"workfile"}
     representations = {"*"}
@@ -59,7 +41,7 @@ class LoadBatchgroup(LoaderPlugin):
             requested_version_entity.get("data", {}).get("batch_name")
             or context["representation"]["context"].get("asset")
         )
-        unique_batch_name = _unique_batch_name(batch_name)
+        unique_batch_name = batch_utils.get_unique_batch_name(batch_name)
         if unique_batch_name != batch_name:
             self.log.warning(
                 f"Batch group '{batch_name}' already exists. "

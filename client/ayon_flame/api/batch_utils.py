@@ -18,6 +18,9 @@ AYON_NOTE_MARKER = "__ayon__"
 # Name of the hidden Note node used to embed instance data inside the batch.
 _METADATA_NODE_NAME = "AYON_metadata"
 
+# Name of the hidden Note node holding the batch's workfile path.
+_WORKFILE_NODE_NAME = "AYON_workfile"
+
 
 def read_node_metadata(node: flame.PyNode) -> Optional[Dict[str, Any]]:
     """ Read AYON instance data from a node's note attribute.
@@ -33,6 +36,9 @@ def read_node_metadata(node: flame.PyNode) -> Optional[Dict[str, Any]]:
     try:
         data = json.loads(raw)
     except json.JSONDecodeError:
+        return None
+
+    if not isinstance(data, dict):
         return None
 
     return data if data.get(AYON_NOTE_MARKER) else None
@@ -187,6 +193,25 @@ def get_batch_from_workspace(
     return None
 
 
+def get_task_batch_name(folder_path: str, task_name: str) -> str:
+    return f"{folder_path}_{task_name}".replace("/", "_").strip("_")
+
+
+def get_unique_batch_name(name: str) -> str:
+    existing = {
+        bg.name.get_value()
+        for bg in flame.project.current_project.current_workspace
+            .desktop.batch_groups
+    }
+    if name not in existing:
+        return name
+
+    counter = 2
+    while f"{name} ({counter})" in existing:
+        counter += 1
+    return f"{name} ({counter})"
+
+
 def save_batch_as_consolidated_json(
     batch: flame.PyBatch,
     filepath: str,
@@ -246,21 +271,50 @@ def get_current_batch() -> flame.PyBatch:
 
 def get_metadata_node(
         batch: Optional[flame.PyBatch] = None,
-        create: bool = False
+        create: bool = False,
+        node_name: str = _METADATA_NODE_NAME,
     ) -> Optional[flame.PyNode]:
-    """ Find or create the AYON metadata Note node in the current batch.
+    """ Find or create the Note node with this name in the batch.
     """
     batch = batch or get_current_batch()
     for node in batch.nodes:
-        if node.name.get_value() == _METADATA_NODE_NAME:
+        if node.name.get_value() == node_name:
             return node
 
     if not create:
         return None
 
     node = batch.create_node("Note")
-    node.name.set_value(_METADATA_NODE_NAME)
+    node.name.set_value(node_name)
     return node
+
+
+def set_workfile_path(batch: flame.PyBatch, filepath: str):
+    """ Store the workfile path in the batch's AYON_workfile note."""
+    node = get_metadata_node(
+        batch=batch, create=True, node_name=_WORKFILE_NODE_NAME
+    )
+    write_node_metadata(node, {"workfile_path": filepath})
+
+
+def get_workfile_path(batch: flame.PyBatch) -> Optional[str]:
+    """ Return the workfile path stored in the batch."""
+    node = get_metadata_node(batch=batch, node_name=_WORKFILE_NODE_NAME)
+    if node is None:
+        return None
+
+    data = read_node_metadata(node) or {}
+    return data.get("workfile_path")
+
+
+def set_instances_batch_name(batch: flame.PyBatch, batch_name: str):
+    """ Set the batch group name saved in each AYON instance note.
+    """
+    for node in batch.nodes:
+        data = read_node_metadata(node)
+        if data and "batch_name" in data:
+            data["batch_name"] = batch_name
+            write_node_metadata(node, data)
 
 
 def load_batch_from_consolidated_json(
