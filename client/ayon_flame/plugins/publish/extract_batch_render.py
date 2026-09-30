@@ -103,7 +103,7 @@ class ExtractBatchRender(publish.Extractor):
             )
         if not written_files:
             raise PublishError(
-                f"Expected {resolved_path} files is not found "
+                f"Expected files for '{resolved_path}' were not found "
                 "in output directory."
             )
 
