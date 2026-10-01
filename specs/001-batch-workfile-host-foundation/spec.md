@@ -463,6 +463,25 @@ validation passes. Publish again unchanged: no failure.
 - Verification is manual in Flame plus `ruff` and package-build checks; no
   test framework is added.
 
+## Implementation Status — Amendment 1 (2026-10-01)
+
+**Delivered (code)**: atomic Batch save in `workio.save_file` (FR-A01–A05);
+`FlameHost` is now an `IWorkfileHost` (FR-A06, resolves DV-1); new
+`CollectCurrentFile` collector (FR-A10); Core's `ValidateCurrentSaveFile` and
+`CollectSceneVersion` are kept inactive for the Flame host through a pyblish
+discovery filter (FR-A10–A12); new `ValidateBatchWorkfileSaved` validator whose
+Repair calls Core's `save_next_version()` (FR-A13–A17); the existence check uses
+the context's workfiles from AYON Core (FR-A18). `CollectBatchVersion`,
+`addon.py`, `startup/`, `server/` and `package.py` are unchanged.
+
+**Not verified — needs a reviewer inside Flame**: all acceptance scenarios and
+`SC-A01`–`SC-A08` (see `quickstart.md`); code paths were verified only with
+stubbed harnesses and static checks (tasks.md DV-8).
+
+**Open — needs a decision**: the Workfiles tool has no entry in Flame's AYON
+menus, so artists cannot open it from Flame (tasks.md T029 / DV-9). Adding a
+menu control is out of the stated scope and is therefore not implemented.
+
 ## Verification Plan
 
 1. Run `ruff check .`.

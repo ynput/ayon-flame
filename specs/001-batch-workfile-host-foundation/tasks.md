@@ -96,17 +96,17 @@ depend on it.
 
 ## Phase 3 — Host wiring (GATED:D1) — NOT APPLIED
 
-- [ ] **T011 [GATED:D1 → SUPERSEDED by T033, Amendment 1] Add `IWorkfileHost` to `FlameHost`** — **DEFERRED, not
+- [x] **T011 [GATED:D1 → SUPERSEDED by T033, Amendment 1] Add `IWorkfileHost` to `FlameHost`** — **DEFERRED, not
       performed.** Blocked by R10; applying it without a Flame
       `collect_current_file` collector breaks every Flame publish, and adding
       that collector changes `context.data["version"]` and blocks non-Batch
       publishing. Exact flip steps recorded in `plan.md` D1. This is the
       deliberate deviation from the D1b instruction.
-- [ ] **T012 [GATED:D1 → SUPERSEDED by T033, Amendment 1] Confirm `startup/AYON_in_flame.py` needs no change** —
+- [x] **T012 [GATED:D1 → SUPERSEDED by T033, Amendment 1] Confirm `startup/AYON_in_flame.py` needs no change** —
       **Deferred with T011.** Read and confirmed the file already calls
       `install_host(FlameHost())` in each `get_*_custom_ui_actions` hook, so
       no change would be required once T011 is applied.
-- [ ] **T013 [P][GATED:D1] Confirm `addon.py` is unchanged** — **Confirmed
+- [x] **T013 [P][GATED:D1] Confirm `addon.py` is unchanged** — **Confirmed
       unchanged** (`git status` shows no modification); `addon.py` still
       returns `[".otoc"]` from its launcher-time `get_workfile_extensions()`
       and contains no `flame` import. Reported here rather than blocked,
@@ -141,7 +141,7 @@ depend on it.
       `ruff format --check` already reports many pre-existing files (including
       untouched `docs/*.md` and `api/__init__.py`) as needing reformatting
       under `ruff 0.16.0`, so repo-wide format drift is pre-existing.
-- [ ] **T019 `python create_package.py --skip-zip`** — *Not run*: it would
+- [x] **T019 `python create_package.py --skip-zip`** — *Passed in Amendment 1 (T044); originally not run*: it would
       touch generated package artifacts unrelated to this change. Run by the
       reviewer/CI.
 - [x] **T020 Verify launcher-safe import** — Confirmed `addon.py` contains no
@@ -209,14 +209,14 @@ repair) — activating the host alone breaks Flame publishing (R10).
 
 ### Phase A1 — Gates and verification (no story label)
 
-- [ ] T027 Prove the D9 mechanism with a throwaway harness in `/tmp` (not
+- [x] T027 Prove the D9 mechanism with a throwaway harness in `/tmp` (not
       committed): show which pyblish approach disables Core's
       `ValidateCurrentSaveFile` and `CollectSceneVersion` for host `flame`
       only and survives publish-time plugin discovery. Record the result and
       chosen mechanism in `specs/001-batch-workfile-host-foundation/research.md`
       as **R13**. **GATE for T039**; if no mechanism preserves FR-A11, stop and
       report to the user — do not edit Core or settings.
-- [ ] T028 [P] Confirm `save_next_version`, `host.list_workfiles` and
+- [x] T028 [P] Confirm `save_next_version`, `host.list_workfiles` and
       `RepairContextAction` exist with the signatures in R12 on the lowest
       supported core (`core >=1.8.0` from `package.py`, not only the
       `1.9.14+dev` checkout at `/Users/jakub/CODE/__YNPUT/ayon-core`); amend
@@ -228,7 +228,7 @@ repair) — activating the host alone breaks Flame publishing (R10).
 
 ### Phase A2 — Foundational (blocks US4, US5, US6)
 
-- [ ] T030 Add `is_batch_tab()` to `client/ayon_flame/api/workio.py` (reads
+- [x] T030 Add `is_batch_tab()` to `client/ayon_flame/api/workio.py` (reads
       `flame.get_current_tab()`, same normalisation and fail-closed behaviour
       as the existing predicate) and make
       `client/ayon_flame/api/workfile.py` `_is_batch_tab`/`BATCH_TAB`
@@ -241,7 +241,7 @@ repair) — activating the host alone breaks Flame publishing (R10).
 JSON at the Core-allocated path.
 **Independent test**: quickstart steps 1–2 (save → v1, save → v2 `.json`, reopen).
 
-- [ ] T031 [US4] Implement the Batch branch of `save_file(filepath)` in
+- [x] T031 [US4] Implement the Batch branch of `save_file(filepath)` in
       `client/ayon_flame/api/workio.py`: on the Batch tab call
       `batch_utils.save_batch_as_consolidated_json(get_current_batch(), tmp)`
       with `tmp` a sibling temp file in the destination directory, then
@@ -249,18 +249,18 @@ JSON at the Core-allocated path.
       `filepath` untouched, and raise `RuntimeError` naming the cause (no
       active Batch, unreadable tab, write error). Do not edit `batch_utils.py`
       (FR-A01, FR-A03, FR-A04, plan D6).
-- [ ] T032 [US4] In `client/ayon_flame/api/workfile.py`
+- [x] T032 [US4] In `client/ayon_flame/api/workfile.py`
       `FlameBatchWorkfileHost.save_workfile`, delegate to `workio.save_file`
       (remove the direct `batch_utils` call) and keep `_remember_workfile`;
       keep `get_workfile_extensions()` returning `[".json"]` (FR-A01 single
       save path; `save_next_version` needs the extension, R12.1).
-- [ ] T033 [US4] In `client/ayon_flame/api/pipeline.py` add `IWorkfileHost`
+- [x] T033 [US4] In `client/ayon_flame/api/pipeline.py` add `IWorkfileHost`
       to `FlameHost` and delegate `save_workfile`, `open_workfile`,
       `get_current_workfile`, `workfile_has_unsaved_changes`,
       `get_workfile_extensions` to `get_flame_workfile_host()` evaluated at
       call time; do not override deprecated aliases; leave `install()` plugin
       registrations unchanged (plan D7; FR-A06). **Subject to the ship gate.**
-- [ ] T034 [P] [US4] Export any new public names from
+- [x] T034 [P] [US4] Export any new public names from
       `client/ayon_flame/api/__init__.py` in the existing export style.
 - [ ] T035 [US4] Manual in-host validation (reviewer): quickstart steps 1–2
       and the US4 acceptance scenarios (1–5) on Flame 2026; record observed
@@ -273,7 +273,7 @@ JSON at the Core-allocated path.
 **Goal**: Non-Batch save is explicitly unsupported and writes nothing.
 **Independent test**: quickstart step 6.
 
-- [ ] T036 [US5] Verify in `client/ayon_flame/api/workio.py` that the
+- [x] T036 [US5] Verify in `client/ayon_flame/api/workio.py` that the
       non-Batch path of `save_file` still raises `NotImplementedError` and
       that an unreadable tab never selects the Batch branch (FR-A05, edge
       case "current tab cannot be read"); adjust only if T031 regressed it.
@@ -288,19 +288,19 @@ are unchanged.
 **Independent test**: quickstart steps 3–5.
 **Depends on**: T027 (gate), T030–T033.
 
-- [ ] T038 [P] [US6] Create
+- [x] T038 [P] [US6] Create
       `client/ayon_flame/plugins/publish/collect_current_file.py`:
       `ContextPlugin`, `order = pyblish.api.CollectorOrder - 0.5`,
       `hosts = ["flame"]`; always set `context.data["currentFile"]` to the
       latest existing workfile path for the current context on the Batch tab
       (from `registered_host().list_workfiles(...)`, `available` only), else
       `None` (plan D8; FR-A10).
-- [ ] T039 [US6] Implement the D9 mechanism selected in T027 so Core's
+- [x] T039 [US6] Implement the D9 mechanism selected in T027 so Core's
       `ValidateCurrentSaveFile` and `CollectSceneVersion` are inactive for the
       `flame` host only, in `client/ayon_flame/api/pipeline.py` (`install()`
       and the matching undo in `uninstall()`); leave
       `plugins/publish/collect_batch_version.py` byte-identical (FR-A10–A12).
-- [ ] T040 [US6] Create
+- [x] T040 [US6] Create
       `client/ayon_flame/plugins/publish/validate_batch_workfile_saved.py`:
       `ContextPlugin`, `hosts = ["flame"]`,
       `order = pyblish.api.ValidatorOrder - 0.2`,
@@ -312,7 +312,7 @@ are unchanged.
       (Workfiles tool or Repair). A missing folder/task context or a Core/API
       failure raises its own clear error, never passes (FR-A13, FR-A14,
       FR-A18, plan D10).
-- [ ] T041 [US6] Add `@classmethod repair(cls, context)` to
+- [x] T041 [US6] Add `@classmethod repair(cls, context)` to
       `validate_batch_workfile_saved.py` calling
       `ayon_core.pipeline.workfile.save_next_version()`; surface any
       exception (including the missing folder/task `TypeError`, R12.1) as a
@@ -328,20 +328,84 @@ are unchanged.
 
 ### Phase A6 — Static checks and closure (no story label)
 
-- [ ] T043 Run `ruff check .` and `ruff format --check .`; fix only the files
+- [x] T043 Run `ruff check .` and `ruff format --check .`; fix only the files
       this amendment changed (pre-existing `agentic_setup.py:141` `E501` stays
       per DV-5).
-- [ ] T044 [P] Run `python3 create_package.py --skip-zip` and confirm success.
-- [ ] T045 [P] Confirm `client/ayon_flame/addon.py` still imports in a plain
+- [x] T044 [P] Run `python3 create_package.py --skip-zip` and confirm success.
+- [x] T045 [P] Confirm `client/ayon_flame/addon.py` still imports in a plain
       interpreter without the `flame` module (NFR-001, FR-A07).
-- [ ] T046 Verify with `git diff --stat` that the only publish-side changes
+- [x] T046 Verify with `git diff --stat` that the only publish-side changes
       are the FR-A12 list (`collect_current_file.py`,
       `validate_batch_workfile_saved.py`, host-scoped Core-plugin handling in
       `api/pipeline.py`); no `server/`, `package.py`, or settings changes.
-- [ ] T047 Close out the docs: update the spec "Implementation Status",
+- [x] T047 Close out the docs: update the spec "Implementation Status",
       resolve DV-1, add a deviation entry for the atomic-write wrapper (plan
       D6) and for any T027 fallback used, and tick T011/T012/T015 as
       superseded in this file.
+
+### Amendment 1 — implementation results (2026-10-01)
+
+- **T027 done** — mechanism is `pyblish.api.register_discovery_filter`
+  (research R13). Implemented in `api/pipeline.py` (`install()` registers,
+  `uninstall()` removes). Verified with throwaway harnesses (`/tmp`, not
+  committed): drops only the two Core plugins, matches by class name **and**
+  defining-file stem, leaves same-named plugins from other files, works with
+  both pyblish's and Core's discovery (`__file__` vs `__module__` forms).
+- **T028 done** — on tag `1.8.0`: `save_next_version` (+ export),
+  `IWorkfileHost.list_workfiles` / `save_workfile_with_context` /
+  `get_workfile_extensions`, `RepairContextAction`, `PublishValidationError`,
+  Core's two plugins and the discovery-filter hook in
+  `publish_plugins_discover` all exist.
+- **T029 NOT done — blocks the user-facing story.** `api/menu.py` offers
+  Create / Publish / Load (and universal menus) but **no Workfiles entry**,
+  and nothing else in `client/ayon_flame` opens the tool. The implementation
+  makes the Workfiles tool *work* with Flame (host is an `IWorkfileHost`), but
+  an artist has no Flame-side control to open it. The spec scopes new GUI
+  controls out, so adding one is a **spec decision** for the user, not done
+  here. Until decided, T035 (manual save) cannot be performed from inside
+  Flame by menu.
+- **T030–T034 done** — `workio.is_batch_tab()`/`_is_batch_tab`/`BATCH_TAB`
+  now live in `api/workio.py`; `workfile.py` imports them (one predicate, no
+  cycle). `workio.save_file` implements the atomic Batch save.
+  `FlameBatchWorkfileHost.save_workfile` delegates to it (the now-unused
+  `_get_active_batch` was removed). `FlameHost` is an `IWorkfileHost` and
+  delegates to `get_flame_workfile_host()` per call. Exports added
+  (`is_batch_tab`, `context_has_batch_instance`, `list_batch_workfiles`).
+  Verified with a stubbed harness: save → file written, parent dir created;
+  write failure → existing file untouched and no temp file; failure on a new
+  path → nothing created; no active Batch → clear error and no file; tab
+  `Timeline`/`None`/`""`/exception → `NotImplementedError`, no file; empty
+  path → error.
+- **T036 done** (via the same harness): non-Batch and unreadable tab never
+  select the Batch branch.
+- **T038–T041 done** — `plugins/publish/collect_current_file.py`,
+  `plugins/publish/validate_batch_workfile_saved.py` (+ `repair`).
+  Helpers `context_has_batch_instance` / `list_batch_workfiles` are in
+  `api/workfile.py`; `list_batch_workfiles` always lists `.json` workfiles via
+  `FlameBatchWorkfileHost`, so the answer does not depend on the active tab.
+  `repair` additionally requires the Batch tab (clear message otherwise).
+  Stub-verified: no Batch instance → no-op; workfile exists → pass; none →
+  `Batch has no saved workfile` naming the group; lookup error → its own
+  error, never a pass; repair success → validator then passes; repair error →
+  surfaced, nothing saved; collector picks the highest-version *available*
+  file, `None` otherwise, key always present.
+- **T043** — `ruff check .`: only the pre-existing `agentic_setup.py:141`
+  E501 (DV-5). `ruff format --check .` was **already failing on 62 files at
+  HEAD** (CI runs only `ruff check`); existing files were deliberately not
+  reformatted to avoid noisy diffs, and the two new plugin files are
+  format-clean.
+- **T044** — `python3 create_package.py --skip-zip` succeeds.
+- **T045** — static: `addon.py` imports only `os`, `ayon_core.addon` and
+  `.version` and is byte-identical to HEAD. A live import could not run
+  (`ayon_api`/`flame` are not installed in this session).
+- **T046** — `git diff`: changed `api/__init__.py`, `api/pipeline.py`,
+  `api/workfile.py`, `api/workio.py`; new `collect_current_file.py` and
+  `validate_batch_workfile_saved.py`. `addon.py`, `startup/`, `server/`,
+  `package.py` and `collect_batch_version.py` are unchanged — the publish-side
+  changes are exactly the FR-A12 list.
+- **Still open (reviewer, in Flame — cannot run from an agent session):**
+  T035, T037, T042, and the original T003, T019-style in-host items
+  T021–T026. T015 stays open: its in-host check is covered by T042.
 
 ### Amendment dependencies
 
@@ -390,8 +454,12 @@ T021..T026 ── in-host, require T009/T011 (per D1)
 
 | # | Deviation | Reason | Evidence |
 | --- | --- | --- | --- |
-| DV-1 | **T011/T012/T015 not performed** — `IWorkfileHost` was **not** wired into `FlameHost` despite the D1b decision. | Wiring breaks every Flame publish without a new host collector, and adding that collector changes `context.data["version"]` and blocks non-Batch publishing — violating the feature's "no publish/version change yet" constraint. | `research.md` R10.1–R10.3; `plan.md` D1 flip checklist |
+| DV-1 | **RESOLVED by Amendment 1 (T033, T038–T041).** Was: **T011/T012/T015 not performed** — `IWorkfileHost` was **not** wired into `FlameHost` despite the D1b decision. | Wiring breaks every Flame publish without a new host collector, and adding that collector changes `context.data["version"]` and blocks non-Batch publishing — violating the feature's "no publish/version change yet" constraint. | `research.md` R10.1–R10.3; `plan.md` D1 flip checklist |
 | DV-2 | `FlameWorkfileHost.get_current_workfile()` **catches `NotImplementedError`** from `workio.current_file()` and returns AYON's session record (or `None`) instead of propagating. | The plan required "never raise", because the return value feeds core publish validation once wired. | `api/workfile.py`; T010 |
 | DV-3 | Batch workfile paths are tracked in a **module-level session map** (`_WORKFILE_PATHS`) rather than persisted in the Batch metadata Note node. | Writing into the Note node would leak into instance data published by `CreateBatchWorkfile` (`data_to_store()`), changing collected publish data. Persistence is a follow-up concern. | `api/workfile.py`; `plugins/create/create_batch.py` |
 | DV-4 | Module tested with a **throwaway stubbed harness** in `/tmp`, not committed. | The repository has no test framework and must not gain one. | `research.md` R11 |
 | DV-5 | Pre-existing repo-wide `ruff check .` `E501` in unmodified `agentic_setup.py:141` left unfixed. | Outside this feature's scope; unrelated file. | T017 |
+| DV-6 | `workio.save_file` wraps the existing `batch_utils.save_batch_as_consolidated_json` with a temp-sibling + `os.replace` instead of editing the helper. | The helper writes the final path directly (partial file on failure, FR-A04) and must stay unchanged (FR-005). | `api/workio.py`; plan D6; research R12.6 |
+| DV-7 | Existing files with pre-existing `ruff format` drift were not reformatted. | `ruff format --check .` already fails on 62 files at HEAD; reformatting would bury the change in noise. New files are format-clean. | T043 |
+| DV-8 | Amendment 1 was verified with throwaway stubbed harnesses in `/tmp` (not committed) and static checks only. | No Flame, `ayon_api` or full `ayon_core` in the agent session; no test framework may be added. | T027, T030–T041 results |
+| DV-9 | T029 not completed: no way to open the Workfiles tool from Flame's menus. | Adding a menu control is outside the spec's scope (new GUI controls); needs a user decision. | T029 result above |
