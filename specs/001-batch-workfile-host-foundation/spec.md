@@ -480,7 +480,9 @@ stubbed harnesses and static checks (tasks.md DV-8).
 
 **Open — needs a decision**: the Workfiles tool has no entry in Flame's AYON
 menus, so artists cannot open it from Flame (tasks.md T029 / DV-9). Adding a
-menu control is out of the stated scope and is therefore not implemented.
+menu control is out of the stated scope here; it is tracked and implemented by
+spec 002 (`specs/002-workfiles-batch-menu-entry`, branch
+`workfile-entry-batch-menu`).
 
 ## Verification Plan
 
