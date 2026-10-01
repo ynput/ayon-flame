@@ -73,16 +73,15 @@ already accepted by the existing Create/Publish actions.
 
 ## R5 — Host workfile capability dependency
 
-Feature 001 added `client/ayon_flame/api/workfile.py`, but intentionally did
-not mix `IWorkfileHost` into `FlameHost`. Its plan records that doing so would
-activate ayon-core publish validation and scene-version collection, changing
-Flame publish/version behavior. This feature therefore does not modify
-`api/pipeline.py`, publish plugins, or settings.
+Feature 001 Amendment 1 mixed `IWorkfileHost` into `FlameHost`
+(`api/pipeline.py`), dispatching to `get_flame_workfile_host()` per active tab,
+and kept Core's `ValidateCurrentSaveFile` / `CollectSceneVersion` inactive via
+a pyblish discovery filter. The Workfiles tool therefore has a usable host,
+and this feature only adds the entry point (001 T029 / DV-9). It does not
+modify `api/pipeline.py`, `api/workfile.py`, publish plugins, or settings.
 
-The menu action is still valid as the user-facing entry point and can be
-implemented independently. End-to-end opening of the workfiles UI must be
-validated against the registered host in Flame and coordinated with the
-follow-up that resolves the feature 001 D1b wiring decision.
+Save/open from the tool on the Batch tab uses `workio.save_file` (atomic JSON)
+and `load_batch_from_consolidated_json`; other tabs are out of scope.
 
 ## R6 — Scope and compatibility
 

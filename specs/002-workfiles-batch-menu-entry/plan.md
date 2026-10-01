@@ -15,11 +15,10 @@ Create/Publish callback pattern. To keep the action Batch-only, override
 Publish, and Load actions. No shared context-menu action, startup hook, host
 wiring, publish plugin, settings, or launcher module changes are required.
 
-The workfile-host capability from feature 001 remains a documented runtime
-dependency. Its deferred `FlameHost`/`IWorkfileHost` wiring is not included in
-this plan because feature 001 established that wiring changes publish
-validation and version collection behavior. The menu entry must not introduce
-that side effect.
+The workfile-host capability, including `FlameHost` as an `IWorkfileHost`, was
+delivered by feature 001 Amendment 1 and is a prerequisite of this plan. This
+feature only adds the missing menu entry (closing 001 T029 / DV-9) and must not
+alter the 001 publish/version behaviour.
 
 ## Technical Context
 
@@ -49,8 +48,7 @@ construction and the existing workfiles UI invocation.
 - `client/ayon_flame/addon.py` must remain importable without Flame.
 - Do not modify `client/ayon_flame/plugins/**`, `server/**`, settings, or
   publish/version behavior.
-- Do not wire `IWorkfileHost` into `FlameHost` as an incidental part of the
-  menu change.
+- Do not modify `FlameHost`, `workfile.py`, or `workio.py`; they belong to 001.
 - Preserve existing action labels and order.
 
 **Scale/Scope**: One existing client menu module plus feature documentation;
@@ -113,13 +111,12 @@ Batch-specific Workfiles action.
 
 ## Design Decisions
 
-### D1 — Keep host wiring out of this feature
+### D1 — Host wiring is owned by feature 001
 
-Do not modify `FlameHost` or add `IWorkfileHost` to its bases. Feature 001's
-D1b wiring was deferred because it activates core validators/collectors and
-would change Flame publish/version behavior. The menu action can be added
-without silently reopening that decision. A future implementation may wire the
-host after the feature 001 follow-up resolves those effects.
+Do not modify `FlameHost`. 001 Amendment 1 made it an `IWorkfileHost` and
+neutralised Core's `ValidateCurrentSaveFile` / `CollectSceneVersion` with a
+discovery filter, so the Workfiles tool has a usable host. This feature depends
+on that and only adds the entry point.
 
 ### D2 — Override only `FlameMenuBatch.build_menu`
 
@@ -199,8 +196,9 @@ Also inspect:
    `Create...`, `Publish...`, `Load...`, `Workfiles...` after the project row.
 3. Select Workfiles and verify the AYON workfiles UI opens with the Flame main
    window parent.
-4. Verify the current registered-host behavior, and record whether the
-   feature 001 `IWorkfileHost` wiring is still deferred.
+4. Verify the 001 flow end to end: save a Batch version from the tool (a
+   `.json` is written), open it (Batch group restored), then publish and
+   confirm `ValidateBatchWorkfileSaved` passes.
 5. Check Timeline and Universal/Media Panel menus: Workfiles must be absent,
    and existing actions must remain unchanged.
 6. Confirm no publish/version behavior changed as a result of this feature.
@@ -210,7 +208,7 @@ Also inspect:
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
 | `show_workfiles` signature differs in the runtime AYON Core | Action could fail when selected | Confirm the installed Core callback contract before in-host validation; adapt only the call signature if necessary. |
-| `IWorkfileHost` remains unwired | Workfiles UI may not offer a usable Flame workfile host | Keep this dependency explicit; do not activate publish validators/collectors as a workaround. |
+| Tool left open while switching tabs | Save on a non-Batch tab raises `NotImplementedError` | Out of scope (001); documented edge case, no menu-layer handling. |
 | Action added to shared builder accidentally | Workfiles appears in unsupported contexts | Implement only on `FlameMenuBatch`; manually inspect Timeline/Universal menus. |
 | Missing main window | Workfiles receives `None` parent | Reuse existing `_get_main_window()` behavior exactly; no new window assumptions. |
 | Existing menu order changes | User-facing regression | Append after inherited actions and validate exact labels/order. |

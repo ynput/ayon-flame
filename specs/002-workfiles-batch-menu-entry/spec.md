@@ -21,20 +21,17 @@ added in feature `001-batch-workfile-host-foundation`
 (`client/ayon_flame/api/workfile.py`: `FlameWorkfileHost`,
 `FlameBatchWorkfileHost`, `get_flame_workfile_host`).
 
-That capability is **not yet wired into `FlameHost`** — spec 001 deferred the
-`IWorkfileHost` mixin (decision D1b blocked; task T011; deviation DV-1),
-because flipping it activates ayon-core's `ValidateCurrentSaveFile` and
-`CollectSceneVersion` in ways that change publish/version behaviour. The AYON
-workfiles tool opens against the **registered host** and requires the host to
-implement the `IWorkfileHost` contract, so today the host is not the target for
-`show_workfiles`.
+As of 001 Amendment 1 (2026-10-01) `FlameHost` **is** an `IWorkfileHost`
+(`api/pipeline.py`); it delegates to `get_flame_workfile_host()`, which picks
+`FlameBatchWorkfileHost` when the active Flame tab is `Batch`. Core's
+`ValidateCurrentSaveFile` and `CollectSceneVersion` are kept inactive for
+Flame through a pyblish discovery filter, and `ValidateBatchWorkfileSaved`
+guards Batch publishing. This resolves 001 decision D1b / deviation DV-1.
 
-Consequence (recorded as an explicit decision for planning, not silently
-assumed): this feature's in-scope deliverable is the **menu action wiring
-itself**. Whether the action is usable-end-to-end depends on wiring the host
-either in this milestone (if the user accepts the spec-001 D1b blast radius)
-or in the separate follow-up tracked by spec 001. The spec below options this
-as the primary open question for `/speckit.plan`.
+What 001 left open is the user-facing entry point: the Workfiles tool has no
+menu item in Flame (001 task T029 / deviation DV-9). **This feature closes
+T029 / DV-9.** Its deliverable is the menu action wiring only; the host,
+validator, and collector behaviour belongs to 001 and is not touched here.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -49,9 +46,9 @@ Batch workfile capability (001) has no in-app entry point.
 
 **Independent Test**: In Flame on the Batch page, expand the AYON menu and
 verify a **Workfiles** action is present alongside Create / Publish / Load and
-that selecting it invokes `host_tools.show_workfiles`. If the host is wired,
-the workfiles tool opens; otherwise (deliberately unwired) record that it is
-present but inert, and test the resulting behaviour explicitly.
+that selecting it invokes `host_tools.show_workfiles`. The workfiles tool
+opens against the wired `FlameHost`; saving a Batch version writes the
+consolidated `.json` and opening it restores the Batch group (001 FR-A01+).
 
 **Acceptance Scenarios**:
 
@@ -115,12 +112,12 @@ files and confirm no import of `flame` is added to `addon.py`. Confirm via
 
 ### Edge Cases
 
-- **Host not wired (dependency)**: If the `IWorkfileHost` mixin (spec 001
-  D1b) is still unwired, `show_workfiles` opens against a host that is not an
-  `IWorkfileHost`. The action should not raise on menu build; the tool's
-  behaviour (and whether it is even shown) with an unwired host must be
-  verified in-host and recorded, and **must not** break menu construction or
-  the other actions.
+- **Tab changes while the tool is open**: Workfiles save/open dispatches on
+  the active tab at call time (001). The action exists only on the Batch menu,
+  so the tab is normally `Batch`; if the artist switches tabs with the tool
+  still open, saving goes through `FlameWorkfileHost` and raises
+  `NotImplementedError` (`workio.save_file`). Non-Batch tabs are out of scope
+  (001 "no other tabs"); the menu action adds no handling for it.
 - **No active Batch group**: The Batch workfile host raises a clear error when
   no Batch group is active (spec 001 T007/D4). The menu action itself opens the
   tool regardless; any in-tool failure is surfaced by the existing workfile
@@ -153,15 +150,16 @@ files and confirm no import of `flame` is added to `addon.py`. Confirm via
 - **FR-005**: Existing Create / Publish / Load actions, their labels, and their
   ordering MUST be preserved.
 - **FR-006**: The implementation MUST NOT modify `client/ayon_flame/plugins/**`,
-  `server/**`, or any publish/version code, and MUST NOT add a settings field or
-  a `_convert_*` migration.
+  `server/**`, `api/pipeline.py`, `api/workfile.py`, `api/workio.py`, or any
+  publish/version code, and MUST NOT add a settings field or a `_convert_*`
+  migration. (Host wiring, validators, and collectors are delivered by 001.)
 - **FR-007**: `client/ayon_flame/addon.py` MUST remain importable without the
   `flame` module; the change MUST NOT add a `flame` import to launcher-safe
   code.
-- **FR-008**: If the host `IWorkfileHost` mixin (spec 001 D1b) is not wired in
-  this milestone, the feature MUST NOT activate or alter validator/collector
-  behaviour (FR-009 of spec 001 still holds); the dependency MUST be recorded
-  as an explicit decision, not silently relied upon.
+- **FR-008**: The Workfiles action MUST open the tool against the host wired
+  by 001 Amendment 1 and MUST NOT alter the 001 publish behaviour (discovery
+  filter for `ValidateCurrentSaveFile` / `CollectSceneVersion`,
+  `ValidateBatchWorkfileSaved`, `CollectCurrentFile`).
 
 ### Key Entities
 
@@ -187,12 +185,8 @@ files and confirm no import of `flame` is added to `addon.py`. Confirm via
 
 ## Assumptions
 
-- **Scope is menu-entry-only by default**: The primary deliverable is the
-  Batch-menu Workfiles action. Whether to also wire `FlameHost` as an
-  `IWorkfileHost` (spec 001 D1b flip) in this milestone is an **open decision**
-  for `/speckit.plan`; the default assumption here is that wiring stays in the
-  spec-001 follow-up unless the user explicitly opts in, because flipping it
-  changes publish/version behaviour (spec 001 R10/D1).
+- **Scope is menu-entry-only**: Host wiring is already delivered by 001
+  Amendment 1 and is not part of this feature.
 - **Label/position**: "Workfiles..." placed as the next numbered action (after
   the existing `3 - Load...`), consistent with the current labels.
 - **Placement implementation**: Implemented by overriding `build_menu` on
@@ -200,6 +194,6 @@ files and confirm no import of `flame` is added to `addon.py`. Confirm via
   Workfiles action) so the entry is Batch-scoped without disturbing the shared
   `_FlameMenuContext` actions. Alternative (adding to the shared builder and
   exposing on every context) is noted and rejected by default per the request.
-- **Dependency on spec 001**: This feature consumes
-  `client/ayon_flame/api/workfile.py`; that module already exists and is
-  unmodified here.
+- **Dependency on spec 001 (as amended)**: This feature requires 001
+  Amendment 1 (`FlameHost` as `IWorkfileHost`, atomic Batch save) and must be
+  based on the branch that contains it. It does not modify that code.

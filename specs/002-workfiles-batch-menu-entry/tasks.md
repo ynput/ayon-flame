@@ -12,10 +12,10 @@ contracts/menu-action.md
   it touches a different file or is read-only.
 - The runtime implementation is limited to client/ayon_flame/api/menu.py.
 - Do not modify client/ayon_flame/addon.py, client/ayon_flame/plugins/**,
-  server/**, client/ayon_flame/api/pipeline.py, or
-  client/ayon_flame/api/workfile.py.
-- Do not wire IWorkfileHost into FlameHost; that is the deferred feature-001
-  D1b decision and is explicitly out of scope.
+  server/**, client/ayon_flame/api/pipeline.py,
+  client/ayon_flame/api/workfile.py, or client/ayon_flame/api/workio.py.
+- Host wiring (IWorkfileHost on FlameHost) was delivered by feature 001
+  Amendment 1; this branch must be based on it.
 - The repository has no test framework; do not add one.
 - Preserve the existing menu.py style and pass the configured Ruff checks.
 
@@ -77,9 +77,8 @@ contracts/menu-action.md
       Workfiles action and confirm it calls show_workfiles with the Flame main
       window parent and opens the AYON workfiles UI. Confirm the existing
       selection/context callback path receives the Batch selection and
-      FlameMenuBatch context. Record behavior if the feature-001 IWorkfileHost
-      wiring is still deferred; do not add a publish collector or change
-      validator/version behavior as a workaround.
+      FlameMenuBatch context. Also save a Batch version from the tool, open
+      it, and publish, confirming the 001 flow works from this entry point.
       Depends on T007.
 
 - [ ] **T009 Validate menu scoping and regression behavior** — In Flame, inspect
@@ -96,8 +95,8 @@ contracts/menu-action.md
       research or plan with the observed AYON Core callback signature and
       in-host results, including any Flame-version differences. Run
       git diff --check, review git status --short, and ensure all acceptance
-      criteria in spec.md and the contract are covered. Keep all deferred
-      feature-001 host-wiring work out of this change.
+      criteria in spec.md and the contract are covered. Mark feature 001 T029 / DV-9 as resolved
+      by this feature.
       Depends on T006, T008, T009.
 
 ## Dependency graph
