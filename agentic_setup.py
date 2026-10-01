@@ -6,10 +6,17 @@ Requires Python 3.9+.
 Cross-platform one-time setup for agentic development, replacing the
 manual steps documented in ``SPEC_KIT.md``:
 
-- ensure the shared AYON agent instructions repository
-  (``ayon-agentic-instructions``) is cloned next to this repository
+- locate the shared AYON agent instructions repository
+  (``ayon-agentic-instructions``): an existing ``.agents-main`` link is
+  adopted when its target is verified as the shared repository (it has
+  ``AGENTS.md`` and the shared constitution, and a git remote matching
+  ``SHARED_REPO_URL``) - the folder name does not matter. Otherwise the
+  main git worktree's ``.agents-main`` and a sibling checkout are tried,
+  and the repository is cloned next to this one only as a last resort
 - link it as ``.agents-main`` (symlink on macOS/Linux; directory
-  junction on Windows, which needs no administrator privileges)
+  junction on Windows, which needs no administrator privileges); a
+  dangling link is repaired automatically, a link to something else is
+  replaced only with ``--relink``
 - link the three shared constitution files (pointer stub
   ``constitution.md``, canonical ``ayon-constitution.md`` and evidence
   annex ``ayon-constitution-evidence.md``) from the shared repository's
@@ -44,13 +51,14 @@ Usage::
     python agentic_setup.py install
     python agentic_setup.py check
     python agentic_setup.py install --specify --integration=goose
+    python agentic_setup.py install --relink
     python agentic_setup.py install --force --specify \\
         --integration=goose --arbitrary-arg arbitrary-arg-value
 
 Unknown options are passed verbatim to ``specify integration
 install <integration>``, so the script does not need updates when the
 specify CLI changes its interface. Place the script's own options
-(``--force``, ``--integration``, ``--constitution``) before the
+(``--force``, ``--relink``, ``--integration``, ``--constitution``) before the
 pass-through arguments, or separate them with ``--``.
 
 Windows notes:
@@ -88,7 +96,6 @@ SHARED_REPO_DIR: str = os.path.join(
     CURRENT_ROOT, "..", "ayon-agentic-instructions"
 )
 AGENTS_MAIN: str = os.path.join(CURRENT_ROOT, ".agents-main")
-AGENTS_MAIN_REL: str = "../ayon-agentic-instructions"
 SPECIFY_CLI_URL: str = "git+https://github.com/github/spec-kit.git"
 # Shared constitution files: local name in .specify/memory -> source name
 # in the shared repository's .specify/memory/. All three are symlinked
@@ -106,13 +113,13 @@ ADDON_CONSTITUTION_NAME: str = "ayon-addon-constitution.md"
 # Governance preset/extension shipped by the shared repository, wrapped
 # around /speckit.constitution and the after_constitution hook.
 GOVERNANCE_PRESET_ID: str = "ayon-constitution"
+# Paths go through the '.agents-main' link so they stay valid wherever the
+# shared repository actually lives (worktrees, renamed folders).
 GOVERNANCE_PRESET_REL: str = os.path.join(
-    "..", "ayon-agentic-instructions", ".specify", "presets",
-    "ayon-constitution",
+    ".agents-main", ".specify", "presets", "ayon-constitution",
 )
 GOVERNANCE_EXTENSION_REL: str = os.path.join(
-    "..", "ayon-agentic-instructions", ".specify", "extensions",
-    "ayon-constitution",
+    ".agents-main", ".specify", "extensions", "ayon-constitution",
 )
 # Opt-in Spec Kit bug extension (bug-fixing workflow); installed from
 # the extension registry, records live in '.specify/bugs/'.
@@ -243,22 +250,143 @@ def _ask(question: str, default: str) -> str:
 # Steps
 # ---------------------------------------------------------------------------
 
-def ensure_shared_repo() -> bool:
-    """Clone the shared instructions repository if it is missing."""
-    if os.path.isfile(os.path.join(SHARED_REPO_DIR, "AGENTS.md")):
-        LOG.info("Shared instructions found: %s", SHARED_REPO_DIR)
-        return True
-    if os.path.exists(SHARED_REPO_DIR):
-        LOG.error(
-            "%s exists but does not look like the shared instructions "
-            "repository (no AGENTS.md). Fix or remove it manually.",
-            SHARED_REPO_DIR,
+def _agents_main_state() -> str:
+    """Classify '.agents-main': missing, link, dangling, dir or file."""
+    if os.path.islink(AGENTS_MAIN) or _is_reparse_point(AGENTS_MAIN):
+        if os.path.isdir(os.path.realpath(AGENTS_MAIN)):
+            return "link"
+        return "dangling"
+    if os.path.isdir(AGENTS_MAIN):
+        return "dir"
+    if os.path.exists(AGENTS_MAIN):
+        return "file"
+    return "missing"
+
+
+def _normalize_remote(url: str) -> str:
+    """Reduce a git remote URL to 'host/owner/repo' for comparison."""
+    url = url.strip().lower().rstrip("/")
+    if url.endswith(".git"):
+        url = url[:-4]
+    url = re.sub(r"^[a-z+]+://", "", url)
+    url = url.split("@", 1)[-1]
+    return url.replace(":", "/", 1) if "://" not in url and \
+        re.match(r"^[^/]+:[^/]", url) else url.rstrip("/")
+
+
+def _git_remote_urls(path: str) -> List[str]:
+    """Return every configured remote URL of the repository at 'path'."""
+    try:
+        result = subprocess.run(
+            ["git", "-C", path, "config", "--get-regexp",
+             r"^remote\..*\.url$"],
+            capture_output=True, text=True, check=False,
         )
+    except OSError:
+        return []
+    return [
+        line.split(None, 1)[1]
+        for line in result.stdout.splitlines()
+        if len(line.split(None, 1)) == 2
+    ]
+
+
+def _shared_repo_problem(path: str) -> Optional[str]:
+    """Return why 'path' is not the shared repository, None when it is."""
+    if not os.path.isfile(os.path.join(path, "AGENTS.md")):
+        return "no AGENTS.md"
+    if not os.path.isfile(os.path.join(
+            path, ".specify", "memory", "ayon-constitution.md")):
+        return "no .specify/memory/ayon-constitution.md"
+    expected = _normalize_remote(SHARED_REPO_URL)
+    remotes = _git_remote_urls(path)
+    if any(_normalize_remote(url) == expected for url in remotes):
+        return None
+    return "no git remote matching {} (found: {})".format(
+        SHARED_REPO_URL, ", ".join(remotes) or "none"
+    )
+
+
+def _main_worktree_agents_target() -> Optional[str]:
+    """Real target of '.agents-main' in the main git worktree, if any."""
+    try:
+        result = subprocess.run(
+            ["git", "worktree", "list", "--porcelain"],
+            cwd=CURRENT_ROOT, capture_output=True, text=True, check=False,
+        )
+    except OSError:
+        return None
+    for line in result.stdout.splitlines():
+        if not line.startswith("worktree "):
+            continue
+        main_root = line[len("worktree "):]
+        if os.path.realpath(main_root) == os.path.realpath(CURRENT_ROOT):
+            return None
+        link = os.path.join(main_root, ".agents-main")
+        if os.path.islink(link) or _is_reparse_point(link):
+            return os.path.realpath(link)
+        return None
+    return None
+
+
+def _adopt_shared_repo(path: str, origin: str) -> bool:
+    """Use 'path' as the shared repository when it verifies."""
+    global SHARED_REPO_DIR
+    problem = _shared_repo_problem(path)
+    if problem is not None:
+        LOG.warning("Ignoring %s (%s): %s", path, origin, problem)
+        return False
+    SHARED_REPO_DIR = os.path.realpath(path)
+    LOG.info("Using shared instructions from %s (%s).", SHARED_REPO_DIR,
+             origin)
+    return True
+
+
+def ensure_shared_repo(relink: bool = False) -> bool:
+    """Locate the shared instructions repository, cloning as a last resort.
+
+    Order: existing '.agents-main' link, the main worktree's link, the
+    sibling checkout, a fresh clone. Candidates must pass
+    '_shared_repo_problem' (content plus matching git remote).
+    """
+    state = _agents_main_state()
+    if state == "link":
+        target = os.path.realpath(AGENTS_MAIN)
+        if _adopt_shared_repo(target, "existing '.agents-main'"):
+            return True
+        if not relink:
+            LOG.error(
+                "'.agents-main' points to %s, which is not the shared "
+                "instructions repository. Re-run with --relink to "
+                "replace the link.", target,
+            )
+            return False
+    elif state in ("dir", "file") and not relink:
+        return True  # setup_agents_main reports it
+    elif state == "dangling":
+        LOG.warning("'.agents-main' is a broken link, looking for a "
+                    "replacement target.")
+
+    main_target = _main_worktree_agents_target()
+    if main_target and _adopt_shared_repo(
+            main_target, "main worktree's '.agents-main'"):
+        return True
+
+    if os.path.isdir(SHARED_REPO_DIR):
+        if _adopt_shared_repo(SHARED_REPO_DIR, "sibling checkout"):
+            return True
+        LOG.error(
+            "%s exists but is not the shared instructions repository. "
+            "Fix or remove it manually.", SHARED_REPO_DIR,
+        )
+        return False
+    if os.path.exists(SHARED_REPO_DIR):
+        LOG.error("%s exists and is not a directory.", SHARED_REPO_DIR)
         return False
     if shutil.which("git") is None:
         LOG.error(
             "'git' not found. Install git or clone manually:\n"
-            "    git clone %s %s", SHARED_REPO_URL, AGENTS_MAIN_REL,
+            "    git clone %s %s", SHARED_REPO_URL, SHARED_REPO_DIR,
         )
         return False
     LOG.info("Cloning shared instructions repository...")
@@ -268,40 +396,47 @@ def ensure_shared_repo() -> bool:
     return True
 
 
-def setup_agents_main(force: bool = False) -> bool:
+def setup_agents_main(relink: bool = False) -> bool:
     """Create the '.agents-main' link to the shared instructions repo.
 
     Symlink on macOS/Linux, directory junction on Windows (junctions
     can be created by non-admin users and need no Developer Mode).
+    A dangling link is repaired without 'relink'; anything else that
+    is not already a correct link needs it.
     """
-    if os.path.exists(AGENTS_MAIN) or os.path.islink(AGENTS_MAIN):
-        if os.path.islink(AGENTS_MAIN) or _is_reparse_point(AGENTS_MAIN):
-            if _same_target(AGENTS_MAIN, SHARED_REPO_DIR):
-                LOG.info("'.agents-main' link already OK, skipping.")
-                return True
-            if not force:
-                LOG.warning(
-                    "'.agents-main' exists but points elsewhere. "
-                    "Re-run with --force to replace it."
-                )
-                return False
-            _remove_link(AGENTS_MAIN)
-        elif os.path.isdir(AGENTS_MAIN):
+    state = _agents_main_state()
+    if state == "link":
+        if _same_target(AGENTS_MAIN, SHARED_REPO_DIR):
+            LOG.info("'.agents-main' link already OK, skipping.")
+            return True
+        if not relink:
+            LOG.warning(
+                "'.agents-main' exists but points elsewhere. "
+                "Re-run with --relink to replace it."
+            )
+            return False
+        _remove_link(AGENTS_MAIN)
+    elif state == "dangling":
+        LOG.info("Repairing broken '.agents-main' link.")
+        _remove_link(AGENTS_MAIN)
+    elif state == "dir":
+        if not relink:
             LOG.error(
                 "'.agents-main' is a REAL DIRECTORY (probably created by "
                 "'ln -s' in Git Bash, which copies instead of linking). "
                 "It will NOT receive shared-repo amendments. Re-run with "
-                "--force to replace it with a proper link."
+                "--relink to replace it with a proper link."
             )
             return False
-        else:
-            if not force:
-                LOG.warning(
-                    "'.agents-main' exists as a file. "
-                    "Re-run with --force to replace it."
-                )
-                return False
-            os.remove(AGENTS_MAIN)
+        shutil.rmtree(AGENTS_MAIN)
+    elif state == "file":
+        if not relink:
+            LOG.warning(
+                "'.agents-main' exists as a file. "
+                "Re-run with --relink to replace it."
+            )
+            return False
+        os.remove(AGENTS_MAIN)
 
     if IS_WINDOWS:
         result = _run([
@@ -309,8 +444,11 @@ def setup_agents_main(force: bool = False) -> bool:
             os.path.abspath(SHARED_REPO_DIR),
         ])
     else:
+        link_target = os.path.relpath(
+            SHARED_REPO_DIR, os.path.realpath(CURRENT_ROOT)
+        )
         try:
-            os.symlink(AGENTS_MAIN_REL, AGENTS_MAIN)
+            os.symlink(link_target, AGENTS_MAIN)
             result = 0
         except OSError as error:
             LOG.error("Could not create symlink: %s", error)
@@ -898,9 +1036,10 @@ def ensure_git_exclude() -> None:
 
 def command_install(args: argparse.Namespace) -> int:
     """Handle the 'install' command."""
-    if not ensure_shared_repo():
+    relink = args.relink or args.force
+    if not ensure_shared_repo(relink=relink):
         return 1
-    if not setup_agents_main(force=args.force):
+    if not setup_agents_main(relink=relink):
         return 1
     if not copy_instruction_templates(force=args.force):
         return 1
@@ -955,10 +1094,17 @@ def _parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     install.add_argument(
         "--force",
         action="store_true",
-        help="Replace an existing '.agents-main' link/directory, "
+        help="Implies --relink; also overwrite the copied templates, "
              "refresh 'ayon-addon-constitution.md' from the shared "
              "seed (discarding local amendments), and reinstall the "
              "governance preset/extension.",
+    )
+    install.add_argument(
+        "--relink",
+        action="store_true",
+        help="Replace an existing '.agents-main' link/directory that "
+             "does not point to a verified shared repository. Touches "
+             "nothing else (unlike --force).",
     )
     install.add_argument(
         "--specify",
