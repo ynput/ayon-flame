@@ -321,3 +321,95 @@ repository.
    `plan.md` D1 (or keep D1a until Timeline workfile save exists).
 3. Decide what `get_current_workfile()` should return for the **non-Batch**
    Flame tab once publishing depends on it (see R10.3).
+
+## R12 — Amendment 1: `ayon_core` APIs for save / next version / repair (verified)
+
+Verified in the local checkout `/Users/jakub/CODE/__YNPUT/ayon-core`
+(`1.9.14+dev`; tags to 1.9.14). Paths below are relative to
+`client/ayon_core/`.
+
+### R12.1 — Core already allocates the next version without the Workfiles tool
+
+`pipeline/workfile/utils.py:423`
+`save_next_version(version=None, comment=None, description=None, *,
+prepared_data=None) -> None`, exported from `ayon_core.pipeline.workfile`.
+Added in tag **1.5.0** (declared constraint is `core >=1.8.0`, so available).
+
+- Needs no entities: reads `registered_host().get_current_context()`, fetches
+  project/folder/task/settings/anatomy itself, resolves workdir and file name
+  from the `work` template, picks `last + 1` from `host.list_workfiles()`
+  (else `get_versioning_start`), then calls
+  `host.save_workfile_with_context(path, folder, task, version=..., ...)`.
+- Extension: current file ext, else last workfile ext, else
+  `host.get_workfile_extensions()[0]`. The Batch host MUST therefore report
+  `[".json"]` while the Batch tab is active, or `ext` stays unfilled.
+- Returns `None` (no path). Raises `TypeError` if the context has no
+  folder/task (`folder_entity["id"]` on `None`).
+- No public "resolve next path without saving" API exists. FR-A15 uses
+  `save_next_version()` itself, so the addon never computes a version.
+
+### R12.2 — How the Workfiles tool saves (what `save_file` is called with)
+
+`tools/workfiles/models/workfiles.py:129` `save_as_workfile(...)` builds
+`filepath = os.path.join(workdir, filename)` and calls
+`host.save_workfile_with_context(filepath, folder, task, version=..., comment=
+..., description=..., prepared_data=...)`. That (`host/interfaces/
+workfiles.py:902`) makes the workdir, sets `AYON_WORKDIR`, calls
+`set_current_context(..., reason=workfile_save)`, then
+**`host.save_workfile(filepath)`**, then creates/updates the workfile entity.
+So the host only ever receives an absolute final path (version and name are
+already decided by Core). "Save current" is `host.save_workfile(current_file)`
+(an intentional overwrite; overwrite policy therefore stays with Core/UI).
+
+### R12.3 — Existence check for FR-A18
+
+`host.list_workfiles(project_name, folder_entity, task_entity)`
+(`host/interfaces/workfiles.py:1050`) merges files on disk (filtered by
+`get_workfile_extensions()`; returns `[]` if that list is empty) with
+workfile entities from the DB. `bool(...)` of it is the cheapest reliable
+"any workfile for this context". It raises on API/connection failure and
+needs resolved folder/task entities.
+
+### R12.4 — Core publish plugins that react to an `IWorkfileHost`
+
+- `ValidateCurrentSaveFile` (`plugins/publish/validate_file_saved.py:32`,
+  `order = ValidatorOrder - 0.1`, no host filter): skipped unless the host is
+  an `IWorkfileHost`; then `context.data["currentFile"]` is a hard `KeyError`
+  if no collector set it, and a failure "File not saved" if falsy. Its own
+  actions are `SaveByVersionUpAction` (calls `save_next_version()`) and
+  `ShowWorkfilesAction`. **Core already ships a generic version of the
+  FR-A13/FR-A15 behaviour**; the Flame validator exists for the Batch-specific
+  message and Batch-only scope.
+- `CollectSceneVersion` (`collect_scene_version.py:8`, `CollectorOrder`,
+  `hosts=["*"]`): no-op (error log) when `currentFile` is falsy; otherwise
+  parses a version from the file name and **raises `PublishError` when none**;
+  sets `context.data["version"]` (collides with `CollectBatchVersion`, same
+  order).
+- Consumers indexing `context.data["currentFile"]` with `[]`: `integrate.py:932`,
+  `pipeline/publish/lib.py:988,1626`, `abstract_collect_render.py:156`,
+  `pipeline/farm/tools.py:99`. They work for Flame today, so behaviour must
+  stay equivalent (a present-but-`None` key is never worse than today).
+
+### R12.5 — Validator + Repair pattern
+
+`ayon_core.pipeline.publish`: `PublishValidationError(message, title=None,
+description=None, detail=None)`, `RepairAction` (InstancePlugin; calls
+`plugin.repair(instance)` on errored instances), **`RepairContextAction`**
+(ContextPlugin; calls `plugin.repair(context)` if the plugin errored).
+Pitfall: `RepairAction` on a `ContextPlugin` never runs `repair`; use
+`RepairContextAction`. Pattern reference outside this repo:
+`ayon-blender` `validate_renderlayer_active.py` (context validator +
+`RepairContextAction`).
+
+### R12.6 — Local findings in this repo
+
+- `batch_utils.save_batch_as_consolidated_json` opens the destination with
+  `open(filepath, "w")` directly: a failure mid-write leaves a **partial
+  file**, violating FR-A04. The save path must write to a temporary sibling
+  and `os.replace` it.
+- `api/menu.py` has **no Workfiles entry** (grep: no match). How artists open
+  the Workfiles widget in Flame is unverified — see plan open items.
+- `FlameHost.get_current_context()` already prefers Batch metadata when
+  `CTX.context == "FlameMenuBatch"`; `save_workfile_with_context` calls
+  `set_current_context(...)` — verify in-host this does not corrupt the Batch
+  metadata Note node (plan risk).

@@ -96,13 +96,13 @@ depend on it.
 
 ## Phase 3 — Host wiring (GATED:D1) — NOT APPLIED
 
-- [ ] **T011 [GATED:D1] Add `IWorkfileHost` to `FlameHost`** — **DEFERRED, not
+- [ ] **T011 [GATED:D1 → SUPERSEDED by T033, Amendment 1] Add `IWorkfileHost` to `FlameHost`** — **DEFERRED, not
       performed.** Blocked by R10; applying it without a Flame
       `collect_current_file` collector breaks every Flame publish, and adding
       that collector changes `context.data["version"]` and blocks non-Batch
       publishing. Exact flip steps recorded in `plan.md` D1. This is the
       deliberate deviation from the D1b instruction.
-- [ ] **T012 [GATED:D1] Confirm `startup/AYON_in_flame.py` needs no change** —
+- [ ] **T012 [GATED:D1 → SUPERSEDED by T033, Amendment 1] Confirm `startup/AYON_in_flame.py` needs no change** —
       **Deferred with T011.** Read and confirmed the file already calls
       `install_host(FlameHost())` in each `get_*_custom_ui_actions` hook, so
       no change would be required once T011 is applied.
@@ -120,7 +120,7 @@ depend on it.
       Confirmed: `client/ayon_flame/plugins/**`, `server/**`,
       `api/menu.py`, and `api/pipeline.py` are all unmodified. Change set is
       `api/workfile.py` (new), `api/__init__.py` (exports), plus `specs/`.
-- [ ] **T015 [GATED:D1] Verify `ValidateCurrentSaveFile` behaviour** —
+- [ ] **T015 [GATED:D1 → SUPERSEDED by T027/T039/T042, Amendment 1] Verify `ValidateCurrentSaveFile` behaviour** —
       **Deferred with T011** (nothing to verify while the mixin is unwired).
       Expected behaviour if D1b is flipped: R10.1–R10.3.
 - [x] **T016 Confirm `CTX.context` and creators/loaders are untouched** —
@@ -186,6 +186,181 @@ these inside Flame via the studio launcher wrapper (`README.md`).
 - [ ] **T026 Record results** — Append observed values (tab strings, error
       messages, round-trip outcomes) to `research.md` open questions and, if
       the D1 decision needs adjusting, note it in `plan.md` Decisions.
+
+---
+
+## Amendment 1 tasks (2026-10-01)
+
+**Spec**: Amendment 1 (FR-A01–A18, US4–US6). **Plan**: "Amendment 1 plan"
+(D6–D11, Open items). **Design**: `data-model.md`,
+`contracts/internal-seams.md`, `quickstart.md`.
+
+**Overrides to the Conventions above (for Amendment 1 tasks only)**: the
+original ban on editing `client/ayon_flame/plugins/` is lifted for exactly the
+two new publish plugins and the host-scoped Core-plugin handling listed in
+FR-A12 / plan "Source layout delta"; every other publish plugin, `server/`,
+`package.py` and `addon.py` stay unchanged. No test framework is added.
+
+**Ship gate**: T033 (host becomes an `IWorkfileHost`) MUST NOT be merged or
+released without T038–T041 (collector, Core-plugin handling, validator,
+repair) — activating the host alone breaks Flame publishing (R10).
+
+**Task format**: `- [ ] Txxx [P?] [Story?] description with file path`.
+
+### Phase A1 — Gates and verification (no story label)
+
+- [ ] T027 Prove the D9 mechanism with a throwaway harness in `/tmp` (not
+      committed): show which pyblish approach disables Core's
+      `ValidateCurrentSaveFile` and `CollectSceneVersion` for host `flame`
+      only and survives publish-time plugin discovery. Record the result and
+      chosen mechanism in `specs/001-batch-workfile-host-foundation/research.md`
+      as **R13**. **GATE for T039**; if no mechanism preserves FR-A11, stop and
+      report to the user — do not edit Core or settings.
+- [ ] T028 [P] Confirm `save_next_version`, `host.list_workfiles` and
+      `RepairContextAction` exist with the signatures in R12 on the lowest
+      supported core (`core >=1.8.0` from `package.py`, not only the
+      `1.9.14+dev` checkout at `/Users/jakub/CODE/__YNPUT/ayon-core`); amend
+      R12 in `research.md` with any difference.
+- [ ] T029 [P] Establish how artists open the Workfiles tool in Flame
+      (`client/ayon_flame/api/menu.py` has no entry; plan Open item 2).
+      Record the answer in `research.md`. If a new menu control is required,
+      stop and report: it is a spec change (spec scopes out new GUI controls).
+
+### Phase A2 — Foundational (blocks US4, US5, US6)
+
+- [ ] T030 Add `is_batch_tab()` to `client/ayon_flame/api/workio.py` (reads
+      `flame.get_current_tab()`, same normalisation and fail-closed behaviour
+      as the existing predicate) and make
+      `client/ayon_flame/api/workfile.py` `_is_batch_tab`/`BATCH_TAB`
+      re-export it, so exactly one predicate exists and `workio` never imports
+      `workfile` (plan D6; FR-003).
+
+### Phase A3 — US4: Save the current Batch from the Workfiles widget (P1, MVP)
+
+**Goal**: Save in the Workfiles tool writes the active Batch as consolidated
+JSON at the Core-allocated path.
+**Independent test**: quickstart steps 1–2 (save → v1, save → v2 `.json`, reopen).
+
+- [ ] T031 [US4] Implement the Batch branch of `save_file(filepath)` in
+      `client/ayon_flame/api/workio.py`: on the Batch tab call
+      `batch_utils.save_batch_as_consolidated_json(get_current_batch(), tmp)`
+      with `tmp` a sibling temp file in the destination directory, then
+      `os.replace(tmp, filepath)`; on any error delete `tmp`, leave
+      `filepath` untouched, and raise `RuntimeError` naming the cause (no
+      active Batch, unreadable tab, write error). Do not edit `batch_utils.py`
+      (FR-A01, FR-A03, FR-A04, plan D6).
+- [ ] T032 [US4] In `client/ayon_flame/api/workfile.py`
+      `FlameBatchWorkfileHost.save_workfile`, delegate to `workio.save_file`
+      (remove the direct `batch_utils` call) and keep `_remember_workfile`;
+      keep `get_workfile_extensions()` returning `[".json"]` (FR-A01 single
+      save path; `save_next_version` needs the extension, R12.1).
+- [ ] T033 [US4] In `client/ayon_flame/api/pipeline.py` add `IWorkfileHost`
+      to `FlameHost` and delegate `save_workfile`, `open_workfile`,
+      `get_current_workfile`, `workfile_has_unsaved_changes`,
+      `get_workfile_extensions` to `get_flame_workfile_host()` evaluated at
+      call time; do not override deprecated aliases; leave `install()` plugin
+      registrations unchanged (plan D7; FR-A06). **Subject to the ship gate.**
+- [ ] T034 [P] [US4] Export any new public names from
+      `client/ayon_flame/api/__init__.py` in the existing export style.
+- [ ] T035 [US4] Manual in-host validation (reviewer): quickstart steps 1–2
+      and the US4 acceptance scenarios (1–5) on Flame 2026; record observed
+      file names/versions and the no-partial-file failure case in `research.md`.
+      Also confirm saving does not corrupt the Batch metadata Note node
+      (plan D11).
+
+### Phase A4 — US5: Other tabs behave as before (P2)
+
+**Goal**: Non-Batch save is explicitly unsupported and writes nothing.
+**Independent test**: quickstart step 6.
+
+- [ ] T036 [US5] Verify in `client/ayon_flame/api/workio.py` that the
+      non-Batch path of `save_file` still raises `NotImplementedError` and
+      that an unreadable tab never selects the Batch branch (FR-A05, edge
+      case "current tab cannot be read"); adjust only if T031 regressed it.
+- [ ] T037 [US5] Manual in-host validation (reviewer): trigger a save on a
+      Timeline/Media Panel tab and confirm no file is written (SC-A05).
+
+### Phase A5 — US6: Publish requires a saved Batch workfile (P2)
+
+**Goal**: Publishing a never-saved Batch fails with a clear validator message
+whose Repair saves the next version; saved contexts and all other publishes
+are unchanged.
+**Independent test**: quickstart steps 3–5.
+**Depends on**: T027 (gate), T030–T033.
+
+- [ ] T038 [P] [US6] Create
+      `client/ayon_flame/plugins/publish/collect_current_file.py`:
+      `ContextPlugin`, `order = pyblish.api.CollectorOrder - 0.5`,
+      `hosts = ["flame"]`; always set `context.data["currentFile"]` to the
+      latest existing workfile path for the current context on the Batch tab
+      (from `registered_host().list_workfiles(...)`, `available` only), else
+      `None` (plan D8; FR-A10).
+- [ ] T039 [US6] Implement the D9 mechanism selected in T027 so Core's
+      `ValidateCurrentSaveFile` and `CollectSceneVersion` are inactive for the
+      `flame` host only, in `client/ayon_flame/api/pipeline.py` (`install()`
+      and the matching undo in `uninstall()`); leave
+      `plugins/publish/collect_batch_version.py` byte-identical (FR-A10–A12).
+- [ ] T040 [US6] Create
+      `client/ayon_flame/plugins/publish/validate_batch_workfile_saved.py`:
+      `ContextPlugin`, `hosts = ["flame"]`,
+      `order = pyblish.api.ValidatorOrder - 0.2`,
+      `actions = [RepairContextAction]` (from `ayon_core.pipeline.publish`),
+      applying only when an instance with `flame_context == "FlameMenuBatch"`
+      is in the context. Fail with `PublishValidationError` (title "Batch has
+      no saved workfile") when `host.list_workfiles(project, folder, task)` is
+      empty; message names the Batch group, why it matters, and both ways out
+      (Workfiles tool or Repair). A missing folder/task context or a Core/API
+      failure raises its own clear error, never passes (FR-A13, FR-A14,
+      FR-A18, plan D10).
+- [ ] T041 [US6] Add `@classmethod repair(cls, context)` to
+      `validate_batch_workfile_saved.py` calling
+      `ayon_core.pipeline.workfile.save_next_version()`; surface any
+      exception (including the missing folder/task `TypeError`, R12.1) as a
+      cause-naming error and keep the validator failing; never compute a
+      version or path in the addon (FR-A15–A17, FR-A02).
+- [ ] T042 [US6] Manual in-host validation (reviewer): quickstart steps 3–5 —
+      never-saved Batch fails with the message; Repair creates the next
+      `.json` version without opening the Workfiles tool and the validator
+      passes; restart Flame and publish again (passes); Batch publish
+      `context.data["version"]`/iteration identical before vs after (SC-A06);
+      Timeline/Media Panel publishes show no new failure; record results in
+      `research.md`.
+
+### Phase A6 — Static checks and closure (no story label)
+
+- [ ] T043 Run `ruff check .` and `ruff format --check .`; fix only the files
+      this amendment changed (pre-existing `agentic_setup.py:141` `E501` stays
+      per DV-5).
+- [ ] T044 [P] Run `python3 create_package.py --skip-zip` and confirm success.
+- [ ] T045 [P] Confirm `client/ayon_flame/addon.py` still imports in a plain
+      interpreter without the `flame` module (NFR-001, FR-A07).
+- [ ] T046 Verify with `git diff --stat` that the only publish-side changes
+      are the FR-A12 list (`collect_current_file.py`,
+      `validate_batch_workfile_saved.py`, host-scoped Core-plugin handling in
+      `api/pipeline.py`); no `server/`, `package.py`, or settings changes.
+- [ ] T047 Close out the docs: update the spec "Implementation Status",
+      resolve DV-1, add a deviation entry for the atomic-write wrapper (plan
+      D6) and for any T027 fallback used, and tick T011/T012/T015 as
+      superseded in this file.
+
+### Amendment dependencies
+
+```text
+T027 ──► T039
+T028, T029 ── independent checks (T029 may block scope)
+T030 ──► T031 ──► T032 ──► T033 ──► T035
+T031 ──► T036 ──► T037
+T033 + T038 + T039 + T040 + T041 ── ship together (ship gate)
+T038 ──► T040 ──► T041 ──► T042
+T043..T046 ──► T047
+```
+
+**Parallel opportunities**: T028 ∥ T029 ∥ T027 (separate investigations);
+T034 ∥ T032; T038 ∥ T040 (different new files; T041 follows T040); T044 ∥ T045.
+
+**MVP**: US4 (T030–T035) delivers Save, but per the ship gate it cannot ship
+without the US6 publish-side tasks (T038–T041); the smallest *releasable*
+increment is therefore A1 + A2 + US4 + the US6 implementation tasks.
 
 ---
 
