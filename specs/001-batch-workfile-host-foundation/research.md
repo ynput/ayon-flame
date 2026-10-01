@@ -413,3 +413,24 @@ Pitfall: `RepairAction` on a `ContextPlugin` never runs `repair`; use
   `CTX.context == "FlameMenuBatch"`; `save_workfile_with_context` calls
   `set_current_context(...)` — verify in-host this does not corrupt the Batch
   metadata Note node (plan risk).
+
+## R13 — D9 gate (T027): how to neutralise Core's two plugins for Flame only
+
+**Result: `pyblish.api.register_discovery_filter` works.**
+
+- pyblish 1.8.12 `plugin.discover` and `ayon_core.pipeline.publish.lib.
+  publish_plugins_discover` (the one AYON publishing actually calls) both end
+  with `for filter_ in pyblish.plugin._registered_plugin_filters:
+  filter_(plugins)` — an in-place filter over the discovered plugin list.
+- Throwaway harness (`/tmp/gate_h`, not committed) with plugins named
+  `ValidateCurrentSaveFile`, `CollectSceneVersion`, `Other` and Flame's
+  `CollectBatchVersion`: discovery returned all four; with a filter
+  registered it returned only `CollectBatchVersion` and `Other`;
+  `deregister_discovery_filter` restored all four.
+- Not viable: `pyblish.api.deregister_plugin` — it only touches
+  *registered* classes, not those discovered from plugin paths.
+- Scope: the filter lives in the Flame-hosted process only (registered from
+  `FlameHost`'s `install()`, removed in `uninstall()`), so no other host is
+  affected. Matching uses plugin class name **and** the defining file's
+  basename (`validate_file_saved.py`, `collect_scene_version.py`) so a
+  same-named plugin from another addon is never dropped.

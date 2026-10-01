@@ -21,20 +21,18 @@ separately, see decision D1 in
 import os
 from typing import Optional
 
+import ayon_api
 import flame
 
 from ayon_core.host import IWorkfileHost
 from ayon_core.lib import Logger
+from ayon_core.pipeline import registered_host
 
 from . import batch_utils
 from . import workio
+from .workio import BATCH_TAB, _is_batch_tab  # noqa: F401
 
 log = Logger.get_logger(__name__)
-
-# Value returned by 'flame.get_current_tab()' for the Batch page.
-# 'flame.set_current_tab' documents the full tab list as
-# "MediaHub, Conform, Timeline, Effects, Batch, Tools".
-BATCH_TAB = "Batch"
 
 # Consolidated JSON workfile extension produced by 'batch_utils'.
 BATCH_WORKFILE_EXTENSION = ".json"
@@ -45,21 +43,6 @@ BATCH_WORKFILE_EXTENSION = ".json"
 # only source for 'get_current_workfile()'. It is deliberately not persisted
 # and never guessed: an unknown path stays unknown.
 _WORKFILE_PATHS = {}
-
-
-def _is_batch_tab(tab: object) -> bool:
-    """Return whether the given value is the Flame Batch page.
-
-    'MediaHub', 'Conform', 'Timeline', 'Effects', 'Batch' and 'Tools' are
-    the tabs documented by 'flame.set_current_tab'. BFX is a render context,
-    not a tab, and is therefore not matched here.
-
-    Any unexpected value - including 'None' - is treated as "not Batch" so
-    that workfile operations never target the wrong context.
-    """
-    if not isinstance(tab, str):
-        return False
-    return tab.strip().lower() == BATCH_TAB.lower()
 
 
 def _project_name() -> Optional[str]:
@@ -164,9 +147,7 @@ class FlameBatchWorkfileHost(_FlameWorkfileHostBase):
                 "path."
             )
 
-        batch_utils.save_batch_as_consolidated_json(
-            self._get_active_batch(), dst_path
-        )
+        workio.save_file(dst_path)
         self._remember_workfile(dst_path)
 
     def open_workfile(self, filepath: str):
@@ -176,15 +157,6 @@ class FlameBatchWorkfileHost(_FlameWorkfileHostBase):
     def get_workfile_extensions(self) -> list:
         """Return the consolidated JSON extension used by Batch workfiles."""
         return [BATCH_WORKFILE_EXTENSION]
-
-    def _get_active_batch(self):
-        """Return the active Batch Group or raise a clear error."""
-        try:
-            return batch_utils.get_current_batch()
-        except RuntimeError as error:
-            raise RuntimeError(
-                "No active Flame Batch Group to work with."
-            ) from error
 
     def _workfile_key(self) -> Optional[str]:
         try:
@@ -214,3 +186,44 @@ def get_flame_workfile_host() -> IWorkfileHost:
         return FlameBatchWorkfileHost()
 
     return FlameWorkfileHost()
+
+
+def context_has_batch_instance(context) -> bool:
+    """Return whether the publish context holds an instance from the Batch."""
+    return any(
+        instance.data.get("flame_context") == "FlameMenuBatch"
+        for instance in context
+    )
+
+
+def list_batch_workfiles() -> list:
+    """Return the AYON workfiles of the current context.
+
+    Always lists Batch workfiles ('.json'), whatever tab is active, so the
+    answer does not depend on where the artist is in Flame. Needs the AYON
+    folder and task of the current context.
+
+    Raises:
+        RuntimeError: When the current context has no resolvable folder or
+            task.
+    """
+    context = registered_host().get_current_context()
+    project_name = context["project_name"]
+    folder_path = context["folder_path"]
+    task_name = context["task_name"]
+
+    folder_entity = ayon_api.get_folder_by_path(project_name, folder_path)
+    task_entity = None
+    if folder_entity:
+        task_entity = ayon_api.get_task_by_name(
+            project_name, folder_entity["id"], task_name
+        )
+    if not task_entity:
+        raise RuntimeError(
+            f"Current context '{folder_path}' / '{task_name}' was not "
+            f"found in project '{project_name}'."
+        )
+
+    return FlameBatchWorkfileHost().list_workfiles(
+        project_name, folder_entity, task_entity
+    )

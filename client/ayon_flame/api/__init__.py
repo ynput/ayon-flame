@@ -73,6 +73,7 @@ from .workio import (
     current_file,
     has_unsaved_changes,
     file_extensions,
+    is_batch_tab,
     work_root
 )
 from .render_utils import (
@@ -99,6 +100,8 @@ from .workfile import (
     FlameWorkfileHost,
     FlameBatchWorkfileHost,
     get_flame_workfile_host,
+    context_has_batch_instance,
+    list_batch_workfiles,
 )
 
 __all__ = [
@@ -178,6 +181,7 @@ __all__ = [
     "has_unsaved_changes",
     "file_extensions",
     "work_root",
+    "is_batch_tab",
 
     # render utils
     "export_clip",
@@ -203,4 +207,6 @@ __all__ = [
     "FlameWorkfileHost",
     "FlameBatchWorkfileHost",
     "get_flame_workfile_host",
+    "context_has_batch_instance",
+    "list_batch_workfiles",
 ]

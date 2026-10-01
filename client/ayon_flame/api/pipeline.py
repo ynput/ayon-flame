@@ -6,7 +6,12 @@ import os
 from copy import deepcopy
 import flame
 
-from ayon_core.host import HostBase, ILoadHost, IPublishHost
+from ayon_core.host import (
+    HostBase,
+    ILoadHost,
+    IPublishHost,
+    IWorkfileHost,
+)
 from ayon_core.lib import Logger
 from ayon_core.pipeline import (
     AYON_CONTAINER_ID,
@@ -19,6 +24,7 @@ from pyblish import api as pyblish
 
 from ayon_flame import FLAME_ADDON_ROOT
 
+from .workfile import get_flame_workfile_host
 from .lib import (
     get_current_sequence,
     maintained_segment_selection,
@@ -32,11 +38,22 @@ PUBLISH_PATH = os.path.join(PLUGINS_DIR, "publish")
 LOAD_PATH = os.path.join(PLUGINS_DIR, "load")
 CREATE_PATH = os.path.join(PLUGINS_DIR, "create")
 
+# AYON Core publish plugins that react to a host being an 'IWorkfileHost'
+# and must stay inactive for Flame (class name -> defining file stem):
+# - 'ValidateCurrentSaveFile' would block publishing from tabs that cannot
+#   be saved as a workfile; the Flame Batch validator replaces it.
+# - 'CollectSceneVersion' would parse the version from the workfile name and
+#   compete with 'CollectBatchVersion' over 'context.data["version"]'.
+_INACTIVE_CORE_PLUGINS = {
+    "ValidateCurrentSaveFile": "validate_file_saved",
+    "CollectSceneVersion": "collect_scene_version",
+}
+
 
 log = Logger.get_logger(__name__)
 
 
-class FlameHost(HostBase, ILoadHost, IPublishHost):
+class FlameHost(HostBase, ILoadHost, IPublishHost, IWorkfileHost):
     name = "flame"
 
     def __init__(self):
@@ -57,6 +74,23 @@ class FlameHost(HostBase, ILoadHost, IPublishHost):
     def update_context_data(self, data, changes):
         """required by IPublishHost"""
         self._publish_context_data = deepcopy(data)
+
+    # IWorkfileHost: the implementation depends on the active Flame tab,
+    # so it is resolved on every call.
+    def save_workfile(self, dst_path=None):
+        get_flame_workfile_host().save_workfile(dst_path)
+
+    def open_workfile(self, filepath):
+        get_flame_workfile_host().open_workfile(filepath)
+
+    def get_current_workfile(self):
+        return get_flame_workfile_host().get_current_workfile()
+
+    def workfile_has_unsaved_changes(self):
+        return get_flame_workfile_host().workfile_has_unsaved_changes()
+
+    def get_workfile_extensions(self):
+        return get_flame_workfile_host().get_workfile_extensions()
 
     def get_current_context(self):
         current_ctx = super().get_current_context()
@@ -83,9 +117,36 @@ class FlameHost(HostBase, ILoadHost, IPublishHost):
 
         return current_ctx
 
+def _is_inactive_core_plugin(plugin):
+    """Return whether the plugin is one of 'AYON Core' plugins to disable."""
+    stem = _INACTIVE_CORE_PLUGINS.get(plugin.__name__)
+    if stem is None:
+        return False
+
+    source = getattr(plugin, "__file__", None) or plugin.__module__
+    name = source.replace("\\", "/").split("/")[-1]
+    if name.endswith(".py"):
+        name = name[:-3]
+    else:
+        name = name.rsplit(".", 1)[-1]
+    return name == stem
+
+
+def _filter_core_workfile_plugins(plugins):
+    """Pyblish discovery filter, drops plugins in place."""
+    plugins[:] = [
+        plugin for plugin in plugins
+        if not _is_inactive_core_plugin(plugin)
+    ]
+
+
 def install():
     pyblish.register_host("flame")
     pyblish.register_plugin_path(PUBLISH_PATH)
+    if _filter_core_workfile_plugins not in (
+        pyblish.registered_discovery_filters()
+    ):
+        pyblish.register_discovery_filter(_filter_core_workfile_plugins)
     register_loader_plugin_path(LOAD_PATH)
     register_creator_plugin_path(CREATE_PATH)
     log.info("AYON Flame plug-ins registered.")
@@ -97,6 +158,8 @@ def uninstall():
 
     log.info("Deregistering Flame plug-ins.")
     pyblish.deregister_plugin_path(PUBLISH_PATH)
+    if _filter_core_workfile_plugins in pyblish.registered_discovery_filters():
+        pyblish.deregister_discovery_filter(_filter_core_workfile_plugins)
     deregister_loader_plugin_path(LOAD_PATH)
     deregister_creator_plugin_path(CREATE_PATH)
 
