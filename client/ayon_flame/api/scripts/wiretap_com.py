@@ -61,7 +61,21 @@ class WireTapCom(object):
             self.volume_name = volume_name or "stonefs"
             self.group_name = group_name or "staff"
         else:
+            if volume_name:
+                print(
+                    "WARNING: FLAME_WIRETAP_VOLUME='{}' is not used for "
+                    "project creation since Flame 2026, projects are "
+                    "created under /projects, their default location is "
+                    "defined by 'project_folders' in Flame "
+                    "sysconfig.cfg.".format(volume_name)
+                )
             self.volume_name = None  # no volumes in Flame>2026
+            if group_name:
+                print(
+                    "WARNING: project group set from "
+                    "FLAME_WIRETAP_GROUP='{}', make sure this group "
+                    "exists on the wiretap host.".format(group_name)
+                )
             self.group_name = group_name  # current user group if None
 
     def close(self):
@@ -647,7 +661,8 @@ if __name__ == "__main__":
 
     # set returned args back to out data
     out_data.update({
-        "app_args": app_args
+        "app_args": app_args,
+        "volume_name": wiretap_handler.volume_name,
     })
 
     # write it out back to the exchange json file
