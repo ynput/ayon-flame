@@ -633,7 +633,7 @@ class ExtractProductResources(
             instance: The publish instance
 
         Returns:
-            str or None: The remapped colorspace name
+            str or None: The clip colorspace name, remapped for Flame < 2026.
         """
         flame_colour = exporting_clip.get_colour_space()
         self.log.debug(flame_colour)
