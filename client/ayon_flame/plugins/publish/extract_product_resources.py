@@ -633,10 +633,16 @@ class ExtractProductResources(
             instance: The publish instance
 
         Returns:
-            str: The remapped colorspace name
+            str or None: The remapped colorspace name
         """
         flame_colour = exporting_clip.get_colour_space()
         self.log.debug(flame_colour)
+
+        # Flame >= 2026 colour spaces are already OCIO names.
+        # no need to convert to path mapping.
+        if int(flame.get_version_major()) >= 2026:
+            return flame_colour or None
+
         context = instance.context
         host_name = context.data["hostName"]
         project_settings = context.data["project_settings"]
