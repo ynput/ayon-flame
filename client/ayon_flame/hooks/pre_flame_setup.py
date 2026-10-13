@@ -8,7 +8,12 @@ from ayon_core.lib import (
     get_ayon_username,
     run_subprocess,
 )
-from ayon_applications import PreLaunchHook, LaunchTypes
+from ayon_applications import (
+    PreLaunchHook,
+    LaunchTypes,
+    ApplicationLaunchFailed
+)
+
 from ayon_flame import FLAME_ADDON_ROOT
 
 
@@ -122,7 +127,9 @@ class FlamePrelaunch(PreLaunchHook):
         self.log.info(pformat(dict(_env)))
         self.log.info(pformat(data_to_script))
 
-        app_arguments = self._get_launch_arguments(data_to_script)
+        app_arguments, volume_name = self._get_launch_arguments(
+            data_to_script
+        )
 
         # fix project data permission issue
         self._fix_permissions(project_name, volume_name)
@@ -138,13 +145,18 @@ class FlamePrelaunch(PreLaunchHook):
 
         Args:
             project_name (str): project name
-            volume_name (str): studio volume
+            volume_name (str or None): studio volume
         """
         dirs_to_modify = [
             "/usr/discreet/project/{}".format(project_name),
-            "/opt/Autodesk/clip/{}/{}.prj".format(volume_name, project_name),
-            "/usr/discreet/clip/{}/{}.prj".format(volume_name, project_name)
         ]
+        if volume_name:
+            dirs_to_modify.extend([
+                "/opt/Autodesk/clip/{}/{}.prj".format(
+                    volume_name, project_name),
+                "/usr/discreet/clip/{}/{}.prj".format(
+                    volume_name, project_name),
+            ])
 
         for dirtm in dirs_to_modify:
             for root, dirs, files in os.walk(dirtm):
@@ -209,8 +221,13 @@ class FlamePrelaunch(PreLaunchHook):
                 "env": env
             }
 
-            output = run_subprocess(args, **process_kwargs)
-            self.log.debug("wiretap_com.py output:\n %r", output)
+            try:
+                output = run_subprocess(args, **process_kwargs)
+                self.log.debug("wiretap_com.py output:\n %r", output)
+            except Exception as error:
+                raise ApplicationLaunchFailed(
+                    f"Failed to run pre-check script:\n{error}"
+                ) from error
 
             # process returned json file to pass launch args
             return_json_data = open(tmp_json_path).read()
@@ -221,7 +238,7 @@ class FlamePrelaunch(PreLaunchHook):
             if not app_args:
                 RuntimeError("App arguments were not solved")
 
-        return app_args
+        return app_args, returned_data.get("volume_name")
 
 
 @contextlib.contextmanager
