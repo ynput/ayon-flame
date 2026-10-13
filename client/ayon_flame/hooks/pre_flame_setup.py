@@ -8,7 +8,12 @@ from ayon_core.lib import (
     get_ayon_username,
     run_subprocess,
 )
-from ayon_applications import PreLaunchHook, LaunchTypes
+from ayon_applications import (
+    PreLaunchHook,
+    LaunchTypes,
+    ApplicationLaunchFailed
+)
+
 from ayon_flame import FLAME_ADDON_ROOT
 
 
@@ -216,8 +221,13 @@ class FlamePrelaunch(PreLaunchHook):
                 "env": env
             }
 
-            output = run_subprocess(args, **process_kwargs)
-            self.log.debug("wiretap_com.py output:\n %r", output)
+            try:
+                output = run_subprocess(args, **process_kwargs)
+                self.log.debug("wiretap_com.py output:\n %r", output)
+            except Exception as error:
+                raise ApplicationLaunchFailed(
+                    f"Failed to run pre-check script:\n{error}"
+                ) from error
 
             # process returned json file to pass launch args
             return_json_data = open(tmp_json_path).read()
