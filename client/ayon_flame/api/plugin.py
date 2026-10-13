@@ -570,9 +570,6 @@ class ClipLoader(LoaderPlugin):
         )
     ]
 
-    _mapping = None
-    _host_settings = None
-
     @classmethod
     def apply_settings(cls, project_settings):
 
@@ -637,28 +634,14 @@ class ClipLoader(LoaderPlugin):
             input_colorspace (str | None): colorspace name
 
         Returns:
-            str: native colorspace name defined in mapping or None
+            str: native colorspace name defined in remapping or None
         """
-        # TODO: rewrite to support only pipeline's remapping
-        if not cls._host_settings:
-            cls._host_settings = get_current_project_settings()["flame"]
-
-        # [Deprecated] way of remapping
-        if not cls._mapping:
-            mapping = (
-                cls._host_settings["imageio"]["profilesMapping"]["inputs"])
-            cls._mapping = {
-                input["ocioName"]: input["flameName"]
-                for input in mapping
-            }
-
-        native_name = cls._mapping.get(input_colorspace)
-
-        if not native_name:
-            native_name = get_remapped_colorspace_to_native(
-                input_colorspace, "flame", cls._host_settings["imageio"])
-
-        return native_name
+        imageio_settings = get_current_project_settings()["flame"]["imageio"]
+        return get_remapped_colorspace_to_native(
+            input_colorspace,
+            "flame",
+            imageio_settings
+        )
 
     def _get_clip_name_format_data(self, context, _) -> dict[str, str]:
         """ Get formatting data for the clip name template.
@@ -762,7 +745,6 @@ class ClipLoader(LoaderPlugin):
             version_context["version"] = version
             version_context["representation"] = representation
             version_name = version["name"]
-            colorspace = self.get_colorspace(version_context)
 
             # in case output is not in context replace key to representation
             layer_rename_template = self.layer_rename_template
@@ -771,8 +753,10 @@ class ClipLoader(LoaderPlugin):
                     "output", "representation"
                 )
 
-            # convert colorspace with ocio to syncolor mapping from presets
-            # Flame < 2026 only, already OCIO otherwise.
+            # Gather colorspace from incoming version data.
+            colorspace = self.get_colorspace(version_context)
+            # If Flame < 2026, convert incoming OCIO colorpsace
+            # to syncolor using settings remapping.
             if int(flame.get_version_major()) < 2026:
                 colorspace = self.get_native_colorspace(colorspace)
 
