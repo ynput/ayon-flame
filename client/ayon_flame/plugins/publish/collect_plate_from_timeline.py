@@ -2,6 +2,7 @@ from pprint import pformat
 
 import pyblish
 
+import ayon_flame.api as ayfapi
 from ayon_flame.otio import utils
 
 
@@ -75,9 +76,13 @@ class CollectTimelinePlate(pyblish.api.InstancePlugin):
         )
 
         clip_data = instance.data["clipData"]
+        colorspace = ayfapi.get_ocio_colorspace(
+            clip_data["colour_space"],
+            instance.context.data["project_settings"]["flame"]["imageio"],
+        )
         version_data = instance.data.setdefault("versionData", {})
-        version_data["colorSpace"] = clip_data["colour_space"]
-        instance.data["colorspace"] = clip_data["colour_space"]
+        version_data["colorSpace"] = colorspace
+        instance.data["colorspace"] = colorspace
 
         instance.data["shotDurationFromSource"] = instance.data.get(
             "retimedFramerange")

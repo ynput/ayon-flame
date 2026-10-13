@@ -39,13 +39,17 @@ class CollectReelPlate(pyblish.api.InstancePlugin):
             instance.data["families"].append("review")
 
         clip_data = instance.data["clip_data"]
+        colorspace = lib.get_ocio_colorspace(
+            clip_data["colour_space"],
+            instance.context.data["project_settings"]["flame"]["imageio"],
+        )
         version_data = instance.data.setdefault("versionData", {})
-        version_data["colorSpace"] = clip_data["colour_space"]
+        version_data["colorSpace"] = colorspace
 
         instance_clip_data = {
             "clipIn": clip_data["record_in"],
             "clipOut": clip_data["record_out"],
-            "colorspace": clip_data["colour_space"],
+            "colorspace": colorspace,
             "fps": clip_data["fps"],
             "frameStart": clip_data["record_in"],
             "frameEnd": clip_data["record_out"],
