@@ -76,8 +76,9 @@ class CollectTimelinePlate(pyblish.api.InstancePlugin):
         )
 
         clip_data = instance.data["clipData"]
+        segment = clip_data["PySegment"]
         colorspace = ayfapi.get_ocio_colorspace(
-            clip_data["colour_space"],
+            segment.get_colour_space(),
             instance.context.data["project_settings"]["flame"]["imageio"],
         )
         version_data = instance.data.setdefault("versionData", {})
