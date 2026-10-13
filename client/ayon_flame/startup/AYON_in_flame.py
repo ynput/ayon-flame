@@ -133,8 +133,8 @@ def check_project_ocio_config():
         return
 
     if (
-        not project_ocio_config
-        or os.path.realpath(project_ocio_config)
+        project_ocio_config
+        and os.path.realpath(project_ocio_config)
         == os.path.realpath(ayon_ocio_config)
     ):
         return
