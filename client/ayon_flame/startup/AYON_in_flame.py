@@ -1,6 +1,7 @@
 from __future__ import print_function  # noqa: UP010
 
 import atexit
+import os
 import sys
 import types
 from pprint import pformat
@@ -100,6 +101,59 @@ def project_changed_dict(info):
     cleanup()
 
 
+def check_project_ocio_config():
+    """Warn if Flame project OCIO config and AYON OCIO config differs.
+
+    Flame project OCIO config is only set at project creation,
+    so it can differ from the current config set in AYON (used at publish).
+    """
+    import flame
+    from ayon_core.pipeline.context_tools import get_current_project_settings
+
+    # Flame < 2026 projects use SynColor not OCIO.
+    if int(flame.get_version_major()) < 2026:
+        return
+
+    # No OCIO config set.
+    ayon_ocio_config = os.getenv("OCIO")
+    if not ayon_ocio_config:
+        return
+
+    project_name = flame_api.get_current_project().name
+    try:
+        # Color management is disabled.
+        imageio_flame = get_current_project_settings()["flame"]["imageio"]
+        if imageio_flame.get("activate_host_color_management") is False:
+            return
+
+        project_ocio_config = flame_api.get_project_ocio_config(project_name)
+
+    except Exception as error:
+        print(f"!!!! not able to check project OCIO config: {error} !!!!")
+        return
+
+    if (
+        not project_ocio_config
+        or os.path.realpath(project_ocio_config)
+        == os.path.realpath(ayon_ocio_config)
+    ):
+        return
+
+    message = (
+        f"Flame project '{project_name}' OCIO config does not match "
+        "AYON OCIO config, published colorspaces might be wrong.\n\n"
+        f"- Flame project: {project_ocio_config}\n"
+        f"- AYON: {ayon_ocio_config}"
+    )
+    print(f"AYON: {message}")
+    flame.messages.show_in_dialog(
+        "AYON: OCIO config mismatch",
+        message,
+        "warning",
+        ["OK"],
+    )
+
+
 def app_initialized(parent=None):
     """Inicialization of Framework
 
@@ -111,6 +165,7 @@ def app_initialized(parent=None):
     print(f"{flame_api.CTX.app_framework.bundle_name} initializing")
 
     load_apps()
+    check_project_ocio_config()
 
 
 """
