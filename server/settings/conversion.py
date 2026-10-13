@@ -1,6 +1,45 @@
 from typing import Any
 
 
+def _convert_imageio_profiles_mapping_1_4_5(
+    overrides: dict[str, Any]
+):
+    """Converts "imageio/profilesMapping" to "imageio/remapping".
+    """
+    imageio_overrides = overrides.get("imageio", {})
+    profiles_mapping = imageio_overrides.pop("profilesMapping", None)
+    remapping = imageio_overrides.get("remapping")
+
+    # Nothing overridden, new remapping defaults match
+    # legacy profiles mapping defaults.
+    if profiles_mapping is None and remapping is None:
+        return
+
+    if profiles_mapping is None:
+        # Default values of the removed "imageio/profilesMapping" settings.
+        _LEGACY_PROFILES_MAPPING_INPUTS = [
+            {"flameName": "ACEScg", "ocioName": "ACES - ACEScg"},
+            {"flameName": "Rec.709 video", "ocioName": "Output - Rec.709"},
+        ]
+        legacy_inputs = _LEGACY_PROFILES_MAPPING_INPUTS
+    else:
+        legacy_inputs = profiles_mapping.get("inputs", [])
+
+    rules = []
+    if remapping is not None:
+        rules.extend(remapping.get("rules", []))
+
+    for legacy_input in legacy_inputs:
+        rule = {
+            "host_native_name": legacy_input.get("flameName", ""),
+            "ocio_name": legacy_input.get("ocioName", ""),
+        }
+        if rule not in rules:
+            rules.append(rule)
+
+    imageio_overrides.setdefault("remapping", {})["rules"] = rules
+
+
 def _convert_collect_shots_plugins_1_3_1(
     overrides: dict[str, Any]
 ):
@@ -62,4 +101,5 @@ def convert_settings_overrides(
 ) -> dict[str, Any]:
     _convert_collect_shots_plugins_1_1_0(overrides)
     _convert_collect_shots_plugins_1_3_1(overrides)
+    _convert_imageio_profiles_mapping_1_4_5(overrides)
     return overrides
