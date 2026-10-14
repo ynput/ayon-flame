@@ -97,8 +97,6 @@ from .batch_utils import (
     get_workfile_path,
     get_instances_batches,
     get_batch_product_data,
-    write_batch_product_data,
-    remove_batch_product_data,
     get_batch_products_context,
 )
 
@@ -202,7 +200,5 @@ __all__ = [
     "get_workfile_path",
     "get_instances_batches",
     "get_batch_product_data",
-    "write_batch_product_data",
-    "remove_batch_product_data",
     "get_batch_products_context",
 ]

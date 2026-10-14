@@ -35,12 +35,20 @@ Publishing batch from Batch panel.
     def _dump_instance_data(self, data: Dict[str, Any]):
         """ Write instance data into the batch metadata Note node.
         """
-        flapi.write_batch_product_data(data)
+        node = flapi.get_metadata_node(create=True)
+        flapi.write_node_metadata(node, data)
 
     def _load_instance_data(self) -> Dict[str, Any]:
         """ Read instance data from the batch metadata Note node.
         """
-        return flapi.get_batch_product_data() or {}
+        node = flapi.get_metadata_node()
+        if not node:
+            return {}
+
+        data = flapi.read_node_metadata(node)
+        if data is None:
+            return {}
+        return data
 
     def create(
             self,
@@ -103,9 +111,11 @@ Publishing batch from Batch panel.
             self._dump_instance_data(created_inst.data_to_store())
 
     def remove_instances(self, instances: List[CreatedInstance]):
-        """Remove instance and its data from the batch metadata Note node.
+        """Remove instance and delete the metadata Note node from the batch.
         """
         for instance in instances:
             self._remove_instance_from_context(instance)
 
-        flapi.remove_batch_product_data()
+        node = flapi.get_metadata_node()
+        if node:
+            node.delete()
