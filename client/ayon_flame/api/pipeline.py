@@ -3,7 +3,6 @@ Basic AYON integration
 """
 import contextlib
 import os
-import tempfile
 from copy import deepcopy
 import ayon_api
 import flame
@@ -128,21 +127,16 @@ class FlameBatchHost(HostBase, IWorkfileHost):
 
         # Write next to the destination and replace it at the end, so
         # a failure never leaves a partial or corrupted workfile behind.
-        fd, tmp_path = tempfile.mkstemp(
-            prefix=".ayon_batch_", suffix=".tmp", dir=dirpath
+        tmp_path = os.path.join(
+            dirpath,
+            ".{}.{}.tmp".format(os.path.basename(dst_path), os.getpid())
         )
-        os.close(fd)
         previous_path = batch_utils.get_workfile_path(batch)
         try:
             # The workfile path note is part of the saved batch content,
             # so it is set before writing and restored on failure.
             batch_utils.set_workfile_path(batch, dst_path)
             batch_utils.save_batch_as_consolidated_json(batch, tmp_path)
-
-            # 'mkstemp' creates the file as owner-only, use the default mode.
-            umask = os.umask(0)
-            os.umask(umask)
-            os.chmod(tmp_path, 0o666 & ~umask)
             os.replace(tmp_path, dst_path)
         except Exception as error:
             if os.path.exists(tmp_path):

@@ -80,6 +80,6 @@ class ValidateBatchWorkfileSaved(
             The current Batch group was not saved as an AYON workfile, or
             its workfile no longer exists on disk.
 
-            Save it from **Batch menu > AYON > Work Files...** or click
-            **Repair** to save the next workfile version now.
+            Save it from **AYON > 4 - Work Files...** in the Batch menu
+            or click **Repair** to save the next workfile version now.
         """)
