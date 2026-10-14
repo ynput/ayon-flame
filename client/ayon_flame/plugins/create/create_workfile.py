@@ -22,6 +22,12 @@ class CreateWorkfile(AutoCreator):
     icon = "fa5.file"
     default_variant = "Main"
 
+    def apply_settings(self, project_settings):
+        super().apply_settings(project_settings)
+        # Editorial workfile only, Batch menu actions use the Batch
+        # product of 'CreateBatchWorkfile' instead.
+        self.enabled = (flapi.CTX.context != "FlameMenuBatch")
+
     @staticmethod
     def _get_project_workfile_filepath():
         """
