@@ -8,24 +8,15 @@ import ayon_api
 import flame
 
 from ayon_core.host import HostBase, ILoadHost, IPublishHost, IWorkfileHost
-from ayon_core.host.interfaces import (
-    ListWorkfilesOptionalData,
-    SaveWorkfileOptionalData,
-)
 from ayon_core.lib import Logger
 from ayon_core.pipeline import (
     AYON_CONTAINER_ID,
-    Anatomy,
     deregister_creator_plugin_path,
     deregister_loader_plugin_path,
     register_creator_plugin_path,
     register_loader_plugin_path,
     registered_host,
 )
-from ayon_core.pipeline.template_data import get_template_data
-from ayon_core.pipeline.version_start import get_versioning_start
-from ayon_core.pipeline.workfile import get_workdir, get_workfile_template_key
-from ayon_core.settings import get_project_settings
 from pyblish import api as pyblish
 
 from ayon_flame import FLAME_ADDON_ROOT
@@ -269,88 +260,6 @@ def ensure_batch_product(folder_entity, task_entity):
         )
     finally:
         CTX.context = previous_context
-
-
-def save_next_batch_workfile_version():
-    """Save the current batch group as the next workfile version of the task.
-
-    The core 'save_next_version' is bound to the registered host, which is
-    'FlameHost' and cannot save batch groups, so 'FlameBatchHost' is used.
-    """
-    host = FlameBatchHost()
-    context = host.get_current_context()
-    project_name = context["project_name"]
-    folder_entity = task_entity = None
-    if context["folder_path"]:
-        folder_entity = ayon_api.get_folder_by_path(
-            project_name, context["folder_path"]
-        )
-    if folder_entity and context["task_name"]:
-        task_entity = ayon_api.get_task_by_name(
-            project_name, folder_entity["id"], context["task_name"]
-        )
-    if task_entity is None:
-        raise RuntimeError("Current context has no task to save workfile to.")
-
-    project_entity = ayon_api.get_project(project_name)
-    project_settings = get_project_settings(project_name)
-    anatomy = Anatomy(project_name, project_entity=project_entity)
-    task_type = task_entity["taskType"]
-    template_key = get_workfile_template_key(
-        project_name, task_type, host.name, project_settings=project_settings
-    )
-    workdir = get_workdir(
-        project_entity,
-        folder_entity,
-        task_entity,
-        host.name,
-        anatomy=anatomy,
-        template_key=template_key,
-        project_settings=project_settings,
-    )
-
-    workfiles = host.list_workfiles(
-        project_name,
-        folder_entity,
-        task_entity,
-        prepared_data=ListWorkfilesOptionalData(
-            project_entity=project_entity,
-            anatomy=anatomy,
-            project_settings=project_settings,
-            template_key=template_key,
-        ),
-    )
-    versions = [wf.version for wf in workfiles if wf.version is not None]
-    if versions:
-        version = max(versions) + 1
-    else:
-        version = get_versioning_start(
-            project_name,
-            host.name,
-            task_name=task_entity["name"],
-            task_type=task_type,
-            product_base_type="workfile",
-        )
-
-    template_data = get_template_data(
-        project_entity, folder_entity, task_entity, host.name, project_settings
-    )
-    template_data.update({"version": version, "ext": "json"})
-    file_template = anatomy.get_template_item("work", template_key, "file")
-    filename = file_template.format_strict(template_data)
-
-    host.save_workfile_with_context(
-        os.path.join(workdir, filename),
-        folder_entity,
-        task_entity,
-        version=version,
-        prepared_data=SaveWorkfileOptionalData(
-            project_entity=project_entity,
-            anatomy=anatomy,
-            project_settings=project_settings,
-            rootless_path=f"{workdir.rootless}/{filename}",
-        ),
-    )
 
 
 def install():

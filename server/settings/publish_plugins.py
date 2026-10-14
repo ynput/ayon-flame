@@ -329,11 +329,6 @@ class PublishPluginsModel(BaseSettingsModel):
         title="Validate Segments"
     )
 
-    ValidateBatchWorkfileSaved: OptionalValidatorModel = SettingsField(
-        default_factory=OptionalValidatorModel,
-        title="Validate Batch Workfile Saved"
-    )
-
     ExtractProductResources: ExtractProductResourcesModel = SettingsField(
         default_factory=ExtractProductResourcesModel,
         title="Extract Product Resources"
@@ -385,11 +380,6 @@ DEFAULT_PUBLISH_SETTINGS = {
     "ValidateSegments": {
         "enabled": False,
         "active": False,
-        "optional": True
-    },
-    "ValidateBatchWorkfileSaved": {
-        "enabled": True,
-        "active": True,
         "optional": True
     },
     "ExtractProductResources": {

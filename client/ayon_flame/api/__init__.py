@@ -44,7 +44,6 @@ from .utils import (
 from .pipeline import (
     FlameHost,
     FlameBatchHost,
-    save_next_batch_workfile_version,
     get_last_batch_workfile,
     install,
     uninstall,
@@ -137,7 +136,6 @@ __all__ = [
     # pipeline
     "FlameHost",
     "FlameBatchHost",
-    "save_next_batch_workfile_version",
     "get_last_batch_workfile",
     "install",
     "uninstall",
