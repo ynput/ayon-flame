@@ -44,4 +44,5 @@ class FlameAddon(AYONAddon, IHostAddon):
         ]
 
     def get_workfile_extensions(self):
-        return [".json"]
+        # Editorial workfiles first (registered host), then Batch workfiles.
+        return [".flame", ".json"]
