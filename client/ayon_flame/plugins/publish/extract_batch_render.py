@@ -10,7 +10,10 @@ from ayon_core.pipeline import publish, PublishError
 import ayon_flame.api as flapi
 
 
-class ExtractBatchRender(publish.Extractor):
+class ExtractBatchRender(
+    publish.Extractor,
+    publish.ColormanagedPyblishPluginMixin,
+):
     """Render the batch then collect Write File outputs as representations.
     """
 
@@ -22,6 +25,41 @@ class ExtractBatchRender(publish.Extractor):
     # Context key used to ensure render is triggered only once per publish.
     # Could be multiple batch renders per publish context.
     _RENDER_DONE_KEY = "_batch_render_done"
+
+    def _get_write_node_colour_space(self, write_node):
+        """Return Write File node output colour space.
+
+        Args:
+            write_node (flame.PyWriteFileNode): Write File node
+
+        Returns:
+            str or None: Flame colour space name.
+        """
+        colour_space = getattr(write_node, "colour_space", None)
+        if hasattr(colour_space, "get_value"):
+            colour_space = colour_space.get_value()
+
+        if colour_space:
+            return colour_space
+
+        # Workaround Flame < 2027.1: resolve token from media path pattern.
+        # Characters not suitable for file paths are replaced by Flame.
+        # https://forum.logik.tv/t/colourspace-issues-in-flame-2026-7/14588
+        self.log.warning(
+            "Could not get colour space from Write File node "
+            f"'{write_node.name.get_value()}' (Flame < 2027.1), "
+            "resolving it from the '<colour space>' token instead. "
+        )
+        pattern = write_node.media_path_pattern.get_value()
+        try:
+            write_node.media_path_pattern = "<colour space>"
+            resolved = write_node.get_resolved_media_path(
+                show_extension=False
+            )
+        finally:
+            write_node.media_path_pattern = pattern
+
+        return Path(resolved).stem or None
 
     def process(self, instance):
         write_node_name = instance.data.get("write_node_name")
@@ -112,7 +150,7 @@ class ExtractBatchRender(publish.Extractor):
 
         review = "review" in instance.data["families"]
 
-        representation = {
+        representation_data = {
             "name": ext,
             "ext": ext,
             "outputName": ext,
@@ -122,7 +160,24 @@ class ExtractBatchRender(publish.Extractor):
             "stagingDir": output_dir,
             "tags": ["review"] if review else [],
         }
-        instance.data["representations"].append(representation)
+
+        flame_colour = self._get_write_node_colour_space(write_node)
+        project_settings = instance.context.data["project_settings"]
+        repre_colorspace = flapi.get_ocio_colorspace(
+            flame_colour,
+            project_settings["flame"]["imageio"],
+        )
+        self.set_representation_colorspace(
+            representation_data,
+            instance.context,
+            colorspace=repre_colorspace,
+        )
+        self.log.debug(
+            "Added representation data: %r",
+            representation_data
+        )
+
+        instance.data["representations"].append(representation_data)
         self.log.info(
             f"Collected render representation from '{write_node_name}': "
             f"{output_dir} ({len(written_files)} file(s))."
