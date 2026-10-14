@@ -328,6 +328,30 @@ def get_workfile_path(batch: flame.PyBatch) -> Optional[str]:
     return data.get("workfile_path")
 
 
+def get_instances_batches(instances) -> Dict[str, flame.PyBatch]:
+    """ Return batch groups of active Batch menu instances, by name.
+
+    Batch groups which are not found in the workspace are skipped.
+    """
+    batches = {}
+    for instance in instances:
+        if (
+            instance.data.get("flame_context") != "FlameMenuBatch"
+            or not instance.data.get("publish", True)
+            or not instance.data.get("active", True)
+        ):
+            continue
+
+        batch_name = instance.data.get("batch_name")
+        if not batch_name or batch_name in batches:
+            continue
+
+        batch = get_batch_from_workspace(batch_name)
+        if batch is not None:
+            batches[batch_name] = batch
+    return batches
+
+
 def set_instances_batch_name(batch: flame.PyBatch, batch_name: str):
     """ Set the batch group name saved in each AYON instance note.
     """

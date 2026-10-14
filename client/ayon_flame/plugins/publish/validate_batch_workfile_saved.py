@@ -26,7 +26,7 @@ class ValidateBatchWorkfileSaved(
     OptionalPyblishPluginMixin,
     pyblish.api.ContextPlugin
 ):
-    """Validate the current Batch group was saved as a workfile.
+    """Validate the published Batch groups were saved as workfiles.
 
     Runs only if publishing instances created from the Batch menu.
     """
@@ -46,39 +46,50 @@ class ValidateBatchWorkfileSaved(
             self.log.info("Validation is disabled.")
             return
 
-        if not any(
-            instance.data.get("flame_context") == "FlameMenuBatch"
-            and instance.data.get("publish", True)
-            and instance.data.get("active", True)
-            for instance in context
-        ):
+        batches = flapi.get_instances_batches(context)
+        if not batches:
             self.log.debug("No active Batch instance, skipping.")
             return
 
-        batch = flapi.get_current_batch()
-        workfile_path = flapi.get_workfile_path(batch)
-        if workfile_path and os.path.exists(workfile_path):
-            self.log.debug(f"Batch workfile found: {workfile_path}")
+        unsaved = self.get_unsaved_batch_names(batches)
+        if not unsaved:
             return
 
-        self.log.info(f"Stored Batch workfile path: {workfile_path}")
-        batch_name = batch.name.get_value()
+        names = ", ".join(f"'{name}'" for name in unsaved)
         raise PublishValidationError(
-            f"Batch group '{batch_name}' has no saved workfile.",
+            f"Batch group {names} has no saved workfile.",
             title="Batch has no saved workfile",
             description=self.get_description(),
         )
 
     @classmethod
+    def get_unsaved_batch_names(cls, batches):
+        unsaved = []
+        for batch_name, batch in batches.items():
+            workfile_path = flapi.get_workfile_path(batch)
+            if workfile_path and os.path.exists(workfile_path):
+                cls.log.debug(
+                    f"Batch '{batch_name}' workfile found: {workfile_path}"
+                )
+            else:
+                unsaved.append(batch_name)
+        return unsaved
+
+    @classmethod
     def repair(cls, context):
-        flapi.save_next_batch_workfile_version()
+        batches = flapi.get_instances_batches(context)
+        for batch_name in cls.get_unsaved_batch_names(batches):
+            # The Batch workfile host saves the current batch group.
+            if flapi.get_current_batch().name.get_value() != batch_name:
+                batches[batch_name].open()
+            flapi.save_next_batch_workfile_version()
 
     def get_description(self):
         return inspect.cleandoc("""
             ### Batch has no saved workfile
 
-            The current Batch group was not saved as an AYON workfile, or
-            its workfile no longer exists on disk.
+            The published Batch group was not saved as an AYON workfile,
+            or its workfile no longer exists on disk.
 
             Save it from **AYON > 4 - Work Files...** in the Batch menu
             or click **Repair** to save the next workfile version now.
