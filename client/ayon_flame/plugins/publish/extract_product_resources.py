@@ -15,7 +15,6 @@ from ayon_core.pipeline.editorial import (
 )
 
 import flame
-from ayon_core.pipeline.colorspace import get_remapped_colorspace_from_native
 
 class ExtractProductResources(
     publish.Extractor,
@@ -638,19 +637,10 @@ class ExtractProductResources(
         flame_colour = exporting_clip.get_colour_space()
         self.log.debug(flame_colour)
 
-        # Flame >= 2026 colour spaces are already OCIO names.
-        # no need to convert to path mapping.
-        if int(flame.get_version_major()) >= 2026:
-            return flame_colour or None
-
-        context = instance.context
-        host_name = context.data["hostName"]
-        project_settings = context.data["project_settings"]
-        host_imageio_settings = project_settings["flame"]["imageio"]
-        imageio_colorspace = get_remapped_colorspace_from_native(
+        project_settings = instance.context.data["project_settings"]
+        imageio_colorspace = ayfapi.get_ocio_colorspace(
             flame_colour,
-            host_name,
-            host_imageio_settings,
+            project_settings["flame"]["imageio"],
         )
         self.log.debug(imageio_colorspace)
         return imageio_colorspace
