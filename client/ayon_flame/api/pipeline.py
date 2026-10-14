@@ -52,6 +52,7 @@ class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
     def __init__(self):
         super().__init__()
         self._publish_context_data = {}
+        self._ignore_batch_context = False
 
     def get_containers(self):
         return ls()
@@ -96,13 +97,34 @@ class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
         # Flame has no "dirty" state in its Python API.
         return None
 
+    def save_workfile_with_context(self, *args, **kwargs):
+        with self._session_context():
+            super().save_workfile_with_context(*args, **kwargs)
+
+    def open_workfile_with_context(self, *args, **kwargs):
+        with self._session_context():
+            super().open_workfile_with_context(*args, **kwargs)
+
+    @contextlib.contextmanager
+    def _session_context(self):
+        """Editorial workfiles follow the session context only.
+
+        A Batch menu action leaves 'CTX.context' set, which would make
+        'get_current_context' return the Batch metadata context.
+        """
+        self._ignore_batch_context = True
+        try:
+            yield
+        finally:
+            self._ignore_batch_context = False
+
     def get_current_context(self):
         current_ctx = super().get_current_context()
 
         # Flame can be used as a multi-workfile host.
         # When working with batch, we try to get the
         # current context from the batch products.
-        if CTX.context == "FlameMenuBatch":
+        if CTX.context == "FlameMenuBatch" and not self._ignore_batch_context:
             batch_context = batch_utils.get_batch_products_context()
             if batch_context:
                 current_ctx.update(batch_context)

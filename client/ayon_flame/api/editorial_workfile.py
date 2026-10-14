@@ -26,8 +26,9 @@ EDITORIAL_WORKFILE_EXTENSION = ".flame"
 _SAVE_PROJECT_SHORTCUT = "Save Project"
 
 # The host object is re-created by every Flame menu hook, so the current
-# workfile lives at module level for the whole Flame session.
-_CURRENT_WORKFILE = None
+# workfile lives at module level for the whole Flame session, together
+# with the Flame project it belongs to.
+_CURRENT_WORKFILE = {"flame_project": None, "path": None}
 
 
 def _get_value(attribute: Any) -> Any:
@@ -38,12 +39,21 @@ def _get_value(attribute: Any) -> Any:
 
 
 def get_current_editorial_workfile() -> Optional[str]:
-    return _CURRENT_WORKFILE
+    """Return the editorial workfile saved or opened in this Flame project.
+    """
+    if (
+        _CURRENT_WORKFILE["flame_project"]
+        != flame.project.current_project.name
+    ):
+        return None
+    return _CURRENT_WORKFILE["path"]
 
 
 def set_current_editorial_workfile(filepath: Optional[str]):
-    global _CURRENT_WORKFILE
-    _CURRENT_WORKFILE = os.path.normpath(filepath) if filepath else None
+    _CURRENT_WORKFILE["flame_project"] = flame.project.current_project.name
+    _CURRENT_WORKFILE["path"] = (
+        os.path.normpath(filepath) if filepath else None
+    )
 
 
 def get_timeline_sequence() -> Optional["flame.PySequence"]:

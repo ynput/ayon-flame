@@ -164,15 +164,12 @@ class FlameMenuProjectConnect(_FlameMenuApp):
             "execute": lambda x: self.tools_helper.show_loader()
         })
         # Editorial workfiles of the registered host. Batch workfiles
-        # have their own entry in the Batch menu.
+        # have their own entry in the Batch menu. 'CTX' is left untouched,
+        # it belongs to the Create/Publish tools of the context menus.
         menu["actions"].append({
             "name": "2 - Work Files...",
-            "execute": lambda x: callback_selection(
-                x,
-                lambda: host_tools.show_workfiles(
-                    parent=_get_main_window()
-                ),
-                context=self.__class__.__name__
+            "execute": lambda x: host_tools.show_workfiles(
+                parent=_get_main_window()
             ),
         })
 

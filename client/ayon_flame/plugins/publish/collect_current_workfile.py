@@ -11,7 +11,7 @@ class CollectCurrentWorkfile(pyblish.api.ContextPlugin):
 
     Flame keeps its work in the project database, so earlier collectors
     set 'currentFile' to a 'Flame/<project>[/<sequence>]' placeholder.
-    Batch publishes use the Batch workfile of the current batch group,
+    Batch publishes use the Batch workfile of the published batch group,
     any other publish uses the editorial workfile of the registered host.
     The placeholder is kept when no workfile was saved.
     """
@@ -22,16 +22,12 @@ class CollectCurrentWorkfile(pyblish.api.ContextPlugin):
 
     def process(self, context):
         workfile_path = None
-        if any(
-            instance.data.get("flame_context") == "FlameMenuBatch"
-            for instance in context
-        ):
-            try:
-                batch = flapi.get_current_batch()
-            except RuntimeError:
-                batch = None
-            if batch is not None:
+        batches = flapi.get_instances_batches(context)
+        if batches:
+            for batch in batches.values():
                 workfile_path = flapi.get_workfile_path(batch)
+                if workfile_path:
+                    break
         else:
             workfile_path = registered_host().get_current_workfile()
 
