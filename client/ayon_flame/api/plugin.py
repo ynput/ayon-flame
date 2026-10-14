@@ -755,7 +755,7 @@ class ClipLoader(LoaderPlugin):
 
             # Gather colorspace from incoming version data.
             colorspace = self.get_colorspace(version_context)
-            # If Flame < 2026, convert incoming OCIO colorpsace
+            # If Flame < 2026, convert incoming OCIO colorspace
             # to syncolor using settings remapping.
             if int(flame.get_version_major()) < 2026:
                 colorspace = self.get_native_colorspace(colorspace)
