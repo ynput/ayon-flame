@@ -18,9 +18,6 @@ AYON_NOTE_MARKER = "__ayon__"
 # Name of the hidden Note node used to embed instance data inside the batch.
 _METADATA_NODE_NAME = "AYON_metadata"
 
-# Name of the hidden Note node holding the batch's workfile path.
-_WORKFILE_NODE_NAME = "AYON_workfile"
-
 
 def read_node_metadata(node: flame.PyNode) -> Optional[Dict[str, Any]]:
     """ Read AYON instance data from a node's note attribute.
@@ -301,31 +298,6 @@ def get_metadata_node(
     node = batch.create_node("Note")
     node.name.set_value(node_name)
     return node
-
-
-def set_workfile_path(batch: flame.PyBatch, filepath: str):
-    """ Store the workfile path in the batch's AYON_workfile note."""
-    node = get_metadata_node(
-        batch=batch, create=True, node_name=_WORKFILE_NODE_NAME
-    )
-    write_node_metadata(node, {"workfile_path": filepath})
-
-
-def clear_workfile_path(batch: flame.PyBatch):
-    """ Remove the AYON_workfile note, so batch has no workfile path."""
-    node = get_metadata_node(batch=batch, node_name=_WORKFILE_NODE_NAME)
-    if node is not None:
-        node.delete()
-
-
-def get_workfile_path(batch: flame.PyBatch) -> Optional[str]:
-    """ Return the workfile path stored in the batch."""
-    node = get_metadata_node(batch=batch, node_name=_WORKFILE_NODE_NAME)
-    if node is None:
-        return None
-
-    data = read_node_metadata(node) or {}
-    return data.get("workfile_path")
 
 
 def get_batch_product_data(

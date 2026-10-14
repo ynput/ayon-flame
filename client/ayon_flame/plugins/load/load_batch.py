@@ -114,10 +114,6 @@ class LoadBatchgroup(LoaderPlugin):
                 f"as current batch iteration."
             )
 
-        # A published batch carries the workfile path of its author, the
-        # loaded batch group has no workfile until it is saved.
-        batch_utils.clear_workfile_path(flame.batch)
-
     def update(self, container, context):
         raise NotImplementedError(
             "Version management rely on Flame "

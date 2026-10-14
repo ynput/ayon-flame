@@ -139,10 +139,8 @@ class FlameBatchHost(HostBase, IWorkfileHost):
 
     def save_workfile(self, dst_path=None):
         if not dst_path:
-            dst_path = self.get_current_workfile()
-        if not dst_path:
             raise RuntimeError(
-                "Current batch group has no workfile yet, use Save As."
+                "Batch groups do not keep their workfile path, use Save As."
             )
 
         try:
@@ -169,20 +167,12 @@ class FlameBatchHost(HostBase, IWorkfileHost):
             dirpath,
             ".{}.{}.tmp".format(os.path.basename(dst_path), os.getpid())
         )
-        previous_path = batch_utils.get_workfile_path(batch)
         try:
-            # The workfile path note is part of the saved batch content,
-            # so it is set before writing and restored on failure.
-            batch_utils.set_workfile_path(batch, dst_path)
             batch_utils.save_batch_as_consolidated_json(batch, tmp_path)
             os.replace(tmp_path, dst_path)
         except Exception as error:
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)
-            if previous_path:
-                batch_utils.set_workfile_path(batch, previous_path)
-            else:
-                batch_utils.clear_workfile_path(batch)
             raise RuntimeError(
                 f"Unable to save Flame Batch workfile '{dst_path}': {error}"
             ) from error
@@ -208,15 +198,41 @@ class FlameBatchHost(HostBase, IWorkfileHost):
         batch = batch_utils.load_batch_from_consolidated_json(
             filepath, name=unique_batch_name
         )
-        batch_utils.set_workfile_path(batch, filepath)
         batch_utils.set_instances_batch_name(batch, unique_batch_name)
 
     def get_current_workfile(self):
-        try:
-            batch = batch_utils.get_current_batch()
-        except RuntimeError:
-            return None
-        return batch_utils.get_workfile_path(batch)
+        # Batch groups do not store a workfile path, saved workfiles are
+        # found per context with 'get_last_batch_workfile'.
+        return None
+
+
+def get_last_batch_workfile(folder_path, task_name):
+    """Return the path of the last saved Batch workfile of a task.
+
+    Returns:
+        Optional[str]: Path of the highest version available on disk.
+    """
+    host = FlameBatchHost()
+    project_name = host.get_current_project_name()
+    folder_entity = ayon_api.get_folder_by_path(project_name, folder_path)
+    if not folder_entity:
+        return None
+    task_entity = ayon_api.get_task_by_name(
+        project_name, folder_entity["id"], task_name
+    )
+    if not task_entity:
+        return None
+
+    workfiles = [
+        workfile
+        for workfile in host.list_workfiles(
+            project_name, folder_entity, task_entity
+        )
+        if workfile.available and workfile.version is not None
+    ]
+    if not workfiles:
+        return None
+    return max(workfiles, key=lambda workfile: workfile.version).filepath
 
 
 def ensure_batch_product(folder_entity, task_entity):

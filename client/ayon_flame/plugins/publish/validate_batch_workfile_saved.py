@@ -1,7 +1,7 @@
 import inspect
-import os
 
 import pyblish.api
+from ayon_core.pipeline import get_current_context
 from ayon_core.pipeline.publish import (
     OptionalPyblishPluginMixin,
     PublishValidationError,
@@ -64,10 +64,17 @@ class ValidateBatchWorkfileSaved(
 
     @classmethod
     def get_unsaved_batch_names(cls, batches):
+        """Batch groups whose product task has no saved Batch workfile."""
+        session_context = get_current_context()
         unsaved = []
         for batch_name, batch in batches.items():
-            workfile_path = flapi.get_workfile_path(batch)
-            if workfile_path and os.path.exists(workfile_path):
+            context = (
+                flapi.get_batch_products_context(batch) or session_context
+            )
+            workfile_path = flapi.get_last_batch_workfile(
+                context["folder_path"], context["task_name"]
+            )
+            if workfile_path:
                 cls.log.debug(
                     f"Batch '{batch_name}' workfile found: {workfile_path}"
                 )
@@ -88,8 +95,8 @@ class ValidateBatchWorkfileSaved(
         return inspect.cleandoc("""
             ### Batch has no saved workfile
 
-            The published Batch group was not saved as an AYON workfile,
-            or its workfile no longer exists on disk.
+            The task of the published Batch group has no Batch workfile
+            saved on disk.
 
             Save it from **AYON > 4 - Work Files...** in the Batch menu
             or click **Repair** to save the next workfile version now.
