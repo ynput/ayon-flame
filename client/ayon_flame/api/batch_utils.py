@@ -311,6 +311,13 @@ def set_workfile_path(batch: flame.PyBatch, filepath: str):
     write_node_metadata(node, {"workfile_path": filepath})
 
 
+def clear_workfile_path(batch: flame.PyBatch):
+    """ Remove the AYON_workfile note, so batch has no workfile path."""
+    node = get_metadata_node(batch=batch, node_name=_WORKFILE_NODE_NAME)
+    if node is not None:
+        node.delete()
+
+
 def get_workfile_path(batch: flame.PyBatch) -> Optional[str]:
     """ Return the workfile path stored in the batch."""
     node = get_metadata_node(batch=batch, node_name=_WORKFILE_NODE_NAME)

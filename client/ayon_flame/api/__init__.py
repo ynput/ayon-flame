@@ -44,6 +44,7 @@ from .utils import (
 from .pipeline import (
     FlameHost,
     FlameBatchHost,
+    save_next_batch_workfile_version,
     install,
     uninstall,
     ls,
@@ -58,7 +59,8 @@ from .menu import (
     FlameMenuProjectConnect,
     FlameMenuTimeline,
     FlameMenuBatch,
-    FlameMenuUniversal
+    FlameMenuUniversal,
+    show_batch_workfiles,
 )
 from .plugin import (
     PublishableClip,
@@ -91,6 +93,7 @@ from .batch_utils import (
     get_metadata_node,
     get_current_batch,
     set_workfile_path,
+    clear_workfile_path,
     get_workfile_path,
 )
 
@@ -133,6 +136,7 @@ __all__ = [
     # pipeline
     "FlameHost",
     "FlameBatchHost",
+    "save_next_batch_workfile_version",
     "install",
     "uninstall",
     "ls",
@@ -155,6 +159,7 @@ __all__ = [
     "FlameMenuTimeline",
     "FlameMenuBatch",
     "FlameMenuUniversal",
+    "show_batch_workfiles",
 
     # plugin
     "Creator",
@@ -188,5 +193,6 @@ __all__ = [
     "write_node_metadata",
     "clear_node_metadata",
     "set_workfile_path",
+    "clear_workfile_path",
     "get_workfile_path",
 ]

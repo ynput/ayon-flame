@@ -3,18 +3,29 @@ Basic AYON integration
 """
 import contextlib
 import os
+import tempfile
 from copy import deepcopy
+import ayon_api
 import flame
 
 from ayon_core.host import HostBase, ILoadHost, IPublishHost, IWorkfileHost
+from ayon_core.host.interfaces import (
+    ListWorkfilesOptionalData,
+    SaveWorkfileOptionalData,
+)
 from ayon_core.lib import Logger
 from ayon_core.pipeline import (
     AYON_CONTAINER_ID,
+    Anatomy,
     deregister_creator_plugin_path,
     deregister_loader_plugin_path,
     register_creator_plugin_path,
     register_loader_plugin_path,
 )
+from ayon_core.pipeline.template_data import get_template_data
+from ayon_core.pipeline.version_start import get_versioning_start
+from ayon_core.pipeline.workfile import get_workdir, get_workfile_template_key
+from ayon_core.settings import get_project_settings
 from pyblish import api as pyblish
 
 from ayon_flame import FLAME_ADDON_ROOT
@@ -104,11 +115,45 @@ class FlameBatchHost(HostBase, IWorkfileHost):
                 "Current batch group has no workfile yet, use Save As."
             )
 
-        batch = batch_utils.get_current_batch()
-        log.info("Writing AYON workfile %r", dst_path)
+        try:
+            batch = batch_utils.get_current_batch()
+        except RuntimeError as error:
+            raise RuntimeError(
+                "No active Flame Batch group to save."
+            ) from error
 
-        batch_utils.set_workfile_path(batch, dst_path)
-        batch_utils.save_batch_as_consolidated_json(batch, dst_path)
+        log.info("Writing AYON workfile %r", dst_path)
+        dirpath = os.path.dirname(os.path.abspath(dst_path))
+        os.makedirs(dirpath, exist_ok=True)
+
+        # Write next to the destination and replace it at the end, so
+        # a failure never leaves a partial or corrupted workfile behind.
+        fd, tmp_path = tempfile.mkstemp(
+            prefix=".ayon_batch_", suffix=".tmp", dir=dirpath
+        )
+        os.close(fd)
+        previous_path = batch_utils.get_workfile_path(batch)
+        try:
+            # The workfile path note is part of the saved batch content,
+            # so it is set before writing and restored on failure.
+            batch_utils.set_workfile_path(batch, dst_path)
+            batch_utils.save_batch_as_consolidated_json(batch, tmp_path)
+
+            # 'mkstemp' creates the file as owner-only, use the default mode.
+            umask = os.umask(0)
+            os.umask(umask)
+            os.chmod(tmp_path, 0o666 & ~umask)
+            os.replace(tmp_path, dst_path)
+        except Exception as error:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+            if previous_path:
+                batch_utils.set_workfile_path(batch, previous_path)
+            else:
+                batch_utils.clear_workfile_path(batch)
+            raise RuntimeError(
+                f"Unable to save Flame Batch workfile '{dst_path}': {error}"
+            ) from error
 
     def open_workfile(self, filepath):
         batch_name = batch_utils.get_task_batch_name(
@@ -140,6 +185,88 @@ class FlameBatchHost(HostBase, IWorkfileHost):
         except RuntimeError:
             return None
         return batch_utils.get_workfile_path(batch)
+
+
+def save_next_batch_workfile_version():
+    """Save the current batch group as the next workfile version of the task.
+
+    The core 'save_next_version' is bound to the registered host, which is
+    'FlameHost' and cannot save batch groups, so 'FlameBatchHost' is used.
+    """
+    host = FlameBatchHost()
+    context = host.get_current_context()
+    project_name = context["project_name"]
+    folder_entity = task_entity = None
+    if context["folder_path"]:
+        folder_entity = ayon_api.get_folder_by_path(
+            project_name, context["folder_path"]
+        )
+    if folder_entity and context["task_name"]:
+        task_entity = ayon_api.get_task_by_name(
+            project_name, folder_entity["id"], context["task_name"]
+        )
+    if task_entity is None:
+        raise RuntimeError("Current context has no task to save workfile to.")
+
+    project_entity = ayon_api.get_project(project_name)
+    project_settings = get_project_settings(project_name)
+    anatomy = Anatomy(project_name, project_entity=project_entity)
+    task_type = task_entity["taskType"]
+    template_key = get_workfile_template_key(
+        project_name, task_type, host.name, project_settings=project_settings
+    )
+    workdir = get_workdir(
+        project_entity,
+        folder_entity,
+        task_entity,
+        host.name,
+        anatomy=anatomy,
+        template_key=template_key,
+        project_settings=project_settings,
+    )
+
+    workfiles = host.list_workfiles(
+        project_name,
+        folder_entity,
+        task_entity,
+        prepared_data=ListWorkfilesOptionalData(
+            project_entity=project_entity,
+            anatomy=anatomy,
+            project_settings=project_settings,
+            template_key=template_key,
+        ),
+    )
+    versions = [wf.version for wf in workfiles if wf.version is not None]
+    if versions:
+        version = max(versions) + 1
+    else:
+        version = get_versioning_start(
+            project_name,
+            host.name,
+            task_name=task_entity["name"],
+            task_type=task_type,
+            product_base_type="workfile",
+        )
+
+    template_data = get_template_data(
+        project_entity, folder_entity, task_entity, host.name, project_settings
+    )
+    template_data.update({"version": version, "ext": "json"})
+    file_template = anatomy.get_template_item("work", template_key, "file")
+    filename = file_template.format_strict(template_data)
+
+    host.save_workfile_with_context(
+        os.path.join(workdir, filename),
+        folder_entity,
+        task_entity,
+        version=version,
+        prepared_data=SaveWorkfileOptionalData(
+            project_entity=project_entity,
+            anatomy=anatomy,
+            project_settings=project_settings,
+            rootless_path=f"{workdir.rootless}/{filename}",
+        ),
+    )
 
 
 def install():

@@ -53,6 +53,27 @@ def _get_main_window():
     return _MAIN_WINDOW
 
 
+_BATCH_WORKFILES_TOOL = None
+
+
+def show_batch_workfiles():
+    """ Show the Workfiles tool for batch groups."""
+    global _BATCH_WORKFILES_TOOL
+    if _BATCH_WORKFILES_TOOL is None:
+        from ayon_core.tools.workfiles.control import BaseWorkfileController
+        from ayon_core.tools.workfiles.widgets import WorkfilesToolWindow
+
+        from .pipeline import FlameBatchHost
+
+        controller = BaseWorkfileController(host=FlameBatchHost())
+        _BATCH_WORKFILES_TOOL = WorkfilesToolWindow(
+            controller=controller,
+            parent=_get_main_window(),
+        )
+
+    _BATCH_WORKFILES_TOOL.ensure_visible()
+
+
 class _FlameMenuApp(object):
     def __init__(self, framework):
         self.name = self.__class__.__name__
@@ -278,10 +299,6 @@ class FlameMenuBatch(_FlameMenuContext):
     """ Menu that appears in the batch context.
     """
 
-    def __init__(self, framework):
-        super().__init__(framework)
-        self._workfiles_tool = None
-
     def build_menu(self) -> dict[str, Any]:
         menu = super().build_menu()
         if not menu:
@@ -291,29 +308,11 @@ class FlameMenuBatch(_FlameMenuContext):
             "name": "4 - Work Files...",
             "execute": lambda x: callback_selection(
                 x,
-                self._show_workfiles,
+                show_batch_workfiles,
                 context=self.__class__.__name__
             ),
         })
         return menu
-
-    def _show_workfiles(self):
-        """ Show the Workfiles tool for batch groups."""
-        if self._workfiles_tool is None:
-            from ayon_core.tools.workfiles.control import (
-                BaseWorkfileController,
-            )
-            from ayon_core.tools.workfiles.widgets import WorkfilesToolWindow
-
-            from .pipeline import FlameBatchHost
-
-            controller = BaseWorkfileController(host=FlameBatchHost())
-            self._workfiles_tool = WorkfilesToolWindow(
-                controller=controller,
-                parent=_get_main_window(),
-            )
-
-        self._workfiles_tool.ensure_visible()
 
 
 class FlameMenuUniversal(_FlameMenuContext):
