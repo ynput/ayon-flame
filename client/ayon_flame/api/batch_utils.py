@@ -18,8 +18,12 @@ AYON_NOTE_MARKER = "__ayon__"
 # Name of the hidden Note node used to embed instance data inside the batch.
 _METADATA_NODE_NAME = "AYON_metadata"
 
-# Name of the hidden Note node holding the batch's workfile path.
-_WORKFILE_NODE_NAME = "AYON_workfile"
+# Key of the batch workfile path, stored in the metadata note next to the
+# Batch product data.
+_WORKFILE_PATH_KEY = "workfile_path"
+
+# Separate workfile path note of earlier versions, read and removed.
+_LEGACY_WORKFILE_NODE = "AYON_workfile"
 
 
 def read_node_metadata(node: flame.PyNode) -> Optional[Dict[str, Any]]:
@@ -303,39 +307,103 @@ def get_metadata_node(
     return node
 
 
-def set_workfile_path(batch: flame.PyBatch, filepath: str):
-    """ Store the workfile path in the batch's AYON_workfile note."""
-    node = get_metadata_node(
-        batch=batch, create=True, node_name=_WORKFILE_NODE_NAME
-    )
-    write_node_metadata(node, {"workfile_path": filepath})
+def _read_metadata_note(
+    batch: Optional[flame.PyBatch] = None
+) -> Dict[str, Any]:
+    node = get_metadata_node(batch=batch)
+    if node is None:
+        return {}
+    data = read_node_metadata(node) or {}
+    # The marker is added again by 'write_node_metadata'.
+    data.pop(AYON_NOTE_MARKER, None)
+    return data
 
 
-def clear_workfile_path(batch: flame.PyBatch):
-    """ Remove the AYON_workfile note, so batch has no workfile path."""
-    node = get_metadata_node(batch=batch, node_name=_WORKFILE_NODE_NAME)
+def _write_metadata_note(
+    data: Dict[str, Any],
+    batch: Optional[flame.PyBatch] = None,
+):
+    """ Write the metadata note, delete it when there is nothing to keep."""
+    if data:
+        node = get_metadata_node(batch=batch, create=True)
+        write_node_metadata(node, data)
+        return
+
+    node = get_metadata_node(batch=batch)
     if node is not None:
         node.delete()
 
 
+def _delete_legacy_workfile_node(batch: Optional[flame.PyBatch] = None):
+    """ Remove the separate workfile path note of earlier versions."""
+    node = get_metadata_node(batch=batch, node_name=_LEGACY_WORKFILE_NODE)
+    if node is not None:
+        node.delete()
+
+
+def set_workfile_path(batch: flame.PyBatch, filepath: str):
+    """ Store the workfile path in the batch metadata note."""
+    data = _read_metadata_note(batch)
+    data[_WORKFILE_PATH_KEY] = filepath
+    _write_metadata_note(data, batch)
+    _delete_legacy_workfile_node(batch)
+
+
+def clear_workfile_path(batch: flame.PyBatch):
+    """ Remove the workfile path, so the batch has no workfile."""
+    data = _read_metadata_note(batch)
+    if data.pop(_WORKFILE_PATH_KEY, None) is not None:
+        _write_metadata_note(data, batch)
+    _delete_legacy_workfile_node(batch)
+
+
 def get_workfile_path(batch: flame.PyBatch) -> Optional[str]:
     """ Return the workfile path stored in the batch."""
-    node = get_metadata_node(batch=batch, node_name=_WORKFILE_NODE_NAME)
+    workfile_path = _read_metadata_note(batch).get(_WORKFILE_PATH_KEY)
+    if workfile_path:
+        return workfile_path
+
+    node = get_metadata_node(batch=batch, node_name=_LEGACY_WORKFILE_NODE)
     if node is None:
         return None
-
-    data = read_node_metadata(node) or {}
-    return data.get("workfile_path")
+    return (read_node_metadata(node) or {}).get(_WORKFILE_PATH_KEY)
 
 
 def get_batch_product_data(
     batch: Optional[flame.PyBatch] = None
 ) -> Optional[Dict[str, Any]]:
-    """ Return the Batch product data stored in the batch metadata note."""
-    node = get_metadata_node(batch=batch)
-    if node is None:
+    """ Return the Batch product data stored in the batch metadata note.
+
+    The workfile path shares the note but is not product data.
+    """
+    data = _read_metadata_note(batch)
+    data.pop(_WORKFILE_PATH_KEY, None)
+    if not data.get("productName"):
         return None
-    return read_node_metadata(node)
+    return data
+
+
+def write_batch_product_data(
+    data: Dict[str, Any],
+    batch: Optional[flame.PyBatch] = None,
+):
+    """ Store the Batch product data, keeping the batch workfile path."""
+    workfile_path = _read_metadata_note(batch).get(_WORKFILE_PATH_KEY)
+    data = {
+        key: value
+        for key, value in data.items()
+        if key != _WORKFILE_PATH_KEY
+    }
+    if workfile_path:
+        data[_WORKFILE_PATH_KEY] = workfile_path
+    _write_metadata_note(data, batch)
+
+
+def remove_batch_product_data(batch: Optional[flame.PyBatch] = None):
+    """ Remove the Batch product data, keeping the batch workfile path."""
+    workfile_path = _read_metadata_note(batch).get(_WORKFILE_PATH_KEY)
+    data = {_WORKFILE_PATH_KEY: workfile_path} if workfile_path else {}
+    _write_metadata_note(data, batch)
 
 
 def get_batch_products_context(
