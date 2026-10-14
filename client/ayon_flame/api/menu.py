@@ -163,6 +163,18 @@ class FlameMenuProjectConnect(_FlameMenuApp):
             "name": "1 - Load...",
             "execute": lambda x: self.tools_helper.show_loader()
         })
+        # Editorial workfiles of the registered host. Batch workfiles
+        # have their own entry in the Batch menu.
+        menu["actions"].append({
+            "name": "2 - Work Files...",
+            "execute": lambda x: callback_selection(
+                x,
+                lambda: host_tools.show_workfiles(
+                    parent=_get_main_window()
+                ),
+                context=self.__class__.__name__
+            ),
+        })
 
         return menu
 
