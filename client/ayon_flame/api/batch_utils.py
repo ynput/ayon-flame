@@ -212,6 +212,20 @@ def get_unique_batch_name(name: str) -> str:
     return f"{name} ({counter})"
 
 
+def get_write_node_from_batch(
+    batch: flame.PyBatch,
+    name: str,
+) -> Optional[flame.PyWriteFileNode]:
+    for node in batch.nodes:
+        if (
+            isinstance(node, flame.PyWriteFileNode)
+            and node.name.get_value() == name
+        ):
+            return node
+
+    return None
+
+
 def save_batch_as_consolidated_json(
     batch: flame.PyBatch,
     filepath: str,

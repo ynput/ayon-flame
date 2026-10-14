@@ -243,7 +243,7 @@ getattr(module, "{module_name}")()
                 "name": "1 - Create...",
                 "execute": lambda x: callback_selection(
                     x,
-                    host_tools.show_publisher(
+                    lambda: host_tools.show_publisher(
                         tab="create", parent=_get_main_window()
                     ),
                     context=self.__class__.__name__
@@ -255,7 +255,7 @@ getattr(module, "{module_name}")()
                 "name": "2 - Publish...",
                 "execute": lambda x: callback_selection(
                     x,
-                    host_tools.show_publisher(
+                    lambda: host_tools.show_publisher(
                         tab="publish", parent=_get_main_window()
                     ),
                     context=self.__class__.__name__

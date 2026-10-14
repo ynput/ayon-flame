@@ -178,6 +178,11 @@ def get_current_project():
     return flame.project.current_project
 
 
+def parse_frame_rate(frame_rate) -> float:
+    """Convert a Flame frame rate attribute into a float."""
+    return float(str(frame_rate).split(" ", 1)[0])
+
+
 def get_current_sequence(selection):
     import flame
 
