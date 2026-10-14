@@ -57,20 +57,31 @@ _BATCH_WORKFILES_TOOL = None
 
 
 def show_batch_workfiles():
-    """ Show the Workfiles tool for batch groups."""
+    """ Show the Workfiles tool for the current batch group.
+
+    The window is created again on every call, so its selection starts
+    from the context of the current batch group, not from the selection
+    left by a previous batch group.
+    """
     global _BATCH_WORKFILES_TOOL
-    if _BATCH_WORKFILES_TOOL is None:
-        from ayon_core.tools.workfiles.control import BaseWorkfileController
-        from ayon_core.tools.workfiles.widgets import WorkfilesToolWindow
+    from ayon_core.tools.workfiles.control import BaseWorkfileController
+    from ayon_core.tools.workfiles.widgets import WorkfilesToolWindow
 
-        from .pipeline import FlameBatchHost
+    from .pipeline import FlameBatchHost
 
-        controller = BaseWorkfileController(host=FlameBatchHost())
-        _BATCH_WORKFILES_TOOL = WorkfilesToolWindow(
-            controller=controller,
-            parent=_get_main_window(),
-        )
+    if _BATCH_WORKFILES_TOOL is not None:
+        try:
+            _BATCH_WORKFILES_TOOL.close()
+            _BATCH_WORKFILES_TOOL.deleteLater()
+        except RuntimeError:
+            # Qt object was already deleted.
+            pass
 
+    controller = BaseWorkfileController(host=FlameBatchHost())
+    _BATCH_WORKFILES_TOOL = WorkfilesToolWindow(
+        controller=controller,
+        parent=_get_main_window(),
+    )
     _BATCH_WORKFILES_TOOL.ensure_visible()
 
 

@@ -20,6 +20,7 @@ from ayon_core.pipeline import (
     deregister_loader_plugin_path,
     register_creator_plugin_path,
     register_loader_plugin_path,
+    registered_host,
 )
 from ayon_core.pipeline.template_data import get_template_data
 from ayon_core.pipeline.version_start import get_versioning_start
@@ -42,6 +43,9 @@ PLUGINS_DIR = os.path.join(FLAME_ADDON_ROOT, "plugins")
 PUBLISH_PATH = os.path.join(PLUGINS_DIR, "publish")
 LOAD_PATH = os.path.join(PLUGINS_DIR, "load")
 CREATE_PATH = os.path.join(PLUGINS_DIR, "create")
+
+# Creator of the Batch product, stored in the batch metadata note.
+BATCH_PRODUCT_CREATOR = "io.ayon.creators.flame.batch.workfile"
 
 
 log = Logger.get_logger(__name__)
@@ -74,23 +78,11 @@ class FlameHost(HostBase, ILoadHost, IPublishHost):
 
         # Flame can be used as a multi-workfile host.
         # When working with batch, we try to get the
-        # current context from the batch metadata.
+        # current context from the batch products.
         if CTX.context == "FlameMenuBatch":
-            import ayon_flame.api as flapi
-            metadata_node = flapi.get_metadata_node()
-            if metadata_node:
-                data = flapi.read_node_metadata(metadata_node)
-                try:
-                    return {
-                        "project_name": current_ctx["project_name"],
-                        "folder_path": data["folderPath"],
-                        "task_name": data["task"]
-                    }
-                except (KeyError, TypeError) as error:
-                    log.warning(
-                        "Could not read context from batch metadata: %r",
-                        error
-                    )
+            batch_context = batch_utils.get_batch_products_context()
+            if batch_context:
+                current_ctx.update(batch_context)
 
         return current_ctx
 
@@ -98,10 +90,49 @@ class FlameHost(HostBase, ILoadHost, IPublishHost):
 class FlameBatchHost(HostBase, IWorkfileHost):
     """Workfile host of the Batch page, saving batch groups as .json.
 
-    Its context comes from the session, which core updates on every
-    open and save.
+    Its context comes from the AYON products of the current batch group
+    (Batch product first, then Batch Render products), the session
+    context is used for a batch group without products.
     """
     name = "flame"
+
+    def __init__(self):
+        super().__init__()
+        self._save_entities = None
+        self._session_context_only = False
+
+    def get_current_context(self):
+        current_ctx = super().get_current_context()
+        if self._session_context_only:
+            return current_ctx
+
+        batch_context = batch_utils.get_batch_products_context()
+        if batch_context:
+            current_ctx.update(batch_context)
+        return current_ctx
+
+    def set_current_context(self, *args, **kwargs):
+        # Core skips the change when the current context already matches,
+        # compare with the session context so the session always follows
+        # the opened or saved workfile.
+        self._session_context_only = True
+        try:
+            return super().set_current_context(*args, **kwargs)
+        finally:
+            self._session_context_only = False
+
+    def save_workfile_with_context(
+        self, filepath, folder_entity, task_entity, *args, **kwargs
+    ):
+        # The Batch product is created in 'save_workfile', which core calls
+        # after the context switch, its note is part of the saved content.
+        self._save_entities = (folder_entity, task_entity)
+        try:
+            super().save_workfile_with_context(
+                filepath, folder_entity, task_entity, *args, **kwargs
+            )
+        finally:
+            self._save_entities = None
 
     def get_workfile_extensions(self):
         return [".json"]
@@ -120,6 +151,13 @@ class FlameBatchHost(HostBase, IWorkfileHost):
             raise RuntimeError(
                 "No active Flame Batch group to save."
             ) from error
+
+        if self._save_entities:
+            try:
+                ensure_batch_product(*self._save_entities)
+            except Exception:
+                # Never lose the artist's save because of the product.
+                log.warning("Batch product was not created.", exc_info=True)
 
         log.info("Writing AYON workfile %r", dst_path)
         dirpath = os.path.dirname(os.path.abspath(dst_path))
@@ -179,6 +217,42 @@ class FlameBatchHost(HostBase, IWorkfileHost):
         except RuntimeError:
             return None
         return batch_utils.get_workfile_path(batch)
+
+
+def ensure_batch_product(folder_entity, task_entity):
+    """Create the Batch product of the current batch group if missing.
+
+    The product is created by its creator, the same way as from the
+    Publisher, in the given context. The creator is enabled only for
+    Batch menu actions, so the menu context is forced meanwhile.
+    """
+    if batch_utils.get_batch_product_data():
+        return
+
+    log.info(
+        "Creating Batch product for %s / %s",
+        folder_entity["path"], task_entity["name"],
+    )
+    from ayon_core.pipeline.create import CreateContext
+
+    previous_context = CTX.context
+    CTX.context = "FlameMenuBatch"
+    try:
+        create_context = CreateContext(
+            registered_host(), discover_publish_plugins=False
+        )
+        creator = create_context.creators.get(BATCH_PRODUCT_CREATOR)
+        if creator is None:
+            log.warning("Batch creator is not available, no product made.")
+            return
+        create_context.create(
+            BATCH_PRODUCT_CREATOR,
+            creator.default_variant,
+            folder_entity=folder_entity,
+            task_entity=task_entity,
+        )
+    finally:
+        CTX.context = previous_context
 
 
 def save_next_batch_workfile_version():

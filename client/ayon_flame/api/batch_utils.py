@@ -328,6 +328,48 @@ def get_workfile_path(batch: flame.PyBatch) -> Optional[str]:
     return data.get("workfile_path")
 
 
+def get_batch_product_data(
+    batch: Optional[flame.PyBatch] = None
+) -> Optional[Dict[str, Any]]:
+    """ Return the Batch product data stored in the batch metadata note."""
+    node = get_metadata_node(batch=batch)
+    if node is None:
+        return None
+    return read_node_metadata(node)
+
+
+def get_batch_products_context(
+    batch: Optional[flame.PyBatch] = None
+) -> Optional[Dict[str, str]]:
+    """ Return the folder path and task name of the batch AYON products.
+
+    The Batch product of the metadata note is preferred, the Batch Render
+    products of Write File nodes are used when it is missing.
+
+    Returns:
+        Optional[Dict[str, str]]: 'folder_path' and 'task_name' or None
+            when the batch group has no AYON product with a context.
+    """
+    try:
+        batch = batch or get_current_batch()
+    except RuntimeError:
+        return None
+
+    products_data = [get_batch_product_data(batch)]
+    products_data.extend(
+        read_node_metadata(node)
+        for node in batch.nodes
+        if isinstance(node, flame.PyWriteFileNode)
+    )
+    for data in products_data:
+        if data and data.get("folderPath") and data.get("task"):
+            return {
+                "folder_path": data["folderPath"],
+                "task_name": data["task"],
+            }
+    return None
+
+
 def get_instances_batches(instances) -> Dict[str, flame.PyBatch]:
     """ Return batch groups of active Batch menu instances, by name.
 
