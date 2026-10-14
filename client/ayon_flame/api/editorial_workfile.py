@@ -22,6 +22,10 @@ log = Logger.get_logger(__name__)
 
 EDITORIAL_WORKFILE_EXTENSION = ".flame"
 
+# Auto-creator of the editorial workfile product, the only product
+# published as an OTIO file.
+EDITORIAL_WORKFILE_CREATOR = "io.ayon.creators.flame.workfile"
+
 # Shortcut description of Flame's native project save.
 _SAVE_PROJECT_SHORTCUT = "Save Project"
 

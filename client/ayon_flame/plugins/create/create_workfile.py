@@ -15,7 +15,7 @@ class CreateWorkfile(AutoCreator):
     """Workfile auto-creator."""
     settings_category = "flame"
 
-    identifier = "io.ayon.creators.flame.workfile"
+    identifier = flapi.EDITORIAL_WORKFILE_CREATOR
     label = "Workfile"
     product_base_type = "workfile"
     product_type = product_base_type
