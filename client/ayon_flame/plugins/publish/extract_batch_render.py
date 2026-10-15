@@ -22,6 +22,11 @@ class ExtractBatchRender(
     families = ["render"]
     hosts = ["flame"]
 
+    settings_category = "flame"
+
+    # settings
+    representation_tags: list[str]
+
     # Context key used to ensure render is triggered only once per publish.
     # Could be multiple batch renders per publish context.
     _RENDER_DONE_KEY = "_batch_render_done"
@@ -148,7 +153,9 @@ class ExtractBatchRender(
         if "representations" not in instance.data:
             instance.data["representations"] = []
 
-        review = "review" in instance.data["families"]
+        repre_tags = list(self.representation_tags or [])
+        if "review" in instance.data["families"]:
+            repre_tags.append("review")
 
         representation_data = {
             "name": ext,
@@ -158,7 +165,7 @@ class ExtractBatchRender(
                 written_files if len(written_files) > 1 else written_files[0]
             ),
             "stagingDir": output_dir,
-            "tags": ["review"] if review else [],
+            "tags": repre_tags,
         }
 
         flame_colour = self._get_write_node_colour_space(write_node)
