@@ -212,7 +212,7 @@ class ExtractBatchRender(
         if "representations" not in instance.data:
             instance.data["representations"] = []
 
-        repre_tags = self.representation_tags or []
+        repre_tags = list(self.representation_tags or [])
         if "review" in instance.data["families"]:
             repre_tags.append("review")
 
