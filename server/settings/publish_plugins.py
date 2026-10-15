@@ -273,6 +273,18 @@ class ThumbnailPresetModel(BaseSettingsModel):
     )
 
 
+class ExtractBatchRenderModel(BaseSettingsModel):
+    representation_tags: list[str] = SettingsField(
+        default_factory=list,
+        title="Representation tags",
+        description=(
+            "Adds tags to the representation data for downstream use in "
+            "the publishing process. For example, marking the representation "
+            "as reviewable."
+        ),
+    )
+
+
 class ExtractProductResourcesModel(BaseSettingsModel):
     _isGroup = True
 
@@ -329,6 +341,11 @@ class PublishPluginsModel(BaseSettingsModel):
         title="Validate Segments"
     )
 
+    ExtractBatchRender: ExtractBatchRenderModel = SettingsField(
+        default_factory=ExtractBatchRenderModel,
+        title="Extract Batch Render"
+    )
+
     ExtractProductResources: ExtractProductResourcesModel = SettingsField(
         default_factory=ExtractProductResourcesModel,
         title="Extract Product Resources"
@@ -381,6 +398,9 @@ DEFAULT_PUBLISH_SETTINGS = {
         "enabled": False,
         "active": False,
         "optional": True
+    },
+    "ExtractBatchRender": {
+        "representation_tags": ["slate-frame"],
     },
     "ExtractProductResources": {
         "missing_media_link_export_preset": {
