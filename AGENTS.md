@@ -96,3 +96,7 @@ it works.
   `type: enhancement`, `type: feature`, `type: maintenance`); CI validates it.
 - PR body sections: `## Changelog Description`, `## Additional info`,
   `## Testing notes:` (numbered, reproducible in Flame).
+- Keep `## Additional info` to the bare minimum: a few one-line bullets
+  with what a reviewer needs and cannot read from the changelog or diff
+  (stack position, merge note, known limitation, open risk). No
+  file-by-file change lists, no rationale or research write-ups.
