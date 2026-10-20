@@ -34,6 +34,7 @@ from .lib import (
     maintained_object_duplication,
     maintained_temp_file_path,
     get_clip_segment,
+    get_project_ocio_config,
     MediaInfoFile,
     TimeEffectMetadata
 )
@@ -131,6 +132,7 @@ __all__ = [
     "maintained_object_duplication",
     "maintained_temp_file_path",
     "get_clip_segment",
+    "get_project_ocio_config",
     "MediaInfoFile",
     "TimeEffectMetadata",
 
