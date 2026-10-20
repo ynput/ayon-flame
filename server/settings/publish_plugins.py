@@ -400,7 +400,7 @@ DEFAULT_PUBLISH_SETTINGS = {
         "optional": True
     },
     "ExtractBatchRender": {
-        "representation_tags": ["slate-frame"],
+        "representation_tags": [],
     },
     "ExtractProductResources": {
         "missing_media_link_export_preset": {
