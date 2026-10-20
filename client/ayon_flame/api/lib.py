@@ -13,7 +13,11 @@ from typing import Optional
 from xml.etree import ElementTree as ET
 
 import clique
+
 from ayon_core.lib import Logger, run_subprocess
+from ayon_core.pipeline.colorspace import (
+    get_remapped_colorspace_from_native
+)
 
 from .constants import (
     COLOR_MAP,
@@ -182,6 +186,34 @@ def get_current_project():
 def parse_frame_rate(frame_rate) -> float:
     """Convert a Flame frame rate attribute into a float."""
     return float(str(frame_rate).split(" ", 1)[0])
+
+
+def get_ocio_colorspace(colour_space, imageio_settings):
+    """Return OCIO colorspace name from Flame clip colour space.
+
+    Flame >= 2026 colour spaces are already OCIO names,
+    Flame < 2026 SynColor names are remapped from imageio settings.
+
+    Args:
+        colour_space (str): Flame clip colour space name
+        imageio_settings (dict): Flame imageio settings
+
+    Returns:
+        str or None: OCIO colorspace name, None if not found.
+    """
+    import flame
+
+    if not colour_space:
+        return None
+
+    if int(flame.get_version_major()) >= 2026:
+        return colour_space
+
+    return get_remapped_colorspace_from_native(
+        colour_space,
+        "flame",
+        imageio_settings
+    )
 
 
 def get_current_sequence(selection):
