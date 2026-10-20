@@ -19,14 +19,26 @@ class IncrementBatchRenderNextStagingDir(
     """
 
     label = "Increment Batch Render Custom Staging Dir"
-    # Before IntegrateBatchIteration so the new iteration gets the new path.
-    order = pyblish.api.IntegratorOrder + 0.4
+    order = pyblish.api.IntegratorOrder + 0.6
     families = ["render"]
     hosts = ["flame"]
     settings_category = "flame"
 
     optional = True
     active = True
+
+    @staticmethod
+    def _follows_workfile_version(instance):
+        """Whether render version follows the batch iteration.
+        """
+        if "followWorkfileVersion" in instance.data:
+            return instance.data["followWorkfileVersion"]
+
+        project_settings = instance.context.data["project_settings"]
+        return (
+            project_settings["core"]["publish"]
+            ["CollectAnatomyInstanceData"]["follow_workfile_version"]
+        )
 
     def process(self, instance):
         if not self.is_active(instance.data):
@@ -46,9 +58,20 @@ class IncrementBatchRenderNextStagingDir(
 
         context = instance.context
         template_data = copy.deepcopy(instance.data["anatomyData"])
-        template_data["version"] += 1
 
-        # Same formatting data as ayon-core 'get_instance_staging_dir'.
+        # Sync with the actual batch iteration (incremented or not
+        # by 'IntegrateBatchIteration'), like Nuke 'IncrementWriteNodePath'.
+        if self._follows_workfile_version(instance):
+            batch_name = instance.data["batch_name"]
+            batch = flapi.get_batch_from_workspace(batch_name)
+            if batch is None:
+                self.log.warning(f"Batch group not found: {batch_name}")
+                return
+            template_data["version"] = batch.current_iteration_number
+
+        else:
+            template_data["version"] += 1
+
         current_file = context.data.get("currentFile")
         if current_file:
             template_data["workfile_name"] = os.path.splitext(
