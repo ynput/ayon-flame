@@ -6,7 +6,7 @@ import os
 from copy import deepcopy
 import flame
 
-from ayon_core.host import HostBase, ILoadHost, IPublishHost
+from ayon_core.host import HostBase, ILoadHost, IPublishHost, IWorkfileHost
 from ayon_core.lib import Logger
 from ayon_core.pipeline import (
     AYON_CONTAINER_ID,
@@ -19,6 +19,7 @@ from pyblish import api as pyblish
 
 from ayon_flame import FLAME_ADDON_ROOT
 
+from . import batch_utils
 from .lib import (
     get_current_sequence,
     maintained_segment_selection,
@@ -82,6 +83,64 @@ class FlameHost(HostBase, ILoadHost, IPublishHost):
                     )
 
         return current_ctx
+
+
+class FlameBatchHost(HostBase, IWorkfileHost):
+    """Workfile host of the Batch page, saving batch groups as .json.
+
+    Its context comes from the session, which core updates on every
+    open and save.
+    """
+    name = "flame"
+
+    def get_workfile_extensions(self):
+        return [".json"]
+
+    def save_workfile(self, dst_path=None):
+        if not dst_path:
+            dst_path = self.get_current_workfile()
+        if not dst_path:
+            raise RuntimeError(
+                "Current batch group has no workfile yet, use Save As."
+            )
+
+        batch = batch_utils.get_current_batch()
+        log.info("Writing AYON workfile %r", dst_path)
+
+        batch_utils.set_workfile_path(batch, dst_path)
+        batch_utils.save_batch_as_consolidated_json(batch, dst_path)
+
+    def open_workfile(self, filepath):
+        batch_name = batch_utils.get_task_batch_name(
+            self.get_current_folder_path(), self.get_current_task_name()
+        )
+        unique_batch_name = batch_utils.get_unique_batch_name(batch_name)
+        if unique_batch_name != batch_name:
+            log.warning(
+                "Batch group %r already exists, opening workfile as %r.",
+                batch_name,
+                unique_batch_name,
+            )
+
+        log.info(
+            "Opening AYON workfile %r as batch group %r",
+            filepath,
+            unique_batch_name,
+        )
+        flame.batch.create_batch_group(unique_batch_name)
+        batch = batch_utils.load_batch_from_consolidated_json(
+            filepath, name=unique_batch_name
+        )
+        batch_utils.set_workfile_path(batch, filepath)
+        batch_utils.set_instances_batch_name(batch, unique_batch_name)
+
+    def get_current_workfile(self):
+        try:
+            batch = batch_utils.get_current_batch()
+        except RuntimeError:
+            return None
+        return batch_utils.get_workfile_path(batch)
+
 
 def install():
     pyblish.register_host("flame")
