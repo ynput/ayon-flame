@@ -3,6 +3,8 @@ import pyblish.api
 import opentimelineio as otio
 from ayon_core.pipeline import publish
 
+import ayon_flame.api as flapi
+
 
 class ExtractOTIOFile(publish.Extractor):
     """
@@ -15,6 +17,15 @@ class ExtractOTIOFile(publish.Extractor):
     hosts = ["flame"]
 
     def process(self, instance):
+        # Only the editorial workfile is an OTIO timeline, the Batch
+        # product is published as consolidated JSON.
+        creator_identifier = instance.data.get("creator_identifier")
+        if creator_identifier != flapi.EDITORIAL_WORKFILE_CREATOR:
+            self.log.debug(
+                f"Not an editorial workfile ({creator_identifier}), skipping."
+            )
+            return
+
         # create representation data
         if "representations" not in instance.data:
             instance.data["representations"] = []

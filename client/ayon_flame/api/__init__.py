@@ -57,6 +57,13 @@ from .pipeline import (
     imprint,
     maintained_selection
 )
+from .editorial_workfile import (
+    EDITORIAL_WORKFILE_EXTENSION,
+    EDITORIAL_WORKFILE_CREATOR,
+    get_current_editorial_workfile,
+    get_timeline_sequence,
+    save_flame_project,
+)
 from .menu import (
     FlameMenuProjectConnect,
     FlameMenuTimeline,
@@ -136,6 +143,13 @@ __all__ = [
     "get_project_ocio_config",
     "MediaInfoFile",
     "TimeEffectMetadata",
+
+    # editorial workfile
+    "EDITORIAL_WORKFILE_EXTENSION",
+    "EDITORIAL_WORKFILE_CREATOR",
+    "get_current_editorial_workfile",
+    "get_timeline_sequence",
+    "save_flame_project",
 
     # pipeline
     "FlameHost",
