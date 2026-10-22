@@ -347,6 +347,8 @@ class PublishPluginsModel(BaseSettingsModel):
         description=(
             "Checks Write File node output pointing to custom staging dir."
         ),
+    )
+
     ExtractBatchRender: ExtractBatchRenderModel = SettingsField(
         default_factory=ExtractBatchRenderModel,
         title="Extract Batch Render"
@@ -420,6 +422,7 @@ DEFAULT_PUBLISH_SETTINGS = {
         "enabled": True,
         "active": True,
         "optional": True
+    },
     "ExtractBatchRender": {
         "representation_tags": [],
     },
