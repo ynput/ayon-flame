@@ -1,5 +1,6 @@
 """ Extract render output from Flame batch Write File nodes. """
 import os
+import xml.etree.ElementTree as ET
 
 from pathlib import Path
 
@@ -10,7 +11,10 @@ from ayon_core.pipeline import publish, PublishError
 import ayon_flame.api as flapi
 
 
-class ExtractBatchRender(publish.Extractor):
+class ExtractBatchRender(
+    publish.Extractor,
+    publish.ColormanagedPyblishPluginMixin,
+):
     """Render the batch then collect Write File outputs as representations.
     """
 
@@ -19,9 +23,84 @@ class ExtractBatchRender(publish.Extractor):
     families = ["render"]
     hosts = ["flame"]
 
+    settings_category = "flame"
+
+    # settings
+    representation_tags: list[str]
+
     # Context key used to ensure render is triggered only once per publish.
     # Could be multiple batch renders per publish context.
     _RENDER_DONE_KEY = "_batch_render_done"
+
+    @staticmethod
+    def _get_open_clip_path(write_node):
+        """Return resolved Open Clip path written by the Write File node."""
+        pattern = write_node.media_path_pattern.get_value()
+        try:
+            write_node.media_path_pattern = (
+                write_node.create_clip_path.get_value())
+            resolved = write_node.get_resolved_media_path(
+                show_extension=False
+            )
+        finally:
+            write_node.media_path_pattern = pattern
+
+        return f"{resolved}.clip"
+
+    def _get_write_node_colour_space(self, write_node, from_open_clip=True):
+        """Return Write File node output colour space.
+
+        Write File node `colour_space` attribute returns None in
+        Flame 2026 - 2027.0 (fixed in 2027.1), fallback to the rendered
+        Open Clip colour space xml value.
+        https://forum.logik.tv/t/colourspace-issues-in-flame-2026-7/14588
+
+        Args:
+            write_node (flame.PyWriteFileNode): Write File node
+            from_open_clip (bool): Fallback to the rendered Open Clip.
+
+        Returns:
+            str or None: Flame colour space name.
+        """
+        colour_space = getattr(write_node, "colour_space", None)
+        if hasattr(colour_space, "get_value"):
+            colour_space = colour_space.get_value()
+
+        if colour_space or not from_open_clip:
+            return colour_space or None
+
+        self.log.debug(
+            "No colour space from Write File node "
+            f"'{write_node.name.get_value()}', reading it from Open Clip."
+        )
+        clip_path = self._get_open_clip_path(write_node)
+        if not os.path.exists(clip_path):
+            self.log.warning(
+                "Could not get colour space from Write File node "
+                f"'{write_node.name.get_value()}', "
+                f"Open Clip not found: {clip_path}"
+            )
+            return None
+
+        colour_space = ET.parse(clip_path).findtext(
+            ".//feed/storageFormat/colourSpace")
+        self.log.debug(
+            f"Colour space '{colour_space}' read from Open Clip: {clip_path}")
+        return colour_space or None
+
+    @staticmethod
+    def _enable_open_clip_from_write_node(write_node):
+        """Enable Open Clip creation on the Write File node.
+
+        Args:
+            write_node (flame.PyWriteFileNode): Write File node
+
+        Returns:
+            bool: original 'create_clip' value, to restore.
+        """
+        original_value = write_node.create_clip.get_value()
+        write_node.create_clip = True
+        return original_value
 
     def process(self, instance):
         write_node_name = instance.data.get("write_node_name")
@@ -49,7 +128,30 @@ class ExtractBatchRender(publish.Extractor):
         )
         if not render_context.get(batch_name):
             self.log.info(f"Rendering batch '{batch_name}'.")
-            success = batch.render()  # render_option='Foreground' (blocking)
+            create_clip = None
+
+            # Flame 2026-2027.0, the WriteToFile.color_space
+            # api is broken and return None. Workaround is to
+            # force the generation of an openclip then read the
+            # colorspace from it.
+            # This was fixed from Flame 2027.1
+            if not self._get_write_node_colour_space(
+                write_node, from_open_clip=False
+            ):
+                self.log.debug(
+                    "No colour space from Write File node "
+                    f"'{write_node_name}', enabling Open Clip creation "
+                    "to get the rendered colour space."
+                )
+                create_clip = self._enable_open_clip_from_write_node(
+                    write_node)
+            try:
+                # render_option='Foreground' (blocking)
+                success = batch.render()
+            finally:
+                if create_clip is not None:
+                    write_node.create_clip = create_clip
+
             if not success:
                 raise PublishError(
                     f"Flame batch render failed for '{batch_name}'."
@@ -110,9 +212,11 @@ class ExtractBatchRender(publish.Extractor):
         if "representations" not in instance.data:
             instance.data["representations"] = []
 
-        review = "review" in instance.data["families"]
+        repre_tags = list(self.representation_tags or [])
+        if "review" in instance.data["families"]:
+            repre_tags.append("review")
 
-        representation = {
+        representation_data = {
             "name": ext,
             "ext": ext,
             "outputName": ext,
@@ -120,9 +224,26 @@ class ExtractBatchRender(publish.Extractor):
                 written_files if len(written_files) > 1 else written_files[0]
             ),
             "stagingDir": output_dir,
-            "tags": ["review"] if review else [],
+            "tags": repre_tags,
         }
-        instance.data["representations"].append(representation)
+
+        flame_colour = self._get_write_node_colour_space(write_node)
+        project_settings = instance.context.data["project_settings"]
+        repre_colorspace = flapi.get_ocio_colorspace(
+            flame_colour,
+            project_settings["flame"]["imageio"],
+        )
+        self.set_representation_colorspace(
+            representation_data,
+            instance.context,
+            colorspace=repre_colorspace,
+        )
+        self.log.debug(
+            "Added representation data: %r",
+            representation_data
+        )
+
+        instance.data["representations"].append(representation_data)
         self.log.info(
             f"Collected render representation from '{write_node_name}': "
             f"{output_dir} ({len(written_files)} file(s))."

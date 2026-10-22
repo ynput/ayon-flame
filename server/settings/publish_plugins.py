@@ -273,6 +273,18 @@ class ThumbnailPresetModel(BaseSettingsModel):
     )
 
 
+class ExtractBatchRenderModel(BaseSettingsModel):
+    representation_tags: list[str] = SettingsField(
+        default_factory=list,
+        title="Representation tags",
+        description=(
+            "Adds tags to the representation data for downstream use in "
+            "the publishing process. For example, marking the representation "
+            "as reviewable."
+        ),
+    )
+
+
 class ExtractProductResourcesModel(BaseSettingsModel):
     _isGroup = True
 
@@ -335,6 +347,9 @@ class PublishPluginsModel(BaseSettingsModel):
         description=(
             "Checks Write File node output pointing to custom staging dir."
         ),
+    ExtractBatchRender: ExtractBatchRenderModel = SettingsField(
+        default_factory=ExtractBatchRenderModel,
+        title="Extract Batch Render"
     )
 
     ExtractProductResources: ExtractProductResourcesModel = SettingsField(
@@ -405,6 +420,8 @@ DEFAULT_PUBLISH_SETTINGS = {
         "enabled": True,
         "active": True,
         "optional": True
+    "ExtractBatchRender": {
+        "representation_tags": [],
     },
     "ExtractProductResources": {
         "missing_media_link_export_preset": {
