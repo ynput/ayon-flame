@@ -52,10 +52,11 @@ class CollectShot(pyblish.api.InstancePlugin):
     add_tasks = []
 
     @classmethod
-    def _inject_editorial_shared_data(cls, instance):
+    def _inject_editorial_shared_data(cls, instance, shot_attrs):
         """
         Args:
             instance (obj): The publishing instance.
+            shot_attrs (dict): Creator attributes with solved handles.
         """
         # Mark for 'CollectOTIORanges' in core
         instance.data["families"].append("otio.clip.ranges")
@@ -64,8 +65,7 @@ class CollectShot(pyblish.api.InstancePlugin):
 
         # Inject folderPath and other creator_attributes to ensure
         # new shots/hierarchy are properly handled.
-        creator_attributes = instance.data['creator_attributes']
-        instance.data.update(creator_attributes)
+        instance.data.update(shot_attrs)
 
         # Inject/Distribute instance shot data as editorialSharedData
         # to make it available for clip/plate/audio products
@@ -154,14 +154,31 @@ class CollectShot(pyblish.api.InstancePlugin):
         head = abs(head or 0)
         tail = abs(tail or 0)
 
-        # solve handles length
-        creator_attrs["handleStart"] = min(
-            creator_attrs["handleStart"], head)
-        creator_attrs["handleEnd"] = min(
-            creator_attrs["handleEnd"], tail)
+        # solve handles length, keep creator attributes untouched
+        shot_attrs = dict(
+            creator_attrs,
+            handleStart=min(creator_attrs["handleStart"], head),
+            handleEnd=min(creator_attrs["handleEnd"], tail),
+        )
+        if shot_attrs["handleStart"] != creator_attrs["handleStart"]:
+            self.log.warning(
+                "Head handle of '%s' reduced from %s to %s frames,"
+                " not enough media before the clip.",
+                instance.name,
+                creator_attrs["handleStart"],
+                shot_attrs["handleStart"],
+            )
+        if shot_attrs["handleEnd"] != creator_attrs["handleEnd"]:
+            self.log.warning(
+                "Tail handle of '%s' reduced from %s to %s frames,"
+                " not enough media after the clip.",
+                instance.name,
+                creator_attrs["handleEnd"],
+                shot_attrs["handleEnd"],
+            )
 
         # Adjust info from track_item on timeline
-        workfile_start = self._set_workfile_start(creator_attrs)
+        workfile_start = self._set_workfile_start(shot_attrs)
 
         instance.data.update({
             "item": segment_item,
@@ -178,7 +195,7 @@ class CollectShot(pyblish.api.InstancePlugin):
         })
 
         self._get_resolution_to_data(instance.data, instance.context)
-        self._inject_editorial_shared_data(instance)
+        self._inject_editorial_shared_data(instance, shot_attrs)
         self.log.debug(f"__ inst_data: {pformat(instance.data)}")
 
     @staticmethod
