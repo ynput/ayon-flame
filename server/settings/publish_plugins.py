@@ -341,6 +341,14 @@ class PublishPluginsModel(BaseSettingsModel):
         title="Validate Segments"
     )
 
+    ValidateBatchRenderStagingDir: OptionalValidatorModel = SettingsField(
+        default_factory=OptionalValidatorModel,
+        title="Validate Batch Render Custom Staging Dir",
+        description=(
+            "Checks Write File node output pointing to custom staging dir."
+        ),
+    )
+
     ExtractBatchRender: ExtractBatchRenderModel = SettingsField(
         default_factory=ExtractBatchRenderModel,
         title="Extract Batch Render"
@@ -354,6 +362,17 @@ class PublishPluginsModel(BaseSettingsModel):
     IntegrateBatchGroup: IntegrateBatchGroupModel = SettingsField(
         default_factory=IntegrateBatchGroupModel,
         title="IntegrateBatchGroup"
+    )
+
+    IncrementBatchRenderNextStagingDir: OptionalValidatorModel = (
+        SettingsField(
+            default_factory=OptionalValidatorModel,
+            title="Increment Batch Render Custom Staging Dir",
+            description=(
+                "After publish, points Write File node to the next version "
+                "if a custom staging dir is used."
+            ),
+        )
     )
 
 
@@ -397,6 +416,11 @@ DEFAULT_PUBLISH_SETTINGS = {
     "ValidateSegments": {
         "enabled": False,
         "active": False,
+        "optional": True
+    },
+    "ValidateBatchRenderStagingDir": {
+        "enabled": True,
+        "active": True,
         "optional": True
     },
     "ExtractBatchRender": {
@@ -444,5 +468,10 @@ DEFAULT_PUBLISH_SETTINGS = {
     },
     "IntegrateBatchGroup": {
         "enabled": False
+    },
+    "IncrementBatchRenderNextStagingDir": {
+        "enabled": True,
+        "active": True,
+        "optional": True
     }
 }
