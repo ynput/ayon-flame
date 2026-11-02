@@ -38,6 +38,8 @@ class CollectRenderFromBatch(pyblish.api.InstancePlugin):
                 f"in batch '{batch_name}'."
             )
 
+        instance.data["transientData"]["writeNode"] = write_node
+
         if instance.data.get("creator_attributes", {}).get("review"):
             instance.data["families"].append("review")
             self.log.debug(
