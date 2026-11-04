@@ -166,6 +166,7 @@ current batch group.
             data=node_instance_data,
             creator=self,
         )
+        self._apply_staging_dir_to_node(instance, node)
         self._add_instance_to_context(instance)
         flapi.write_node_metadata(node, instance.data_to_store())
         self.log.info(
@@ -201,16 +202,32 @@ current batch group.
             for node in list(flame.batch.nodes)
             if isinstance(node, flame.PyWriteFileNode)
         }
-        for created_inst, _ in update_list:
+        for created_inst, changes in update_list:
             node_name = created_inst.data.get("write_node_name")
             node = all_nodes.get(node_name)
-            if node:
-                flapi.write_node_metadata(node, created_inst.data_to_store())
-
-            else:
+            if not node:
                 self.log.warning(
                     f"Write File node '{node_name}' not found."
                 )
+                continue
+
+            if any(
+                key in changes.changed_keys
+                for key in ("productName", "folderPath", "task")
+            ):
+                self._apply_staging_dir_to_node(created_inst, node)
+
+            flapi.write_node_metadata(node, created_inst.data_to_store())
+
+    def _apply_staging_dir_to_node(
+        self,
+        instance: CreatedInstance,
+        write_node: flame.PyWriteFileNode,
+    ):
+        """Render into custom staging dir if a studio profile matches."""
+        staging_dir = self.apply_staging_dir(instance)
+        if staging_dir:
+            flapi.set_write_node_output_dir(write_node, staging_dir)
 
     def remove_instances(self, instances: List[CreatedInstance]):
         """ Clear AYON metadata from the associated Write File nodes. """
