@@ -6,12 +6,15 @@ import ayon_api
 from ayon_core.pipeline import LoaderPlugin
 
 from ayon_flame.api import batch_utils
+from ayon_flame.constants import BATCH_WORKFILE_EXTENSION
 
 
 class LoadBatchgroup(LoaderPlugin):
     product_types = {"workfile"}
     representations = {"*"}
-    extensions = ("json",)
+    # Published Batch workfiles are '.flamebatch', '.json' is the extension
+    # of the ones published before the explicit workfile extensions.
+    extensions = (BATCH_WORKFILE_EXTENSION.lstrip("."), "json")
 
     label = "Load batch"
     order = -10
