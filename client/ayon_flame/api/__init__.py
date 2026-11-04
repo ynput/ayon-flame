@@ -90,8 +90,6 @@ from .batch_utils import (
     clear_node_metadata,
     get_metadata_node,
     get_current_batch,
-    set_workfile_path,
-    get_workfile_path,
 )
 
 __all__ = [
@@ -187,6 +185,4 @@ __all__ = [
     "read_node_metadata",
     "write_node_metadata",
     "clear_node_metadata",
-    "set_workfile_path",
-    "get_workfile_path",
 ]

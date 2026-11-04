@@ -18,9 +18,6 @@ AYON_NOTE_MARKER = "__ayon__"
 # Name of the hidden Note node used to embed instance data inside the batch.
 _METADATA_NODE_NAME = "AYON_metadata"
 
-# Name of the hidden Note node holding the batch's workfile path.
-_WORKFILE_NODE_NAME = "AYON_workfile"
-
 
 def read_node_metadata(node: flame.PyNode) -> Optional[Dict[str, Any]]:
     """ Read AYON instance data from a node's note attribute.
@@ -285,50 +282,52 @@ def get_current_batch() -> flame.PyBatch:
 
 def get_metadata_node(
         batch: Optional[flame.PyBatch] = None,
-        create: bool = False,
-        node_name: str = _METADATA_NODE_NAME,
+        create: bool = False
     ) -> Optional[flame.PyNode]:
-    """ Find or create the Note node with this name in the batch.
+    """ Find or create the AYON metadata Note node in the current batch.
     """
     batch = batch or get_current_batch()
     for node in batch.nodes:
-        if node.name.get_value() == node_name:
+        if node.name.get_value() == _METADATA_NODE_NAME:
             return node
 
     if not create:
         return None
 
     node = batch.create_node("Note")
-    node.name.set_value(node_name)
+    node.name.set_value(_METADATA_NODE_NAME)
     return node
-
-
-def set_workfile_path(batch: flame.PyBatch, filepath: str):
-    """ Store the workfile path in the batch's AYON_workfile note."""
-    node = get_metadata_node(
-        batch=batch, create=True, node_name=_WORKFILE_NODE_NAME
-    )
-    write_node_metadata(node, {"workfile_path": filepath})
-
-
-def get_workfile_path(batch: flame.PyBatch) -> Optional[str]:
-    """ Return the workfile path stored in the batch."""
-    node = get_metadata_node(batch=batch, node_name=_WORKFILE_NODE_NAME)
-    if node is None:
-        return None
-
-    data = read_node_metadata(node) or {}
-    return data.get("workfile_path")
 
 
 def set_instances_batch_name(batch: flame.PyBatch, batch_name: str):
     """ Set the batch group name saved in each AYON instance note.
+
+    Publishing finds the batch group by this name, so a workfile opened
+    under another name (' (2)' added for a taken one) must carry it.
     """
     for node in batch.nodes:
         data = read_node_metadata(node)
         if data and "batch_name" in data:
             data["batch_name"] = batch_name
             write_node_metadata(node, data)
+
+
+def _get_safe_extracted_path(
+    root: pathlib.Path, relative_file: str
+) -> pathlib.Path:
+    """ Return the path of a consolidated file, never outside of root.
+
+    The keys of a consolidated json are file paths relative to its root,
+    the document comes from a work folder, so absolute paths and '..' are
+    refused instead of written wherever they point to.
+    """
+    file_path = (root / relative_file).resolve()
+    if not file_path.is_relative_to(root.resolve()):
+        raise ValueError(
+            f"Consolidated file path is outside of its folder: "
+            f"'{relative_file}'"
+        )
+    return file_path
 
 
 def load_batch_from_consolidated_json(
@@ -347,7 +346,11 @@ def load_batch_from_consolidated_json(
     try:
         batch_file = None
         for relative_file, content in data.items():
-            file_path = tmp_dir / relative_file
+            file_path = _get_safe_extracted_path(tmp_dir, relative_file)
+            if not isinstance(content, str):
+                raise ValueError(
+                    f"Invalid content of '{relative_file}' in {filepath}"
+                )
             file_path.parent.mkdir(parents=True, exist_ok=True)
             if content.startswith("__b64__:"):
                 file_path.write_bytes(base64.b64decode(content[8:]))
