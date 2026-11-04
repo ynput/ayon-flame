@@ -349,6 +349,11 @@ class PublishPluginsModel(BaseSettingsModel):
         ),
     )
 
+    ValidateEditorialWorkfileSaved: OptionalValidatorModel = SettingsField(
+        default_factory=OptionalValidatorModel,
+        title="Validate Editorial Workfile Saved"
+    )
+
     ExtractBatchRender: ExtractBatchRenderModel = SettingsField(
         default_factory=ExtractBatchRenderModel,
         title="Extract Batch Render"
@@ -419,6 +424,11 @@ DEFAULT_PUBLISH_SETTINGS = {
         "optional": True
     },
     "ValidateBatchRenderStagingDir": {
+        "enabled": True,
+        "active": True,
+        "optional": True
+    },
+    "ValidateEditorialWorkfileSaved": {
         "enabled": True,
         "active": True,
         "optional": True
