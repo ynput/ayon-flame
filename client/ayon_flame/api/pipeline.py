@@ -19,7 +19,10 @@ from ayon_core.pipeline import (
 from pyblish import api as pyblish
 
 from ayon_flame import FLAME_ADDON_ROOT
-from ayon_flame.constants import BATCH_WORKFILE_EXTENSION
+from ayon_flame.constants import (
+    BATCH_CREATOR_IDENTIFIER,
+    BATCH_WORKFILE_EXTENSION,
+)
 
 from . import batch_utils
 from .lib import (
@@ -34,9 +37,6 @@ PLUGINS_DIR = os.path.join(FLAME_ADDON_ROOT, "plugins")
 PUBLISH_PATH = os.path.join(PLUGINS_DIR, "publish")
 LOAD_PATH = os.path.join(PLUGINS_DIR, "load")
 CREATE_PATH = os.path.join(PLUGINS_DIR, "create")
-
-# Creator of the Batch product, stored in the batch metadata note.
-BATCH_PRODUCT_CREATOR = "io.ayon.creators.flame.batch.workfile"
 
 
 log = Logger.get_logger(__name__)
@@ -159,9 +159,12 @@ class FlameBatchHost(HostBase, IWorkfileHost):
             batch_utils.set_batch_products_context(
                 batch, folder_entity["path"], task_entity["name"]
             )
-            ensure_batch_product(folder_entity, task_entity)
+            self._ensure_batch_product(folder_entity, task_entity)
+        # Without a context (a direct 'save_workfile' call instead of
+        # 'save_workfile_with_context') there is no task to move the
+        # products to, only the file is written.
 
-        log.info("Writing AYON workfile %r", dst_path)
+        log.debug("Writing AYON workfile %r", dst_path)
         dirpath = os.path.dirname(os.path.abspath(dst_path))
         os.makedirs(dirpath, exist_ok=True)
 
@@ -180,6 +183,7 @@ class FlameBatchHost(HostBase, IWorkfileHost):
             raise RuntimeError(
                 f"Unable to save Flame Batch workfile '{dst_path}': {error}"
             ) from error
+        log.info("Saved AYON workfile %r", dst_path)
 
     def open_workfile(self, filepath):
         folder_path = self.get_current_folder_path()
@@ -202,7 +206,7 @@ class FlameBatchHost(HostBase, IWorkfileHost):
                 unique_batch_name,
             )
 
-        log.info(
+        log.debug(
             "Opening AYON workfile %r as batch group %r",
             filepath,
             unique_batch_name,
@@ -215,48 +219,53 @@ class FlameBatchHost(HostBase, IWorkfileHost):
         # A workfile saved by another build, or moved between tasks, can
         # carry products of another task.
         batch_utils.set_batch_products_context(batch, folder_path, task_name)
+        log.info(
+            "Opened AYON workfile %r as batch group %r",
+            filepath,
+            unique_batch_name,
+        )
 
     def get_current_workfile(self):
         # Batch groups do not store a workfile path.
         return None
 
+    def _ensure_batch_product(self, folder_entity, task_entity):
+        """Create the Batch product of the current batch group if missing.
 
-def ensure_batch_product(folder_entity, task_entity):
-    """Create the Batch product of the current batch group if missing.
+        The product is created by its creator, the same way as from the
+        Publisher, in the given context. The creator is enabled only for
+        Batch menu actions, so the menu context is forced meanwhile.
+        """
+        if batch_utils.get_batch_product_data():
+            return
 
-    The product is created by its creator, the same way as from the
-    Publisher, in the given context. The creator is enabled only for
-    Batch menu actions, so the menu context is forced meanwhile.
-    """
-    if batch_utils.get_batch_product_data():
-        return
-
-    log.info(
-        "Creating Batch product for %s / %s",
-        folder_entity["path"], task_entity["name"],
-    )
-    from ayon_core.pipeline.create import CreateContext
-
-    previous_context = CTX.context
-    CTX.context = "FlameMenuBatch"
-    try:
-        create_context = CreateContext(
-            registered_host(), discover_publish_plugins=False
+        log.debug(
+            "Creating Batch product for %s / %s",
+            folder_entity["path"], task_entity["name"],
         )
-        creator = create_context.creators.get(BATCH_PRODUCT_CREATOR)
-        if creator is None:
-            raise RuntimeError(
-                "Batch product creator is not available, the Batch "
-                "workfile cannot be saved without its Batch product."
+        from ayon_core.pipeline.create import CreateContext
+
+        previous_context = CTX.context
+        CTX.context = "FlameMenuBatch"
+        try:
+            create_context = CreateContext(
+                registered_host(), discover_publish_plugins=False
             )
-        create_context.create(
-            BATCH_PRODUCT_CREATOR,
-            creator.default_variant,
-            folder_entity=folder_entity,
-            task_entity=task_entity,
-        )
-    finally:
-        CTX.context = previous_context
+            creator = create_context.creators.get(BATCH_CREATOR_IDENTIFIER)
+            if creator is None:
+                raise RuntimeError(
+                    "Batch product creator is not available, the Batch "
+                    "workfile cannot be saved without its Batch product."
+                )
+            create_context.create(
+                BATCH_CREATOR_IDENTIFIER,
+                creator.default_variant,
+                folder_entity=folder_entity,
+                task_entity=task_entity,
+            )
+        finally:
+            CTX.context = previous_context
+
 
 
 def install():
