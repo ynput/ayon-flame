@@ -35,6 +35,9 @@ def read_node_metadata(node: flame.PyNode) -> Optional[Dict[str, Any]]:
     except json.JSONDecodeError:
         return None
 
+    if not isinstance(data, dict):
+        return None
+
     return data if data.get(AYON_NOTE_MARKER) else None
 
 
@@ -187,6 +190,25 @@ def get_batch_from_workspace(
     return None
 
 
+def get_task_batch_name(folder_path: str, task_name: str) -> str:
+    return f"{folder_path}_{task_name}".replace("/", "_").strip("_")
+
+
+def get_unique_batch_name(name: str) -> str:
+    existing = {
+        bg.name.get_value()
+        for bg in flame.project.current_project.current_workspace
+            .desktop.batch_groups
+    }
+    if name not in existing:
+        return name
+
+    counter = 2
+    while f"{name} ({counter})" in existing:
+        counter += 1
+    return f"{name} ({counter})"
+
+
 def get_write_node_from_batch(
     batch: flame.PyBatch,
     name: str,
@@ -291,6 +313,37 @@ def get_metadata_node(
     return node
 
 
+def set_instances_batch_name(batch: flame.PyBatch, batch_name: str):
+    """ Set the batch group name saved in each AYON instance note.
+
+    Publishing finds the batch group by this name, so a workfile opened
+    under another name (' (2)' added for a taken one) must carry it.
+    """
+    for node in batch.nodes:
+        data = read_node_metadata(node)
+        if data and "batch_name" in data:
+            data["batch_name"] = batch_name
+            write_node_metadata(node, data)
+
+
+def _get_safe_extracted_path(
+    root: pathlib.Path, relative_file: str
+) -> pathlib.Path:
+    """ Return the path of a consolidated file, never outside of root.
+
+    The keys of a consolidated json are file paths relative to its root,
+    the document comes from a work folder, so absolute paths and '..' are
+    refused instead of written wherever they point to.
+    """
+    file_path = (root / relative_file).resolve()
+    if not file_path.is_relative_to(root.resolve()):
+        raise ValueError(
+            f"Consolidated file path is outside of its folder: "
+            f"'{relative_file}'"
+        )
+    return file_path
+
+
 def load_batch_from_consolidated_json(
     filepath: str,
     name: Optional[str] = None,
@@ -307,7 +360,11 @@ def load_batch_from_consolidated_json(
     try:
         batch_file = None
         for relative_file, content in data.items():
-            file_path = tmp_dir / relative_file
+            file_path = _get_safe_extracted_path(tmp_dir, relative_file)
+            if not isinstance(content, str):
+                raise ValueError(
+                    f"Invalid content of '{relative_file}' in {filepath}"
+                )
             file_path.parent.mkdir(parents=True, exist_ok=True)
             if content.startswith("__b64__:"):
                 file_path.write_bytes(base64.b64decode(content[8:]))

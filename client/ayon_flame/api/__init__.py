@@ -45,6 +45,7 @@ from .utils import (
 )
 from .pipeline import (
     FlameHost,
+    FlameBatchHost,
     install,
     uninstall,
     ls,
@@ -69,14 +70,6 @@ from .plugin import (
     FlameEditorialCreator,
     HiddenFlameCreator,
 )
-from .workio import (
-    open_file,
-    save_file,
-    current_file,
-    has_unsaved_changes,
-    file_extensions,
-    work_root
-)
 from .render_utils import (
     export_clip,
     get_preset_path_by_xml_name,
@@ -88,6 +81,9 @@ from .batch_utils import (
     add_reels_to_batch,
     edit_batch_group_content,
     get_batch_from_workspace,
+    get_task_batch_name,
+    get_unique_batch_name,
+    set_instances_batch_name,
     get_write_node_from_batch,
     set_write_node_output_dir,
     save_batch_as_consolidated_json,
@@ -139,6 +135,7 @@ __all__ = [
 
     # pipeline
     "FlameHost",
+    "FlameBatchHost",
     "install",
     "uninstall",
     "ls",
@@ -171,14 +168,6 @@ __all__ = [
     "FlameEditorialCreator",
     "HiddenFlameCreator",
 
-    # workio
-    "open_file",
-    "save_file",
-    "current_file",
-    "has_unsaved_changes",
-    "file_extensions",
-    "work_root",
-
     # render utils
     "export_clip",
     "get_preset_path_by_xml_name",
@@ -190,6 +179,9 @@ __all__ = [
     "add_reels_to_batch",
     "edit_batch_group_content",
     "get_batch_from_workspace",
+    "get_task_batch_name",
+    "get_unique_batch_name",
+    "set_instances_batch_name",
     "get_current_batch",
     "get_metadata_node",
     "get_write_node_from_batch",
