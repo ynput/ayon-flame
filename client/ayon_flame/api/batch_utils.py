@@ -313,6 +313,76 @@ def get_metadata_node(
     return node
 
 
+def get_batch_product_data(
+    batch: Optional[flame.PyBatch] = None
+) -> Optional[Dict[str, Any]]:
+    """ Return the Batch product data stored in the batch metadata note."""
+    node = get_metadata_node(batch=batch)
+    if node is None:
+        return None
+    return read_node_metadata(node)
+
+
+def get_batch_products_context(
+    batch: Optional[flame.PyBatch] = None
+) -> Optional[Dict[str, str]]:
+    """ Return the folder path and task name of the batch AYON products.
+
+    The Batch product of the metadata note is preferred, the Batch Render
+    products of Write File nodes are used when it is missing.
+
+    Returns:
+        Optional[Dict[str, str]]: 'folder_path' and 'task_name' or None
+            when the batch group has no AYON product with a context.
+    """
+    try:
+        batch = batch or get_current_batch()
+    except RuntimeError:
+        return None
+
+    products_data = [get_batch_product_data(batch)]
+    products_data.extend(
+        read_node_metadata(node)
+        for node in batch.nodes
+        if isinstance(node, flame.PyWriteFileNode)
+    )
+    for data in products_data:
+        if data and data.get("folderPath") and data.get("task"):
+            return {
+                "folder_path": data["folderPath"],
+                "task_name": data["task"],
+            }
+    return None
+
+
+def set_batch_products_context(
+    batch: flame.PyBatch, folder_path: str, task_name: str
+) -> int:
+    """ Set the folder and task of every AYON product of the batch group.
+
+    The Batch product and the Batch Render products keep the context they
+    were created in, so a workfile saved into, or opened in, another task
+    would keep the context of the previous one.
+
+    Returns:
+        int: Number of products that were moved to another context.
+    """
+    changed = 0
+    for node in batch.nodes:
+        data = read_node_metadata(node)
+        if not data or "folderPath" not in data:
+            continue
+
+        if data["folderPath"] == folder_path and data.get("task") == task_name:
+            continue
+
+        data["folderPath"] = folder_path
+        data["task"] = task_name
+        write_node_metadata(node, data)
+        changed += 1
+    return changed
+
+
 def set_instances_batch_name(batch: flame.PyBatch, batch_name: str):
     """ Set the batch group name saved in each AYON instance note.
 
