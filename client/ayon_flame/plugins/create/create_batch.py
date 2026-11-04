@@ -27,7 +27,8 @@ def get_batch_product_name(batch_name: str, fallback: str) -> str:
     Args:
         batch_name (str): Batch group name.
         fallback (str): Name used when nothing valid is left of the batch
-            group name (e.g. '(2)' has only the number).
+            group name (e.g. '%%%'). A name that is only a number, '(2)',
+            gives '2'.
 
     Returns:
         str: Product name.
