@@ -4,6 +4,7 @@ Basic AYON integration
 import contextlib
 import os
 from copy import deepcopy
+import ayon_api
 import flame
 
 from ayon_core.host import HostBase, ILoadHost, IPublishHost, IWorkfileHost
@@ -22,9 +23,10 @@ from ayon_flame import FLAME_ADDON_ROOT
 from ayon_flame.constants import (
     BATCH_CREATOR_IDENTIFIER,
     BATCH_WORKFILE_EXTENSION,
+    EDITORIAL_WORKFILE_EXTENSION,
 )
 
-from . import batch_utils
+from . import batch_utils, editorial_workfile
 from .lib import (
     get_current_sequence,
     maintained_segment_selection,
@@ -42,12 +44,22 @@ CREATE_PATH = os.path.join(PLUGINS_DIR, "create")
 log = Logger.get_logger(__name__)
 
 
-class FlameHost(HostBase, ILoadHost, IPublishHost):
+class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
+    """Registered host, its workfiles are the editorial workfiles.
+
+    Batch groups have their own workfile host, 'FlameBatchHost'.
+    """
     name = "flame"
+
+    # Create, Publish and Load tools of the Batch menu use the context of
+    # the batch group products. Workfile tools must not, see
+    # 'FlameEditorialHost'.
+    follow_batch_context = True
 
     def __init__(self):
         super().__init__()
         self._publish_context_data = {}
+        self._ignore_batch_context = False
 
     def get_containers(self):
         return ls()
@@ -64,18 +76,82 @@ class FlameHost(HostBase, ILoadHost, IPublishHost):
         """required by IPublishHost"""
         self._publish_context_data = deepcopy(data)
 
+    def get_workfile_extensions(self):
+        return [EDITORIAL_WORKFILE_EXTENSION]
+
+    def save_workfile(self, dst_path=None):
+        if not dst_path:
+            dst_path = self.get_current_workfile()
+        if not dst_path:
+            raise RuntimeError(
+                "No editorial workfile was saved or opened yet, use Save As."
+            )
+
+        log.info("Writing AYON editorial workfile %r", dst_path)
+        # Session context, not the Batch metadata context of the override.
+        editorial_workfile.save_editorial_workfile(
+            dst_path, super().get_current_context()
+        )
+
+    def open_workfile(self, filepath):
+        log.info("Opening AYON editorial workfile %r", filepath)
+        editorial_workfile.open_editorial_workfile(filepath)
+
+    def get_current_workfile(self):
+        return editorial_workfile.get_current_editorial_workfile()
+
+    def workfile_has_unsaved_changes(self):
+        # Flame has no "dirty" state in its Python API.
+        return None
+
+    def save_workfile_with_context(self, *args, **kwargs):
+        with self._session_context():
+            super().save_workfile_with_context(*args, **kwargs)
+
+    def open_workfile_with_context(self, *args, **kwargs):
+        with self._session_context():
+            super().open_workfile_with_context(*args, **kwargs)
+
+    @contextlib.contextmanager
+    def _session_context(self):
+        """Editorial workfiles follow the session context only.
+
+        A Batch menu action leaves 'CTX.context' set, which would make
+        'get_current_context' return the Batch metadata context.
+        """
+        self._ignore_batch_context = True
+        try:
+            yield
+        finally:
+            self._ignore_batch_context = False
+
     def get_current_context(self):
         current_ctx = super().get_current_context()
 
         # Flame can be used as a multi-workfile host.
         # When working with batch, we try to get the
         # current context from the batch products.
-        if CTX.context == "FlameMenuBatch":
+        if (
+            self.follow_batch_context
+            and CTX.context == "FlameMenuBatch"
+            and not self._ignore_batch_context
+        ):
             batch_context = batch_utils.get_batch_products_context()
             if batch_context:
                 current_ctx.update(batch_context)
 
         return current_ctx
+
+
+class FlameEditorialHost(FlameHost):
+    """Editorial workfile host of the Workfiles tool in the main menu.
+
+    The same editorial workfiles as the registered 'FlameHost', with the
+    session context only. 'CTX.context' keeps the last menu that ran an
+    action, after a Batch menu action it would give the Workfiles tool
+    the context of a batch group.
+    """
+    follow_batch_context = False
 
 
 class FlameBatchHost(HostBase, IWorkfileHost):
@@ -266,6 +342,35 @@ class FlameBatchHost(HostBase, IWorkfileHost):
         finally:
             CTX.context = previous_context
 
+
+
+def get_last_batch_workfile(folder_path, task_name):
+    """Return the path of the last saved Batch workfile of a task.
+
+    Returns:
+        Optional[str]: Path of the highest version available on disk.
+    """
+    host = FlameBatchHost()
+    project_name = host.get_current_project_name()
+    folder_entity = ayon_api.get_folder_by_path(project_name, folder_path)
+    if not folder_entity:
+        return None
+    task_entity = ayon_api.get_task_by_name(
+        project_name, folder_entity["id"], task_name
+    )
+    if not task_entity:
+        return None
+
+    workfiles = [
+        workfile
+        for workfile in host.list_workfiles(
+            project_name, folder_entity, task_entity
+        )
+        if workfile.available and workfile.version is not None
+    ]
+    if not workfiles:
+        return None
+    return max(workfiles, key=lambda workfile: workfile.version).filepath
 
 
 def install():

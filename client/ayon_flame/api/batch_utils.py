@@ -355,6 +355,30 @@ def get_batch_products_context(
     return None
 
 
+def get_instances_batches(instances) -> Dict[str, flame.PyBatch]:
+    """ Return batch groups of active Batch menu instances, by name.
+
+    Batch groups which are not found in the workspace are skipped.
+    """
+    batches = {}
+    for instance in instances:
+        if (
+            instance.data.get("flame_context") != "FlameMenuBatch"
+            or not instance.data.get("publish", True)
+            or not instance.data.get("active", True)
+        ):
+            continue
+
+        batch_name = instance.data.get("batch_name")
+        if not batch_name or batch_name in batches:
+            continue
+
+        batch = get_batch_from_workspace(batch_name)
+        if batch is not None:
+            batches[batch_name] = batch
+    return batches
+
+
 def set_batch_products_context(
     batch: flame.PyBatch, folder_path: str, task_name: str
 ) -> int:
