@@ -29,8 +29,26 @@ _SAVE_PROJECT_SHORTCUT = "Save Project"
 
 # The host object is re-created by every Flame menu hook, so the current
 # workfile lives at module level for the whole Flame session, together
-# with the Flame project it belongs to.
-_CURRENT_WORKFILE = {"flame_project": None, "path": None}
+# with the Flame project and the AYON folder and task it was saved or
+# opened in.
+_CURRENT_WORKFILE = {
+    "flame_project": None,
+    "folder_path": None,
+    "task_name": None,
+    "path": None,
+}
+
+
+def _get_session_context() -> Dict[str, Optional[str]]:
+    """Return the folder path and task name of the AYON session.
+
+    Core sets the session before it saves or opens a workfile, so this is
+    the context of the workfile at those moments.
+    """
+    return {
+        "folder_path": os.environ.get("AYON_FOLDER_PATH"),
+        "task_name": os.environ.get("AYON_TASK_NAME"),
+    }
 
 
 def _get_value(attribute: Any) -> Any:
@@ -41,18 +59,31 @@ def _get_value(attribute: Any) -> Any:
 
 
 def get_current_editorial_workfile() -> Optional[str]:
-    """Return the editorial workfile saved or opened in this Flame project.
+    """Return the editorial workfile saved or opened for the current task.
+
+    The workfile belongs to the Flame project and to the AYON folder and
+    task it was saved or opened in. It is not the current workfile of
+    another task, e.g. after the context was changed in the Publisher.
     """
     if (
         _CURRENT_WORKFILE["flame_project"]
         != flame.project.current_project.name
     ):
         return None
+
+    session = _get_session_context()
+    if (
+        _CURRENT_WORKFILE["folder_path"] != session["folder_path"]
+        or _CURRENT_WORKFILE["task_name"] != session["task_name"]
+    ):
+        return None
     return _CURRENT_WORKFILE["path"]
 
 
 def set_current_editorial_workfile(filepath: Optional[str]):
+    """Remember the workfile of the current Flame project and AYON task."""
     _CURRENT_WORKFILE["flame_project"] = flame.project.current_project.name
+    _CURRENT_WORKFILE.update(_get_session_context())
     _CURRENT_WORKFILE["path"] = (
         os.path.normpath(filepath) if filepath else None
     )

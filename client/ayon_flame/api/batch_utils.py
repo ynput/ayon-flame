@@ -3,6 +3,7 @@ from typing import Optional, List, Dict, Any
 import base64
 import pathlib
 import json
+import os
 import tempfile
 
 from ayon_core.lib import Logger
@@ -353,6 +354,58 @@ def get_batch_products_context(
                 "task_name": data["task"],
             }
     return None
+
+
+# Batch workfile saved or opened for each batch group in this Flame session,
+# by Flame project and batch group name, with the AYON folder path and task
+# name it belongs to. It is not stored in the batch: a path kept in a note
+# went stale, and the note was saved with the file.
+_SESSION_BATCH_WORKFILES: Dict[tuple, Dict[str, str]] = {}
+
+
+def _get_session_batch_key(batch_name: str) -> tuple:
+    return (flame.project.current_project.name, batch_name)
+
+
+def set_session_batch_workfile(
+    batch: flame.PyBatch, filepath: str, folder_path: str, task_name: str
+):
+    """ Remember the workfile saved or opened for the batch group.
+
+    It lasts for the Flame session. A batch group renamed, or deleted and
+    created again with the same name, is told apart only by the context.
+    """
+    key = _get_session_batch_key(batch.name.get_value())
+    _SESSION_BATCH_WORKFILES[key] = {
+        "path": os.path.normpath(filepath),
+        "folder_path": folder_path,
+        "task_name": task_name,
+    }
+
+
+def get_session_batch_workfile(
+    batch_name: str, folder_path: str, task_name: str
+) -> Optional[str]:
+    """ Return the workfile saved or opened for the batch group, if any.
+
+    Args:
+        batch_name (str): Batch group name.
+        folder_path (str): Folder path of the products of the batch group.
+        task_name (str): Task name of the products of the batch group.
+
+    Returns:
+        Optional[str]: Path of a file that still exists and belongs to the
+            given task, None otherwise.
+    """
+    data = _SESSION_BATCH_WORKFILES.get(_get_session_batch_key(batch_name))
+    if (
+        not data
+        or data["folder_path"] != folder_path
+        or data["task_name"] != task_name
+        or not os.path.exists(data["path"])
+    ):
+        return None
+    return data["path"]
 
 
 def get_instances_batches(instances) -> Dict[str, flame.PyBatch]:

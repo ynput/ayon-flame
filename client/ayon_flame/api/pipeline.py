@@ -84,7 +84,8 @@ class FlameHost(HostBase, IWorkfileHost, ILoadHost, IPublishHost):
             dst_path = self.get_current_workfile()
         if not dst_path:
             raise RuntimeError(
-                "No editorial workfile was saved or opened yet, use Save As."
+                "No editorial workfile was saved or opened for this task yet, "
+                "use Save As."
             )
 
         log.info("Writing AYON editorial workfile %r", dst_path)
@@ -259,6 +260,12 @@ class FlameBatchHost(HostBase, IWorkfileHost):
             raise RuntimeError(
                 f"Unable to save Flame Batch workfile '{dst_path}': {error}"
             ) from error
+        batch_utils.set_session_batch_workfile(
+            batch,
+            dst_path,
+            self.get_current_folder_path(),
+            self.get_current_task_name(),
+        )
         log.info("Saved AYON workfile %r", dst_path)
 
     def open_workfile(self, filepath):
@@ -295,6 +302,9 @@ class FlameBatchHost(HostBase, IWorkfileHost):
         # A workfile saved by another build, or moved between tasks, can
         # carry products of another task.
         batch_utils.set_batch_products_context(batch, folder_path, task_name)
+        batch_utils.set_session_batch_workfile(
+            batch, filepath, folder_path, task_name
+        )
         log.info(
             "Opened AYON workfile %r as batch group %r",
             filepath,
@@ -302,7 +312,9 @@ class FlameBatchHost(HostBase, IWorkfileHost):
         )
 
     def get_current_workfile(self):
-        # Batch groups do not store a workfile path.
+        # Batch groups do not store a workfile path, the one saved or
+        # opened for a batch group is kept for the Flame session, see
+        # 'batch_utils.get_session_batch_workfile'.
         return None
 
     def _ensure_batch_product(self, folder_entity, task_entity):

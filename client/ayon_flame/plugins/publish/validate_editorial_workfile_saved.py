@@ -83,8 +83,9 @@ class ValidateEditorialWorkfileSaved(
         return inspect.cleandoc("""
             ### Editorial workfile not saved
 
-            No editorial workfile was saved or opened in this Flame
-            session, so the publish cannot point to its source.
+            No editorial workfile was saved or opened for the current task
+            in this Flame session, so the publish cannot point to its
+            source.
 
             Save it from **AYON > 2 - Work Files...** in the Flame main
             menu or click **Repair** to save the next workfile version now.
