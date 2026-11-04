@@ -9,3 +9,8 @@ Kept free of 'flame' imports, the addon class reads them outside Flame.
 
 # Batch group saved as a consolidated JSON document.
 BATCH_WORKFILE_EXTENSION = ".flamebatch"
+
+# Identifier of the creator of the Batch product. The creator plugins are
+# loaded by file path and cannot be imported, so the host and the creator
+# share the identifier from here.
+BATCH_CREATOR_IDENTIFIER = "io.ayon.creators.flame.batch.workfile"

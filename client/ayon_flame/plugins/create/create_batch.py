@@ -9,14 +9,20 @@ from ayon_core.pipeline import CreatedInstance
 from ayon_core.pipeline.create import PRODUCT_NAME_ALLOWED_SYMBOLS
 
 import ayon_flame.api as flapi
+from ayon_flame.constants import BATCH_CREATOR_IDENTIFIER
+
+# Number Flame adds to the name of a batch group that is taken: ' (2)'.
+_FLAME_NUMBER_SUFFIX = re.compile(r"^(?P<name>.*\S)\s*\((?P<number>\d+)\)\s*$")
 
 
 def get_batch_product_name(batch_name: str, fallback: str) -> str:
     """ Return a product name valid for the server from a batch group name.
 
-    Flame adds ' (2)', ' (3)'... to a batch group name that is taken, and
-    batch groups can be named freely, so characters the server rejects
-    are removed and the name never starts or ends with a dot.
+    Flame adds ' (2)', ' (3)'... to a batch group name that is taken, it
+    becomes '_2', '_3'... like numbered names in AYON ('sh010_comp (2)'
+    gives 'sh010_comp_2'). Batch groups can be named freely, so the
+    characters the server rejects are removed and the name never starts or
+    ends with a dot.
 
     Args:
         batch_name (str): Batch group name.
@@ -26,6 +32,10 @@ def get_batch_product_name(batch_name: str, fallback: str) -> str:
     Returns:
         str: Product name.
     """
+    match = _FLAME_NUMBER_SUFFIX.match(batch_name)
+    if match:
+        batch_name = "{}_{}".format(match["name"].rstrip(), match["number"])
+
     product_name = re.sub(
         "[^{}]+".format(PRODUCT_NAME_ALLOWED_SYMBOLS), "", batch_name
     ).strip(".")
@@ -37,7 +47,7 @@ class CreateBatchWorkfile(flapi.FlameCreator):
     """
     settings_category = "flame"
 
-    identifier = "io.ayon.creators.flame.batch.workfile"
+    identifier = BATCH_CREATOR_IDENTIFIER
     label = "Batch"
     product_base_type = "workfile"
     product_type = product_base_type
