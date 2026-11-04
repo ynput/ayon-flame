@@ -11,6 +11,27 @@ from ayon_core.pipeline.create import PRODUCT_NAME_ALLOWED_SYMBOLS
 import ayon_flame.api as flapi
 
 
+def get_batch_product_name(batch_name: str, fallback: str) -> str:
+    """ Return a product name valid for the server from a batch group name.
+
+    Flame adds ' (2)', ' (3)'... to a batch group name that is taken, and
+    batch groups can be named freely, so characters the server rejects
+    are removed and the name never starts or ends with a dot.
+
+    Args:
+        batch_name (str): Batch group name.
+        fallback (str): Name used when nothing valid is left of the batch
+            group name (e.g. '(2)' has only the number).
+
+    Returns:
+        str: Product name.
+    """
+    product_name = re.sub(
+        "[^{}]+".format(PRODUCT_NAME_ALLOWED_SYMBOLS), "", batch_name
+    ).strip(".")
+    return product_name or fallback
+
+
 class CreateBatchWorkfile(flapi.FlameCreator):
     """Batch workfile creator (stores instance data in a Note node).
     """
@@ -72,10 +93,9 @@ Publishing batch from Batch panel.
         self.log.info(f"Creating batch workfile instance for: {batch_name}")
         instance_data["batch_name"] = batch_name
 
-        # TODO: check this logic with prod use-cases.
-        product_name = re.sub(
-            "[^{}]+".format(PRODUCT_NAME_ALLOWED_SYMBOLS), "", batch_name
-        )
+        # The name is made from the batch group name, 'product_name' of the
+        # creator context is the fallback.
+        product_name = get_batch_product_name(batch_name, product_name)
 
         instance = CreatedInstance(
             product_base_type=self.product_base_type,
