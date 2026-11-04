@@ -151,6 +151,9 @@ class FlameBatchHost(HostBase, IWorkfileHost):
                 "No active Flame Batch group to save."
             ) from error
 
+        # Without a context (a direct 'save_workfile' call instead of
+        # 'save_workfile_with_context') there is no task to move the
+        # products to, only the file is written.
         if self._save_entities:
             # A failure fails the save: a workfile without its Batch
             # product, or with products of another task, is not a valid
@@ -160,9 +163,6 @@ class FlameBatchHost(HostBase, IWorkfileHost):
                 batch, folder_entity["path"], task_entity["name"]
             )
             self._ensure_batch_product(folder_entity, task_entity)
-        # Without a context (a direct 'save_workfile' call instead of
-        # 'save_workfile_with_context') there is no task to move the
-        # products to, only the file is written.
 
         log.debug("Writing AYON workfile %r", dst_path)
         dirpath = os.path.dirname(os.path.abspath(dst_path))
