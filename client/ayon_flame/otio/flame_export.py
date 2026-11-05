@@ -1,4 +1,10 @@
-"""compatibility OpenTimelineIO 0.12.0 and newer
+"""Flame sequence to an OTIO timeline.
+
+Flame is only read here: segments, media info, markers, time effects and
+the colour policy. They are turned into the plain specs of
+`ayon_editorial.otio.builder`, which builds the OTIO objects. The Flame
+timewarp XML baker (`tw_bake`) stays in this addon and feeds the lookup of
+`TimeWarpEffectSpec`.
 """
 from __future__ import annotations
 
@@ -10,6 +16,9 @@ from pprint import pformat
 
 import flame
 import opentimelineio as otio
+from ayon_core.lib.transcoding import IMAGE_EXTENSIONS
+from ayon_editorial.otio import builder, effects, paths
+from ayon_editorial.otio.time import create_time_range, timecode_to_frames
 
 from ayon_flame.api import (
     MediaInfoFile,
@@ -17,15 +26,11 @@ from ayon_flame.api import (
     lib,
 )
 
-from . import tw_bake, utils
+from . import tw_bake
 
 log = logging.getLogger(__name__)
 
 
-TRACK_TYPES = {
-    "video": otio.schema.TrackKind.Video,
-    "audio": otio.schema.TrackKind.Audio
-}
 MARKERS_COLOR_MAP = {
     (1.0, 0.0, 0.0): otio.schema.MarkerColor.RED,
     (1.0, 0.5, 0.0): otio.schema.MarkerColor.ORANGE,
@@ -72,32 +77,13 @@ class OtioExportCTX:
         return cls._tl_start_frame
 
 
-def flatten(_list):
-    for item in _list:
-        if isinstance(item, (list, tuple)):
-            for sub_item in flatten(item):
-                yield sub_item
-        else:
-            yield item
-
-
 def get_current_flame_project():
     project = flame.project.current_project
     return project
 
 
-def create_otio_rational_time(frame, fps):
-    return otio.opentime.RationalTime(
-        float(frame),
-        float(fps)
-    )
-
-
 def create_otio_time_range(start_frame, frame_duration, fps):
-    return otio.opentime.TimeRange(
-        start_time=create_otio_rational_time(start_frame, fps),
-        duration=create_otio_rational_time(frame_duration, fps)
-    )
+    return create_time_range(start_frame, frame_duration, fps)
 
 
 def _get_metadata(item):
@@ -106,74 +92,9 @@ def _get_metadata(item):
     return {}
 
 
-def create_time_effects(otio_clip, clip_data, speed, time_effect=None):
-    otio_effect = None
-
-    # Clip has a TimeWarp effect.
-    if not time_effect.is_empty:
-        data = time_effect.data
-
-        # Check if constant speed retiming
-        if data["type"] == "speed" and data.get("numKeys") == 1:
-            speed = data["speed"]
-
-        else:
-            # Interpolate curves.
-            # And retrieve interpolated value per frames.
-            tw_obj = tw_bake.Timewarp()
-            iframes = tw_obj.bake_flame_tw_setup(
-                time_effect.setup_data
-            )
-
-            # Flame TWs defines its timing offsets
-            # from available range (relative).
-            # Map interpolated frames to
-            # available_range (absolute).
-            av_start = otio_clip.available_range().start_time.to_frames()
-            mapped_frames = [
-                (av_start + iframe - 1)
-                for iframe in iframes.values()
-            ]
-
-            # Set Timewarp lookup values as offsets from src_range (relative).
-            frame_src_offset = min(
-                int(clip_data["source_in"]),
-                int(clip_data["source_out"])
-            )
-
-            metadata = {"lookup": [
-                mapped_frame - (frame_src_offset + idx)
-                for idx, mapped_frame in enumerate(mapped_frames)
-            ]}
-            otio_effect = otio.schema.TimeEffect()
-            otio_effect.effect_name = "TimeWarp"
-            otio_effect.metadata.update(metadata)
-
-    # Potential constant retimes.
-    if otio_effect is None:
-
-        # freeze frame effect
-        if speed == 0.:
-            otio_effect = otio.schema.FreezeFrame(
-                name="FreezeFrame"
-            )
-
-        elif speed != 1:
-            otio_effect = otio.schema.LinearTimeWarp(
-                name="Speed",
-                time_scalar=speed
-            )
-
-    if otio_effect:
-        # add otio effect to clip effects
-        otio_clip.effects.append(otio_effect)
-
-
 def _get_marker_color(flame_colour):
     # clamp colors to closes half numbers
-    _flame_colour = [
-        (lambda x: round(x * 2) / 2)(c)
-        for c in flame_colour]
+    _flame_colour = [round(c * 2) / 2 for c in flame_colour]
 
     for color, otio_color_type in MARKERS_COLOR_MAP.items():
         if _flame_colour == list(color):
@@ -182,211 +103,130 @@ def _get_marker_color(flame_colour):
     return otio.schema.MarkerColor.RED
 
 
-def _get_flame_markers(item):
-    output_markers = []
+def _get_marker_specs(item):
+    """Read the markers of a Flame segment into marker specs."""
+    if not MARKERS_INCLUDE:
+        return []
 
     time_in = item.record_in.relative_frame
-
+    specs = []
     for marker in item.markers:
         log.debug(marker)
-        start_frame = marker.location.get_value().relative_frame
-
-        start_frame = (start_frame - time_in) + 1
-
-        marker_data = {
-            "name": marker.name.get_value(),
-            "duration": marker.duration.get_value().relative_frame,
-            "comment": marker.comment.get_value(),
-            "start_frame": start_frame,
-            "colour": marker.colour.get_value()
-        }
-
-        output_markers.append(marker_data)
-
-    return output_markers
-
-
-def create_otio_markers(otio_item, item):
-    markers = _get_flame_markers(item)
-    for marker in markers:
-        frame_rate = OtioExportCTX.get_fps()
-
-        marked_range = otio.opentime.TimeRange(
-            start_time=otio.opentime.RationalTime(
-                marker["start_frame"],
-                frame_rate
-            ),
-            duration=otio.opentime.RationalTime(
-                marker["duration"],
-                frame_rate
-            )
-        )
-
-        # testing the comment if it is not containing json string
-        check_if_json = re.findall(
-            re.compile(r"[{:}]"),
-            marker["comment"]
-        )
+        comment = marker.comment.get_value()
 
         # to identify this as json, at least 3 items in the list should
         # be present ["{", ":", "}"]
         metadata = {}
-        if len(check_if_json) >= 3:
-            # this is json string
+        if len(re.findall(r"[{:}]", comment)) >= 3:
             try:
-                # capture exceptions which are related to strings only
-                metadata.update(
-                    json.loads(marker["comment"])
-                )
+                metadata.update(json.loads(comment))
             except ValueError as msg:
                 log.error(f"Marker json conversion: {msg}")
         else:
-            metadata["comment"] = marker["comment"]
+            metadata["comment"] = comment
 
-        otio_marker = otio.schema.Marker(
-            name=marker["name"],
-            color=_get_marker_color(
-                marker["colour"]),
-            marked_range=marked_range,
-            metadata=metadata
-        )
+        location = marker.location.get_value().relative_frame
+        specs.append(builder.MarkerSpec(
+            name=marker.name.get_value(),
+            start=(location - time_in) + 1,
+            duration=marker.duration.get_value().relative_frame,
+            color=_get_marker_color(marker.colour.get_value()),
+            metadata=metadata,
+        ))
+    return specs
 
-        otio_item.markers.append(otio_marker)
 
-
-def create_otio_reference(
-        clip_data: dict,
-        media_info: MediaInfoFile | None = None,
-        fps: float | None = None
-) -> (
-    otio.schema.ExternalReference |
-    otio.schema.ImageSequenceReference |
-    otio.schema.MissingReference
-):
-    """Create an OTIO reference from Flame clip data.
-
-    Args:
-        clip_data (dict): Flame clip data.
-        media_info (Optional[MediaInfoFile]): Media information.
-        fps (Optional[float]): Frames per second.
-
-    Returns:
-        otio.schema.ExternalReference |
-        otio.schema.ImageSequenceReference |
-        otio.schema.MissingReference: OTIO reference.
-    """
-    if not media_info:
-        log.error("Media info is missing")
-        return otio.schema.MissingReference(
-            name=clip_data["segment_name"]
-        )
-
-    metadata = _get_metadata(clip_data)
+def _get_media_spec(clip_data, media_info, source_duration, fps):
+    """Read the probed media of a segment into a media spec."""
+    path = clip_data["fpath"]
+    metadata = {}
 
     # Add image-based metadata if not a pure audio media
-    # TODO: what happens if media is image-based but not width
-    # can be reached ?
-    # (could use ayon_core.lib.transcoding.get_otio_info_for_input)
     if hasattr(media_info, "width"):
-        metadata.update(
-            {
-                "ayon.source.width": media_info.width,
-                "ayon.source.height": media_info.height,
-                "ayon.source.pixelAspect": media_info.pixel_aspect,
-            }
-        )
+        metadata.update({
+            "ayon.source.width": media_info.width,
+            "ayon.source.height": media_info.height,
+            "ayon.source.pixelAspect": media_info.pixel_aspect,
+        })
 
-    duration = int(clip_data["source_duration"])
-
-    # get file info for path and start frame
-    media_start = media_info.start_frame or 0
-    fps = fps or media_info.fps or OtioExportCTX.get_fps()
-
-    path = clip_data["fpath"]
-
-    file_name = os.path.basename(path)
-    file_head, extension = os.path.splitext(file_name)
-
-    # get padding and other file infos
-    log.debug(f"_ path: {path}")
-
-    otio_ex_ref_item = None
-
+    sequence = None
+    # match range pattern e.g. "foo_[1001-1010].ext"
     sequence_match = re.match(
-        # match range pattern e.g. "foo_[1001-1010].ext"
         r".*\[(?P<start_frame>\d*)-(?P<end_frame>\d*)\].?",
         media_info.file_pattern
     )
-
     if sequence_match:
+        file_name = os.path.basename(path)
         frame_number = sequence_match.group("start_frame")
-        file_head = file_name.split(frame_number)[0]
-        start_frame = int(frame_number)
-        padding = len(frame_number)
-
-        metadata.update({
-            "isSequence": True,
-            "padding": padding
-        })
-
-        # if it is file sequence try to create `ImageSequenceReference`
-        # the OTIO might not be compatible so return nothing and do it old way
-        try:
-            dirname = os.path.dirname(path)
-            otio_ex_ref_item = otio.schema.ImageSequenceReference(
-                target_url_base=dirname + os.sep,
-                name_prefix=file_head,
-                name_suffix=extension,
-                start_frame=start_frame,
-                frame_zero_padding=padding,
-                rate=fps,
-                available_range=create_otio_time_range(
-                    media_start,
-                    duration,
-                    fps
-                )
-            )
-
-        # in case old OTIO create sequence as `ExternalReference`
-        except AttributeError:
-            dirname, file_name = os.path.split(path)
-            file_name = utils.get_reformatted_filename(file_name, padded=False)
-            reformated_path = os.path.join(dirname, file_name)
-            otio_ex_ref_item = otio.schema.ExternalReference(
-                target_url=reformated_path,
-                available_range=create_otio_time_range(
-                    media_start,
-                    duration,
-                    fps
-                )
-            )
-
-    # video/audio file create `ExternalReference`
-    else:
-        otio_ex_ref_item = otio.schema.ExternalReference(
-            target_url=path,
-            available_range=create_otio_time_range(
-                media_start,
-                duration,
-                fps
-            )
+        sequence = builder.SequenceSpec(
+            target_url_base=os.path.dirname(path) + os.sep,
+            name_prefix=file_name.split(frame_number)[0],
+            name_suffix=os.path.splitext(file_name)[1],
+            start_frame=int(frame_number),
+            padding=len(frame_number),
         )
 
-    # add metadata to otio item
-    add_otio_metadata(otio_ex_ref_item, clip_data, **metadata)
+    return builder.MediaSpec(
+        target_url=path,
+        available_start=media_info.start_frame or 0,
+        available_duration=source_duration,
+        rate=fps or media_info.fps or OtioExportCTX.get_fps(),
+        metadata=metadata,
+        sequence=sequence,
+    )
 
-    return otio_ex_ref_item
+
+def _get_time_effect_spec(clip_data, time_effect, media, speed):
+    """Get the retime effect spec of a segment.
+
+    Flame writes a time warp OR a speed effect, never both.
+    """
+    if not time_effect.is_empty:
+        data = time_effect.data
+
+        # Check if constant speed retiming
+        if data["type"] == "speed" and data.get("numKeys") == 1:
+            speed = data["speed"]
+
+        else:
+            # Interpolate curves and retrieve interpolated value per frame.
+            iframes = tw_bake.Timewarp().bake_flame_tw_setup(
+                time_effect.setup_data
+            )
+
+            # Flame TWs defines its timing offsets from available range
+            # (relative). Map interpolated frames to available_range
+            # (absolute).
+            av_start = int(media.available_start)
+            mapped_frames = [
+                (av_start + iframe - 1)
+                for iframe in iframes.values()
+            ]
+
+            # Lookup values are offsets from src_range (relative).
+            frame_src_offset = min(
+                int(clip_data["source_in"]),
+                int(clip_data["source_out"])
+            )
+            return builder.TimeWarpEffectSpec(
+                lookup=effects.lookup_from_frames(
+                    mapped_frames, frame_src_offset
+                )
+            )
+
+    return builder.SpeedEffectSpec(speed)
 
 
-def create_otio_clip(clip_data):
+def _get_clip_spec(clip_data):
+    """Read a segment's attributes, media and effects into a clip spec."""
     segment = clip_data["PySegment"]
+    fps = OtioExportCTX.get_fps()  # fallback from timeline
 
     media_info = None
-    file_path = None
     file_first_frame = None
     media_timecode_start = None
     tw_data = None
-    media_fps = OtioExportCTX.get_fps()  # fallback from timeline
+    media_fps = fps
     if clip_data.get("fpath"):
         file_path = clip_data["fpath"]
 
@@ -396,8 +236,7 @@ def create_otio_clip(clip_data):
         media_fps = media_info.fps
 
         # define first frame
-        file_first_frame = utils.get_frame_from_filename(
-            file_path)
+        file_first_frame = paths.get_frame(file_path, IMAGE_EXTENSIONS)
         if file_first_frame:
             file_first_frame = int(file_first_frame)
 
@@ -411,40 +250,25 @@ def create_otio_clip(clip_data):
         media_timecode_start = file_first_frame
     elif clip_data.get("source_frame_rate"):
         # it returns `23.976 fps`
-        media_fps = clip_data["source_frame_rate"].replace(" fps", "")
-        media_fps = float(media_fps)
+        media_fps = float(
+            clip_data["source_frame_rate"].replace(" fps", "")
+        )
 
-    first_frame = media_timecode_start or file_first_frame or 0
+    first_frame = int(media_timecode_start or file_first_frame or 0)
 
-    _clip_source_in = int(clip_data["source_in"])
-    _clip_source_out = int(clip_data["source_out"])
-    _clip_record_in = clip_data["record_in"]
-    _clip_record_out = clip_data["record_out"]
-    _clip_record_duration = int(clip_data["record_duration"])
-
-    log.debug(f"file_first_frame: {file_first_frame}")
-    log.debug(f"first_frame: {first_frame}")
-    log.debug(f"_clip_source_in: {_clip_source_in}")
-    log.debug(f"_clip_source_out: {_clip_source_out}")
-    log.debug(f"_clip_record_in: {_clip_record_in}")
-    log.debug(f"_clip_record_out: {_clip_record_out}")
+    clip_source_in = int(clip_data["source_in"])
+    clip_source_out = int(clip_data["source_out"])
+    clip_record_duration = int(clip_data["record_duration"])
 
     # first solve if the reverse timing
     speed = 1
     if clip_data["source_in"] > clip_data["source_out"]:
-        source_in = _clip_source_out - int(first_frame)
-        source_out = _clip_source_in - int(first_frame)
+        source_in = clip_source_out - first_frame
+        source_out = clip_source_in - first_frame
         speed = -1
     else:
-        source_in = _clip_source_in - int(first_frame)
-        source_out = _clip_source_out - int(first_frame)
-
-    log.debug(f"_ source_in: {source_in}")
-    log.debug(f"_ source_out: {source_out}")
-
-    if file_first_frame:
-        log.debug(f"_ file_source_in: {file_first_frame + source_in}")
-        log.debug(f"_ file_source_in: {file_first_frame + source_out}")
+        source_in = clip_source_in - first_frame
+        source_out = clip_source_out - first_frame
 
     source_duration = (source_out - source_in + 1)
 
@@ -452,66 +276,47 @@ def create_otio_clip(clip_data):
         clip_data["source_duration"] = source_duration
 
     # secondly check if any change of speed
-    if source_duration != _clip_record_duration:
-        retime_speed = float(source_duration) / float(_clip_record_duration)
-        log.debug(f"_ calculated speed: {retime_speed}")
-        speed *= retime_speed
+    if source_duration != clip_record_duration:
+        speed *= float(source_duration) / float(clip_record_duration)
 
-    log.debug(f"_ speed: {speed}")
-    log.debug(f"_ source_duration: {source_duration}")
-    log.debug(f"_ _clip_record_duration: {_clip_record_duration}")
+    log.debug(
+        f"_ source_in: {source_in}, source_out: {source_out}, "
+        f"speed: {speed}, source_duration: {source_duration}, "
+        f"record_duration: {clip_record_duration}"
+    )
 
-    # create media reference
+    media = None
     if media_info:
-        media_reference = create_otio_reference(
-            clip_data, media_info=media_info, fps=media_fps)
-
-        # create source range
-        available_media_start = media_reference.available_range.start_time
-        source_in_offset = otio.opentime.RationalTime(
-            source_in,
-            available_media_start.rate
-        )
-        src_in = available_media_start + source_in_offset
-        conformed_src_in = src_in.rescaled_to(OtioExportCTX.get_fps())
-    else:
-        media_reference = create_otio_reference(
-            clip_data, fps=media_fps
-        )
-        conformed_src_in = otio.opentime.RationalTime(
-            source_in,
-            OtioExportCTX.get_fps()
+        media = _get_media_spec(
+            clip_data, media_info, int(clip_data["source_duration"]),
+            media_fps
         )
 
-    source_range = create_otio_time_range(
-        conformed_src_in.value,  # no rounding to preserve accuracy
-        _clip_record_duration,
-        OtioExportCTX.get_fps()
-    )
+    clip_effects = []
+    if tw_data and media:
+        clip_effects.append(
+            _get_time_effect_spec(clip_data, tw_data, media, speed)
+        )
 
-    otio_clip = otio.schema.Clip(
+    return builder.ClipSpec(
         name=clip_data["segment_name"],
-        source_range=source_range,
-        media_reference=media_reference
+        source_offset=source_in,
+        duration=clip_record_duration,
+        media=media,
+        record_in=clip_data["record_in"],
+        record_out=clip_data["record_out"],
+        markers=_get_marker_specs(segment),
+        effects=clip_effects,
     )
 
-    # Add markers
-    if MARKERS_INCLUDE:
-        create_otio_markers(otio_clip, segment)
 
-    if tw_data:
-        create_time_effects(otio_clip, clip_data, speed, time_effect=tw_data)
+def create_otio_clip(clip_data):
+    """Create an OTIO clip from the attributes of a Flame segment.
 
-    return otio_clip
-
-
-def create_otio_gap(gap_start, clip_start, tl_start_frame, fps):
-    return otio.schema.Gap(
-        source_range=create_otio_time_range(
-            gap_start,
-            (clip_start - tl_start_frame) - gap_start,
-            fps
-        )
+    Needs `OtioExportCTX.set_fps` set to the timeline rate.
+    """
+    return builder.create_clip(
+        _get_clip_spec(clip_data), OtioExportCTX.get_fps()
     )
 
 
@@ -535,82 +340,18 @@ def _get_colourspace_policy():
     return output
 
 
-def _create_otio_timeline(sequence):
-
+def _get_timeline_metadata(sequence):
     metadata = _get_metadata(sequence)
 
     # find colour policy files and add them to metadata
-    colorspace_policy = _get_colourspace_policy()
-    metadata.update(colorspace_policy)
+    metadata.update(_get_colourspace_policy())
 
     metadata.update({
         "ayon.timeline.width": int(sequence.width),
         "ayon.timeline.height": int(sequence.height),
         "ayon.timeline.pixelAspect": float(1)
     })
-
-    rt_start_time = create_otio_rational_time(
-        OtioExportCTX.get_tl_start_frame(), OtioExportCTX.get_fps())
-
-    return otio.schema.Timeline(
-        name=str(sequence.name)[1:-1],
-        global_start_time=rt_start_time,
-        metadata=metadata
-    )
-
-
-def create_otio_track(track_type, track_name):
-    return otio.schema.Track(
-        name=track_name,
-        kind=TRACK_TYPES[track_type]
-    )
-
-
-def add_otio_gap(clip_data, otio_track, prev_out):
-    gap_length = clip_data["record_in"] - prev_out
-    if prev_out != 0:
-        gap_length -= 1
-
-    gap = otio.opentime.TimeRange(
-        duration=otio.opentime.RationalTime(
-            gap_length,
-            OtioExportCTX.get_fps()
-        )
-    )
-    otio_gap = otio.schema.Gap(source_range=gap)
-    otio_track.append(otio_gap)
-
-
-def add_otio_metadata(otio_item, item, **kwargs):
-    metadata = _get_metadata(item)
-
-    # add additional metadata from kwargs
-    if kwargs:
-        metadata.update(kwargs)
-
-    # add metadata to otio item metadata
-    for key, value in metadata.items():
-        otio_item.metadata.update({key: value})
-
-
-def _get_shot_tokens_values(clip, tokens):
-    old_value = None
-    output = {}
-
-    old_value = clip.shot_name.get_value()
-
-    for token in tokens:
-        clip.shot_name.set_value(token)
-        _key = re.sub(r"[ <>]", "", token)
-
-        try:
-            output[_key] = int(clip.shot_name.get_value())
-        except ValueError:
-            output[_key] = clip.shot_name.get_value()
-
-    clip.shot_name.set_value(old_value)
-
-    return output
+    return metadata
 
 
 def _get_segments_from_track(
@@ -640,42 +381,13 @@ def _get_segments_from_track(
     return all_segments
 
 
-def _distribute_segments_on_track(segments, otio_track):
-    """Distribute some Flame segments on an OTIO track.
-
-    Args:
-        segments List[flame.PySegments]: The segments to put on the track.
-        otio_track opentimelineio.schema.Track: OTIO track.
-    """
-    if not segments:
-        return
-
-    prev_item_record_out = segments[0]["record_out"]
-    for itemindex, segment_data in enumerate(segments):
-        log.debug(f"_ itemindex: {itemindex}")
-        log.debug(f"_ segment_data: {segment_data!r}")
-
-        # calculate clip frame range difference from each other
-        clip_diff = segment_data["record_in"] - prev_item_record_out
-
-        # initial track gap
-        # add gap if first track item is not starting
-        # at first timeline frame
-        if itemindex == 0 and segment_data["record_in"] > 0:
-            add_otio_gap(segment_data, otio_track, 0)
-
-        # inbetween clip gap
-        # or add gap if following track items are having
-        # frame range differences from each other
-        elif itemindex and clip_diff != 1:
-            add_otio_gap(
-                segment_data, otio_track, prev_item_record_out)
-
-        # create otio clip and add it to track
-        otio_clip = create_otio_clip(segment_data)
-        log.debug(f"_ otio_clip: {otio_clip!r}")
-        otio_track.append(otio_clip)
-        prev_item_record_out = segment_data["record_out"]
+def _fill_track(track_builder, flame_track, validation_aggregator):
+    """Append the clips of a Flame track; gaps come from record times."""
+    segments = _get_segments_from_track(
+        flame_track, validation_aggregator=validation_aggregator)
+    log.debug(f"_ segments: {pformat(segments)}")
+    for segment_data in segments:
+        track_builder.append_clip(_get_clip_spec(segment_data))
 
 
 def create_otio_timeline(
@@ -692,14 +404,20 @@ def create_otio_timeline(
     OtioExportCTX.set_fps(
         float(str(sequence.frame_rate)[:-4]))
 
-    tl_start_frame = utils.timecode_to_frames(
+    tl_start_frame = timecode_to_frames(
         str(sequence.start_time).replace("+", ":"),
         OtioExportCTX.get_fps()
     )
     OtioExportCTX.set_tl_start_frame(tl_start_frame)
 
-    # convert timeline to otio
-    otio_timeline = _create_otio_timeline(sequence)
+    timeline_builder = builder.TimelineBuilder(
+        str(sequence.name)[1:-1],
+        OtioExportCTX.get_fps(),
+        start_frame=OtioExportCTX.get_tl_start_frame(),
+        metadata=_get_timeline_metadata(sequence),
+        gap_mode=builder.GAP_RECORD,
+        sequence_fallback_padded=False,
+    )
 
     # create otio video tracks with clips
     for ver in sequence.versions:
@@ -712,18 +430,9 @@ def create_otio_timeline(
             ):
                 continue
 
-            # convert track to otio
-            otio_track = create_otio_track(
-                "video", str(track.name)[1:-1])
-
-            # Add segments onto track.
-            segments = _get_segments_from_track(
-                track, validation_aggregator=validation_aggregator)
-            log.debug(f"_ segments: {pformat(segments)}")
-            _distribute_segments_on_track(segments, otio_track)
-
-            # add track to otio timeline
-            otio_timeline.tracks.append(otio_track)
+            track_builder = timeline_builder.add_track(
+                str(track.name)[1:-1], "Video")
+            _fill_track(track_builder, track, validation_aggregator)
 
     # create otio audio tracks with clips
     for audio_track in sequence.audio_tracks:
@@ -736,6 +445,7 @@ def create_otio_timeline(
             log.debug(f"Unsupported audio track: {audio_track!r}")
             continue
 
+        # only the first channel is exported
         audio_channel = audio_track.channels[0]
 
         # avoid all empty tracks
@@ -747,17 +457,12 @@ def create_otio_timeline(
             log.debug(f"Hidden or empty channel: {audio_channel!r}")
             continue
 
-        otio_track = create_otio_track(
-            "audio", audio_track.name or "unnamed")
+        track_builder = timeline_builder.add_track(
+            audio_track.name or "unnamed", "Audio")
+        _fill_track(track_builder, audio_channel, validation_aggregator)
 
-        segments = _get_segments_from_track(
-            audio_channel, validation_aggregator=validation_aggregator)
-        log.debug(f"_ segments: {pformat(segments)}")
-        _distribute_segments_on_track(segments, otio_track)
-        otio_timeline.tracks.append(otio_track)
-
-    return otio_timeline
+    return timeline_builder.build()
 
 
 def write_to_file(otio_timeline, path):
-    otio.adapters.write_to_file(otio_timeline, path)
+    builder.write_to_file(otio_timeline, path)
