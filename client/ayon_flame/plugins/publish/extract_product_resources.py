@@ -4,6 +4,10 @@ import os
 import re
 
 import pyblish.api
+from ayon_editorial.shots.retime import (
+    source_range_with_handles,
+    unlinked_retime_values,
+)
 from pathlib import Path
 from pprint import pformat
 
@@ -155,61 +159,46 @@ class ExtractProductResources(
             segment_data = ayfapi.get_segment_attributes(segment)
             source_in = segment_data["source_in"]
             source_out = segment_data["source_out"]
-            source_duration = source_out - source_in + 1
-            record_duration = segment_data["record_duration"]
-            # secondly check if any change of speed
-            retimed_speed = 1
-            if source_duration != record_duration:
-                speed = float(source_duration) / float(record_duration)
-                self.log.debug(f"_ calculated speed: {speed}")
-                retimed_speed *= speed
-            retimed_handle_start = handle_start * retimed_speed
-            retimed_handle_end = handle_end * retimed_speed
-            retimed_source_duration = source_duration * retimed_speed
-            source_start_handles = source_in - handle_start
-            source_end_handles = source_out - handle_end
+            unlinked = unlinked_retime_values(
+                source_in,
+                source_out,
+                segment_data["record_duration"],
+                handle_start,
+                handle_end,
+            )
+            self.log.debug(f"_ calculated speed: {unlinked['speed']}")
+            retimed_speed = unlinked["speed"]
+            retimed_handle_start = unlinked["handle_start"]
+            retimed_handle_end = unlinked["handle_end"]
+            retimed_source_duration = unlinked["source_duration"]
+            source_start_handles = unlinked["source_start_handles"]
+            source_end_handles = unlinked["source_end_handles"]
 
         include_handles = instance.data.get("includeHandles")
         retimed_handles = instance.data.get("retimedHandles")
 
-        # retime if needed
-        if retimed_speed != 1.0:
-            if retimed_handles:
-                # handles are retimed
-                source_start_handles = (
-                    source_start_handles - retimed_handle_start)
-                source_end_handles = (
-                    source_start_handles
-                    + (retimed_source_duration - 1)
-                    + retimed_handle_start
-                    + retimed_handle_end
-                )
-
-            else:
-                # handles are not retimed
-                source_end_handles = (
-                    source_start_handles
-                    + (retimed_source_duration - 1)
-                    + handle_start
-                    + handle_end
-                )
-
-        # get frame range with handles for representation range
-        frame_start_handle = frame_start - handle_start
-        repre_frame_start = frame_start_handle
-        if include_handles:
-            if retimed_speed == 1.0 or not retimed_handles:
-                frame_start_handle = frame_start
-            else:
-                frame_start_handle = (
-                    frame_start - handle_start) + retimed_handle_start
+        source_range = source_range_with_handles(
+            frame_start,
+            handle_start,
+            handle_end,
+            source_start_handles,
+            source_end_handles,
+            retimed_speed,
+            retimed_handle_start,
+            retimed_handle_end,
+            retimed_source_duration,
+            bool(include_handles),
+            bool(retimed_handles),
+        )
+        source_start_handles = source_range.source_start_handles
+        source_end_handles = source_range.source_end_handles
+        frame_start_handle = source_range.frame_start_handle
+        repre_frame_start = source_range.repre_frame_start
 
         self.log.debug("_ frame_start_handle: %s", frame_start_handle)
         self.log.debug("_ repre_frame_start: %s", repre_frame_start)
 
-        # calculate duration with handles
-        source_duration_handles = (
-            source_end_handles - source_start_handles) + 1
+        source_duration_handles = source_range.source_duration_handles
 
         self.log.debug(
             "_ source_duration_handles: %s",

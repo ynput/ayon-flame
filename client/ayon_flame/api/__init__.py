@@ -62,7 +62,7 @@ from .menu import (
     FlameMenuUniversal
 )
 from .plugin import (
-    PublishableClip,
+    clip_info_from_segment,
     ClipLoader,
     OpenClipSolver,
     FlameCreator,
@@ -164,7 +164,7 @@ __all__ = [
 
     # plugin
     "Creator",
-    "PublishableClip",
+    "clip_info_from_segment",
     "ClipLoader",
     "OpenClipSolver",
     "FlameCreator",

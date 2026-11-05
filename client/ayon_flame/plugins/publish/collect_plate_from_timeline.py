@@ -3,6 +3,7 @@ from pprint import pformat
 import pyblish
 
 import ayon_flame.api as ayfapi
+from ayon_editorial.shots.retime import RetimeOptions, retime_instance_data
 from ayon_flame.otio import utils
 
 
@@ -85,7 +86,11 @@ class CollectTimelinePlate(pyblish.api.InstancePlugin):
         version_data["colorSpace"] = colorspace
         instance.data["colorspace"] = colorspace
 
-        instance.data["shotDurationFromSource"] = instance.data.get(
-            "retimedFramerange")
+        # `shotDurationFromSource` makes ayon-core use the retimed ranges
+        # by its presence, so it is set only when retimed frame range is on.
+        instance.data.pop("shotDurationFromSource", None)
+        instance.data.update(
+            retime_instance_data(RetimeOptions.from_data(instance.data))
+        )
 
         self.log.debug(f"__ inst_data: {pformat(instance.data)}")
