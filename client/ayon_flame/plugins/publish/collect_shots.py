@@ -3,6 +3,7 @@ import re
 from pprint import pformat
 
 import ayon_flame.api as ayfapi
+from ayon_editorial.shots.retime import workfile_frame_start
 from ayon_flame.otio import flame_export, utils
 
 from ayon_core.pipeline import PublishError
@@ -161,7 +162,11 @@ class CollectShot(pyblish.api.InstancePlugin):
             creator_attrs["handleEnd"], tail)
 
         # Adjust info from track_item on timeline
-        workfile_start = self._set_workfile_start(creator_attrs)
+        workfile_start = workfile_frame_start(
+            creator_attrs["workfileFrameStart"],
+            creator_attrs["handleStart"],
+            bool(creator_attrs.get("includeHandles")),
+        )
 
         instance.data.update({
             "item": segment_item,
@@ -180,17 +185,6 @@ class CollectShot(pyblish.api.InstancePlugin):
         self._get_resolution_to_data(instance.data, instance.context)
         self._inject_editorial_shared_data(instance)
         self.log.debug(f"__ inst_data: {pformat(instance.data)}")
-
-    @staticmethod
-    def _set_workfile_start(data):
-        include_handles = data.get("includeHandles")
-        workfile_start = data["workfileFrameStart"]
-        handle_start = data["handleStart"]
-
-        if include_handles:
-            workfile_start += handle_start
-
-        return workfile_start
 
     def _get_comment_attributes(self, segment):
         comment = segment.comment.get_value()
