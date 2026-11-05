@@ -223,7 +223,7 @@ OTIO file.
         instance_data["task"] = None
 
         # hero (vertical sync) track segments go first
-        v_sync_track = options.get("vSyncTrack", "")
+        v_sync_track = options.get("vSyncTrack") or ""
         sorted_selected_segments = []
         unsorted_selected_segments = []
         for _segment in self.selected:
@@ -234,7 +234,8 @@ OTIO file.
 
         sorted_selected_segments.extend(unsorted_selected_segments)
 
-        sequence_name = self.sequence.name.get_value()
+        # Flame only replaced spaces in the sequence name, clip names stay
+        sequence_name = self.sequence.name.get_value().replace(" ", "_")
         solver = ShotHierarchySolver(
             options,
             sequence_name,
