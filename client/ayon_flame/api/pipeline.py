@@ -305,6 +305,7 @@ class FlameBatchHost(HostBase, IWorkfileHost):
         batch_utils.set_session_batch_workfile(
             batch, filepath, folder_path, task_name
         )
+        flame.set_current_tab("Batch")
         log.info(
             "Opened AYON workfile %r as batch group %r",
             filepath,

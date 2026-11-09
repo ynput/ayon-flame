@@ -19,8 +19,10 @@ except ImportError:
 
 import traceback
 
+import ayon_api
 import ayon_flame.api as flame_api
-from ayon_core.pipeline import install_host
+from ayon_core.lib import env_value_to_bool
+from ayon_core.pipeline import get_global_context, install_host
 from ayon_flame.api import FlameHost
 from qtpy import QtWidgets
 
@@ -154,11 +156,81 @@ def check_project_ocio_config():
     )
 
 
-def app_initialized(parent=None):
+def open_launch_workfile():
+    """Open the last workfile and the Workfiles tool of the launch task.
+
+    Follows the core settings the launcher passes as
+    'AVALON_OPEN_LAST_WORKFILE' and 'AYON_WORKFILE_TOOL_ON_START'. The
+    workfile host is picked by the workfile extension. Nothing is opened
+    when the task has no workfile yet.
+
+    Runs from an idle event, so errors go to the Flame message bar
+    instead of a blocking dialog.
+    """
+    import flame
+
+    # The launch actions run once. A project change starts a new Flame
+    # process from this one, with this environment, and runs
+    # 'app_initialized' again.
+    open_last_workfile = env_value_to_bool(
+        value=os.environ.pop("AVALON_OPEN_LAST_WORKFILE", None)
+    )
+    show_workfiles_tool = env_value_to_bool(
+        value=os.environ.pop("AYON_WORKFILE_TOOL_ON_START", None)
+    )
+
+    context = get_global_context()
+    if not context["folder_path"] or not context["task_name"]:
+        return
+
+    # Set by the launcher even when the task has no workfile yet, then
+    # with the first workfile extension of the addon.
+    filepath = os.environ.get("AYON_LAST_WORKFILE", "")
+    is_batch = filepath.endswith(flame_api.BATCH_WORKFILE_EXTENSION)
+    try:
+        # The host is installed by the menu hooks, which may not have run
+        # yet.
+        ayon_flame_install()
+
+        if open_last_workfile and os.path.exists(filepath):
+            if is_batch:
+                host = flame_api.FlameBatchHost()
+            else:
+                host = flame_api.FlameEditorialHost()
+
+            project_name = context["project_name"]
+            folder_entity = ayon_api.get_folder_by_path(
+                project_name, context["folder_path"]
+            )
+            task_entity = ayon_api.get_task_by_name(
+                project_name, folder_entity["id"], context["task_name"]
+            )
+            host.open_workfile_with_context(
+                filepath, folder_entity, task_entity
+            )
+
+        if show_workfiles_tool:
+            if is_batch:
+                flame_api.show_batch_workfiles()
+            else:
+                flame_api.show_editorial_workfiles()
+
+    except Exception as error:
+        print(f"!!!! AYON: not able to open the launch workfile: {error} !!!!")
+        traceback.print_exc()
+        flame.messages.show_in_console(
+            f"AYON: not able to open the launch workfile: {error}",
+            "error",
+            20,
+        )
+
+
+def app_initialized(project_name=None):
     """Inicialization of Framework
 
     Args:
-        parent (obj, optional): Parent object. Defaults to None.
+        project_name (str, optional): Flame project, given when Flame runs
+            the hook, after each project load. Defaults to None.
     """
     flame_api.CTX.app_framework = flame_api.FlameAppFramework()
 
@@ -166,6 +238,11 @@ def app_initialized(parent=None):
 
     load_apps()
     check_project_ocio_config()
+
+    if project_name:
+        import flame
+
+        flame.schedule_idle_event(open_launch_workfile)
 
 
 """
@@ -183,7 +260,7 @@ except ImportError:
     print("!!!! not able to import flame module !!!!")
 
 try:
-    app_initialized(parent=None)
+    app_initialized()
 except Exception as error:
     print(f"!!!! not able to initialize the app: {error} !!!!")
 

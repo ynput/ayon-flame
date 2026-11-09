@@ -25,6 +25,28 @@ The published Batch workfile has the same `.flamebatch` extension, so it is
 listed among the published workfiles of the task. Batch workfiles published
 before this change are `.json` and stay loadable with the Batch loader.
 
+### Launch
+
+The core settings that open the last workfile and the Workfiles tool on
+start apply to Flame too, once per Flame session. Opening the last
+workfile is on by default for every host (core `last_workfile_on_startup`
+profiles), add a profile for `flame` to turn it off.
+
+- The last workfile of the task is opened by the host of its extension: a
+  `.flamebatch` as a new batch group on the Batch page, a `.flameedit` as
+  its sequence on the Timeline page when the sequence is in the Flame
+  project. It is the highest version across both extensions, the most
+  recently modified one on a tie, or the workfile selected in the
+  launcher. Each kind numbers its own versions, so a task with both kinds
+  opens the one with the higher number, not the most recent one.
+- Like opening it from the Workfiles tool, every launch adds a batch
+  group, batch groups of earlier sessions stay on the desktop.
+- A task without any workfile opens nothing, its first workfile is saved
+  from the Workfiles tool.
+- The Workfiles tool on start is the tool of that workfile kind. For a
+  task without any workfile it is the editorial one, the first workfile
+  extension of the addon.
+
 ### Publish source
 
 The version source of a publish is the saved AYON workfile, not the Flame

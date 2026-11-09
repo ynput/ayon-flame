@@ -74,6 +74,7 @@ from .menu import (
     FlameMenuBatch,
     FlameMenuUniversal,
     show_batch_workfiles,
+    show_editorial_workfiles,
 )
 from .plugin import (
     PublishableClip,
@@ -187,6 +188,7 @@ __all__ = [
     "FlameMenuBatch",
     "FlameMenuUniversal",
     "show_batch_workfiles",
+    "show_editorial_workfiles",
 
     # plugin
     "Creator",
