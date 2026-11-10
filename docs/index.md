@@ -83,3 +83,17 @@ placeholder:
 - Editorial publish: the editorial workfile saved or opened for the current
   task. It is not used for another task, e.g. after the context was changed
   in the Publisher.
+
+### Batch publish version
+
+A Batch publish follows the core setting "Follow workfile version"
+(`core/publish/CollectAnatomyInstanceData`), like other hosts:
+
+- On: the version of the Batch workfile above, e.g. v003 for
+  `sh010_comp_v003.flamebatch`. A Flame save keeps that version, so a second
+  publish from the same workfile has the same version. Add `flame` to the
+  core "Validate Version" profiles to refuse it, else it overwrites the
+  published version. Save As in Work Files before publishing again.
+- Off (core default): the next version of the product.
+
+The Flame iteration number is not used: Flame numbers jump and get reused.
