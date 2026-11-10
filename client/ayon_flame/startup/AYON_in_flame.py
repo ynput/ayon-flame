@@ -157,47 +157,46 @@ def check_project_ocio_config():
 
 
 def open_launch_workfile():
-    """Open the last workfile and the Workfiles tool of the launch task.
+    """Open the last workfile of the launch task and show the Workfiles tool.
 
-    Follows the core settings the launcher passes as
-    'AVALON_OPEN_LAST_WORKFILE' and 'AYON_WORKFILE_TOOL_ON_START'. The
-    workfile host is picked by the workfile extension. Nothing is opened
-    when the task has no workfile yet.
+    Follows the core Workfiles settings: last workfile on startup, and
+    Workfiles tool on startup. The workfile extension picks the host and
+    the tool. A task without a workfile opens nothing.
 
-    Runs from an idle event, so errors go to the Flame message bar
-    instead of a blocking dialog.
+    Runs from an idle event, so errors show in the Flame message bar, not
+    in a blocking dialog.
     """
-    import flame
-
-    # The launch actions run once. A project change starts a new Flame
-    # process from this one, with this environment, and runs
-    # 'app_initialized' again.
+    # Run once per launch. A project change starts a new Flame process
+    # with this environment, and 'app_initialized' runs again.
     open_last_workfile = env_value_to_bool(
         value=os.environ.pop("AVALON_OPEN_LAST_WORKFILE", None)
     )
     show_workfiles_tool = env_value_to_bool(
         value=os.environ.pop("AYON_WORKFILE_TOOL_ON_START", None)
     )
+    if not open_last_workfile and not show_workfiles_tool:
+        return
 
     context = get_global_context()
     if not context["folder_path"] or not context["task_name"]:
         return
 
-    # Set by the launcher even when the task has no workfile yet, then
-    # with the first workfile extension of the addon.
+    # The launcher sets it even for a task without a workfile. It then
+    # ends with the first extension of the addon, '.flameedit'.
     filepath = os.environ.get("AYON_LAST_WORKFILE", "")
-    is_batch = filepath.endswith(flame_api.BATCH_WORKFILE_EXTENSION)
+    if filepath.endswith(flame_api.BATCH_WORKFILE_EXTENSION):
+        host_class = flame_api.FlameBatchHost
+        show_workfiles = flame_api.show_batch_workfiles
+    else:
+        host_class = flame_api.FlameEditorialHost
+        show_workfiles = flame_api.show_editorial_workfiles
+
+    # Two steps, so the tool still shows when the workfile fails to open.
     try:
-        # The host is installed by the menu hooks, which may not have run
-        # yet.
+        # Only the menu hooks install the host, they may not have run yet.
         ayon_flame_install()
 
         if open_last_workfile and os.path.exists(filepath):
-            if is_batch:
-                host = flame_api.FlameBatchHost()
-            else:
-                host = flame_api.FlameEditorialHost()
-
             project_name = context["project_name"]
             folder_entity = ayon_api.get_folder_by_path(
                 project_name, context["folder_path"]
@@ -205,32 +204,35 @@ def open_launch_workfile():
             task_entity = ayon_api.get_task_by_name(
                 project_name, folder_entity["id"], context["task_name"]
             )
-            host.open_workfile_with_context(
+            host_class().open_workfile_with_context(
                 filepath, folder_entity, task_entity
             )
-
-        if show_workfiles_tool:
-            if is_batch:
-                flame_api.show_batch_workfiles()
-            else:
-                flame_api.show_editorial_workfiles()
-
     except Exception as error:
-        print(f"!!!! AYON: not able to open the launch workfile: {error} !!!!")
-        traceback.print_exc()
-        flame.messages.show_in_console(
-            f"AYON: not able to open the launch workfile: {error}",
-            "error",
-            20,
-        )
+        _show_error("open the launch workfile", error)
+
+    if show_workfiles_tool:
+        try:
+            show_workfiles()
+        except Exception as error:
+            _show_error("show the Workfiles tool", error)
+
+
+def _show_error(action, error):
+    import flame
+
+    print(f"!!!! AYON: not able to {action}: {error} !!!!")
+    traceback.print_exc()
+    flame.messages.show_in_console(
+        f"AYON: not able to {action}: {error}", "error", 20
+    )
 
 
 def app_initialized(project_name=None):
     """Inicialization of Framework
 
     Args:
-        project_name (str, optional): Flame project, given when Flame runs
-            the hook, after each project load. Defaults to None.
+        project_name (str, optional): Flame project. Flame passes it after
+            each project load. Defaults to None.
     """
     flame_api.CTX.app_framework = flame_api.FlameAppFramework()
 
