@@ -208,7 +208,7 @@ def open_launch_workfile():
                 filepath, folder_entity, task_entity
             )
     except Exception as error:
-        _show_error("open the launch workfile", error)
+        _show_error(f"open {os.path.basename(filepath)}", error)
 
     if show_workfiles_tool:
         try:

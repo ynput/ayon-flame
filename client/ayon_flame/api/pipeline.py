@@ -294,10 +294,15 @@ class FlameBatchHost(HostBase, IWorkfileHost):
             filepath,
             unique_batch_name,
         )
-        flame.batch.create_batch_group(unique_batch_name)
-        batch = batch_utils.load_batch_from_consolidated_json(
-            filepath, name=unique_batch_name
-        )
+        new_batch = flame.batch.create_batch_group(unique_batch_name)
+        try:
+            batch = batch_utils.load_batch_from_consolidated_json(
+                filepath, name=unique_batch_name
+            )
+        except Exception:
+            # A file that fails to load leaves no empty batch group.
+            flame.delete(new_batch, confirm=False)
+            raise
         batch_utils.set_instances_batch_name(batch, unique_batch_name)
         # A workfile saved by another build, or moved between tasks, can
         # carry products of another task.
