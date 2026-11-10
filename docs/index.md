@@ -65,6 +65,11 @@ written. Nothing is written for a batch group without a Batch workfile
 in this Flame session: after a Flame restart or a project switch, for a
 group from the Batch loader, or after a Batch Load And Replace.
 
+A project save warns in the Flame console when the current batch group
+has AYON products but no Batch workfile in this Flame session ("not
+linked to a workfile"), or when its workfile is older than the last one
+of the task. Open the right workfile from Work Files, or Save As.
+
 Work Files selects the Batch workfile of the current batch group, and
 Save As proposes its comment.
 

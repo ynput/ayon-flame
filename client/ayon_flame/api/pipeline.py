@@ -8,7 +8,7 @@ import ayon_api
 import flame
 
 from ayon_core.host import HostBase, ILoadHost, IPublishHost, IWorkfileHost
-from ayon_core.lib import Logger
+from ayon_core.lib import Logger, get_version_from_path
 from ayon_core.pipeline import (
     AYON_CONTAINER_ID,
     deregister_creator_plugin_path,
@@ -408,21 +408,56 @@ def refresh_batch_workfile():
     """Rewrite the Batch workfile of the current batch group.
 
     Runs after a Flame project save. Nothing is saved when the batch group
-    has no Batch workfile in this Flame session.
+    has no Batch workfile in this Flame session. The artist is warned when
+    a batch group with AYON products has none, or comes from an older
+    version than the last one of its task.
     """
+    project_settings = get_current_project_settings()
+    if not project_settings["flame"]["update_batch_workfile"]["enabled"]:
+        return
+
     host = FlameBatchHost()
     filepath = host.get_current_workfile()
     if not filepath:
-        return
-
-    project_settings = get_current_project_settings()
-    if not project_settings["flame"]["update_batch_workfile"]["enabled"]:
+        # A batch group without AYON products is not an AYON workfile.
+        if batch_utils.get_batch_products_context():
+            batch_name = batch_utils.get_current_batch().name.get_value()
+            flame.messages.show_in_console(
+                f"AYON: {batch_name} is not linked to a workfile, use Work"
+                " Files > Open or Save As.",
+                "warning",
+                10,
+            )
         return
 
     host.save_workfile(filepath)
     flame.messages.show_in_console(
         f"AYON: saved {os.path.basename(filepath)}", "info", 5
     )
+
+    # Another artist, or another batch group, may have saved a newer
+    # version since this one was opened. The file is saved already, a
+    # failed lookup must not report a failed save.
+    context = host.get_current_context()
+    try:
+        last_filepath = get_last_batch_workfile(
+            context["folder_path"], context["task_name"]
+        )
+    except Exception:
+        log.warning("Unable to find the last Batch workfile.", exc_info=True)
+        return
+    if not last_filepath:
+        return
+    version = get_version_from_path(os.path.basename(filepath))
+    last_version = get_version_from_path(os.path.basename(last_filepath))
+    if version and last_version and int(last_version) > int(version):
+        last_name = os.path.basename(last_filepath)
+        flame.messages.show_in_console(
+            f"AYON: {os.path.basename(filepath)} is older than {last_name}."
+            f" Open {last_name} from Work Files.",
+            "warning",
+            10,
+        )
 
 
 def install():
