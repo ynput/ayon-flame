@@ -77,9 +77,9 @@ placeholder:
 
 - Batch publish: the Batch workfile saved or opened for the published batch
   group in the current Flame session, when it belongs to the task of the
-  batch group's products. Without one (Flame was restarted, the batch group
-  was renamed, it was never saved, its products moved to another task) it is
-  the last saved Batch workfile of that task.
+  batch group's products. Without one (Flame was restarted, it was never
+  saved, its products moved to another task) it is the last saved Batch
+  workfile of that task.
 - Editorial publish: the editorial workfile saved or opened for the current
   task. It is not used for another task, e.g. after the context was changed
   in the Publisher.
