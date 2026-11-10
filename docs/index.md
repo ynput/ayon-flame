@@ -48,6 +48,28 @@ for every host (core `last_workfile_on_startup`). Add a profile for
   without a workfile it is the editorial one. The Batch tool opens on
   the task of the current batch group, like from the Batch menu.
 
+### Flame save
+
+After a Save As or an Open from Work Files, or the workfile opened at
+launch, each Flame project save rewrites the Batch workfile of the
+current batch group. It keeps the same version. Save As in Work Files
+makes a new version.
+
+Project saves are control+S, the Save Project menu and every iteration
+(Iterate button, command+S on the Batch schematic). A Batch publish
+iterates, so it saves too. Auto-saves are skipped. The Batch Save button
+and Save Desktop do not save the project.
+
+Save before switching to another batch group: only the current one is
+written. Nothing is written for a batch group without a Batch workfile
+in this Flame session: after a Flame restart or a project switch, for a
+group from the Batch loader, or after a Batch Load And Replace.
+
+Work Files selects the Batch workfile of the current batch group, and
+Save As proposes its comment.
+
+Setting: `flame/update_batch_workfile`, on by default.
+
 ### Publish source
 
 The version source of a publish is the saved AYON workfile, not the Flame

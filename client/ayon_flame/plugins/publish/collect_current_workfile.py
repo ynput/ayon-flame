@@ -29,7 +29,7 @@ class CollectCurrentWorkfile(pyblish.api.ContextPlugin):
         workfile_path = None
         batches = flapi.get_instances_batches(context)
         if batches:
-            batch_name, batch = next(iter(batches.items()))
+            batch = next(iter(batches.values()))
             batch_context = (
                 flapi.get_batch_products_context(batch)
                 or get_current_context()
@@ -37,9 +37,9 @@ class CollectCurrentWorkfile(pyblish.api.ContextPlugin):
             folder_path = batch_context["folder_path"]
             task_name = batch_context["task_name"]
             workfile_path = flapi.get_session_batch_workfile(
-                batch_name, folder_path, task_name
+                batch, folder_path, task_name
             )
-            if not workfile_path:
+            if not workfile_path or not os.path.exists(workfile_path):
                 workfile_path = flapi.get_last_batch_workfile(
                     folder_path, task_name
                 )

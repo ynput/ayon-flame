@@ -315,11 +315,22 @@ def project_saved(project_name, save_time, is_auto_save):
 
     Args:
         project_name (str): name of project
-        save_time (str): time when it was saved
-        is_auto_save (bool): autosave is on or off
+        save_time (float): seconds Flame took to save
+        is_auto_save (bool): True for an automatic save
     """
     if flame_api.CTX.app_framework:
         flame_api.CTX.app_framework.save_prefs()
+
+    if is_auto_save:
+        return
+
+    # Project saves are control+S, the Save Project menu and each
+    # iteration. The Batch Save button and Save Desktop do not save the
+    # project.
+    try:
+        flame_api.refresh_batch_workfile()
+    except Exception as error:
+        _show_error("save the Batch workfile", error)
 
 
 def get_main_menu_custom_ui_actions():
