@@ -57,8 +57,8 @@ makes a new version.
 
 Project saves are control+S, the Save Project menu and every iteration
 (Iterate button, command+S on the Batch schematic). A Batch publish
-iterates, so it saves too. Auto-saves are skipped. The Batch Save button
-and Save Desktop do not save the project.
+saves too while "Iterate Batch After Publish" is on. Auto-saves are
+skipped. The Batch Save button and Save Desktop do not save the project.
 
 Save before switching to another batch group: only the current one is
 written. Nothing is written for a batch group without a Batch workfile
