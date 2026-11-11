@@ -10,6 +10,7 @@ deleted before each test.
 import copy
 import glob
 import os
+import sys
 import uuid
 
 import ayon_api
@@ -19,6 +20,7 @@ import pytest
 from ayon_core.pipeline import registered_host
 from ayon_core.settings import get_project_settings
 
+import ayon_flame
 from ayon_flame.api import batch_utils, editorial_workfile, pipeline
 from ayon_flame.api.lib import CTX
 
@@ -34,15 +36,24 @@ from helpers import (
 )
 
 _WORKFILE_PATTERNS = ("*.flamebatch", "*.flameedit", ".*.tmp")
+# Same as 'TEST_PROJECT_PREFIX' of the runner.
+_TEST_PROJECT_PREFIX = "flame_tests"
+# Names of the batch groups and sequences the tests make.
+_TEST_NAME_PREFIXES = ("ayon_test_", "shots_sq01_sh010_", "editorial_edit")
 
 
 def pytest_configure(config):
     expected = os.environ.get("AYON_FLAME_TEST_PROJECT")
-    current = os.environ.get("AYON_PROJECT_NAME")
-    if not expected or expected != current:
+    current = os.environ.get("AYON_PROJECT_NAME") or ""
+    if (
+        not expected
+        or expected != current
+        or not current.startswith(_TEST_PROJECT_PREFIX)
+    ):
         pytest.exit(
-            "Run the tests with `ayon run tests/run_flame_tests.py`, they "
-            f"change the project '{current}' and its Flame project.",
+            "Run the tests with `ayon run tests/run_flame_tests.py` in a "
+            f"'{_TEST_PROJECT_PREFIX}*' project, they change the project "
+            f"'{current}' and its Flame project.",
             returncode=4,
         )
 
@@ -156,7 +167,38 @@ def host():
     return registered_host()
 
 
+@pytest.fixture
+def startup_hook():
+    """The 'AYON_in_flame' hook module Flame loaded from this checkout."""
+    expected = os.path.normpath(os.path.join(
+        os.path.dirname(ayon_flame.__file__), "startup", "AYON_in_flame.py"
+    ))
+    for module in list(sys.modules.values()):
+        module_file = getattr(module, "__file__", None) or ""
+        if os.path.normpath(module_file) == expected:
+            return module
+    pytest.fail(f"Flame did not load the hook {expected}")
+
+
 # --- Flame ------------------------------------------------------------------
+
+
+def _is_test_name(name):
+    return name.startswith(_TEST_NAME_PREFIXES)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _sweep_test_leftovers():
+    """Delete batch groups and sequences left by a run that was killed."""
+    desktop = get_desktop()
+    for batch in list(desktop.batch_groups):
+        if _is_test_name(batch.name.get_value()):
+            flame.delete(batch, confirm=False)
+    for reel_group in desktop.reel_groups:
+        for reel in reel_group.reels:
+            for sequence in list(reel.sequences):
+                if _is_test_name(sequence.name.get_value()):
+                    flame.delete(sequence, confirm=False)
 
 
 @pytest.fixture

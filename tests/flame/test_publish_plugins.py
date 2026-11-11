@@ -5,7 +5,6 @@ Each plugin runs on its own, on a pyblish context made by the test.
 """
 
 import copy
-import importlib.util
 import os
 import types
 
@@ -14,7 +13,7 @@ import pytest
 
 from ayon_core.pipeline.publish import PublishValidationError
 
-from ayon_flame import FLAME_ADDON_ROOT
+import ayon_flame.api as flapi
 from ayon_flame.api import batch_utils, editorial_workfile, pipeline
 from ayon_flame.api.lib import CTX
 
@@ -25,24 +24,10 @@ from helpers import (
     add_write_node,
     batch_product_data,
     batch_setup_text,
+    load_plugin_module,
     read_consolidated,
     workfile_path,
 )
-
-_MODULES = {}
-
-
-def load_plugin_module(kind, filename):
-    """Import a plugin file, plugins are not importable as modules."""
-    path = os.path.join(FLAME_ADDON_ROOT, "plugins", kind, filename)
-    if path not in _MODULES:
-        name = f"ayon_flame_test_{kind}_{os.path.splitext(filename)[0]}"
-        spec = importlib.util.spec_from_file_location(name, path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        _MODULES[path] = module
-    return _MODULES[path]
-
 
 def make_context(current_file="Flame/flame_tests"):
     context = pyblish.api.Context()
@@ -274,6 +259,27 @@ def test_extract_otio_skips_batch_product(batch_group):
     module.ExtractOTIOFile().process(instance)
 
     assert "representations" not in instance.data
+
+
+def test_extract_otio_for_editorial_workfile(tmp_path):
+    import opentimelineio as otio
+
+    module = load_plugin_module("publish", "extract_otio_file.py")
+    context = make_context()
+    context.data["otioTimeline"] = otio.schema.Timeline(name="edit")
+    instance = context.create_instance("workfileMain")
+    instance.data.update({
+        "name": "workfileMain",
+        "creator_identifier": flapi.EDITORIAL_WORKFILE_CREATOR,
+        "stagingDir": str(tmp_path),
+    })
+
+    module.ExtractOTIOFile().process(instance)
+
+    representation = instance.data["representations"][-1]
+    assert representation["ext"] == "otio"
+    path = os.path.join(representation["stagingDir"], representation["files"])
+    assert otio.adapters.read_from_file(path).name == "edit"
 
 
 # --- ValidateEditorialWorkfileSaved -----------------------------------------

@@ -37,8 +37,20 @@ def no_project_save(monkeypatch):
     monkeypatch.setattr(editorial_workfile, "save_flame_project", lambda: None)
 
 
-def test_save_project_shortcut_runs():
-    editorial_workfile.save_flame_project()
+def test_failed_project_save_fails_the_save(tmp_path, monkeypatch):
+    """No editorial workfile claims a Flame project that was not saved."""
+
+    def _fail(description):
+        raise RuntimeError(f"no shortcut {description}")
+
+    monkeypatch.setattr(flame, "execute_shortcut", _fail)
+    path = tmp_path / "edit_v001.flameedit"
+
+    with pytest.raises(RuntimeError, match="could not be saved"):
+        pipeline.FlameHost().save_workfile(str(path))
+
+    assert not path.exists()
+    assert pipeline.FlameHost().get_current_workfile() is None
 
 
 def test_save_writes_reference_to_timeline_sequence(make_sequence, tmp_path):

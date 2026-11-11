@@ -1,17 +1,22 @@
-"""Publish a batch group from the Batch menu, end to end.
+"""Publish a batch group from the Batch menu and load it back, end to end.
 
 The Batch product is created by saving a Batch workfile, then published
 with the publish plugins of the bundle into the test project, as the
-Publisher of the Batch menu does.
+Publisher of the Batch menu does, and loaded with the Batch loader.
 """
 
 import os
 
 import ayon_api
+import flame
 import pytest
 
 from ayon_core.pipeline import Anatomy, registered_host
 from ayon_core.pipeline.create import CreateContext
+from ayon_core.pipeline.load import (
+    get_representation_context,
+    load_with_repre_context,
+)
 
 import ayon_flame.api as flame_api
 from ayon_flame.api import batch_utils, pipeline
@@ -21,6 +26,9 @@ from helpers import (
     SHOT_TASK,
     add_note,
     batch_setup_text,
+    get_batch_group_names,
+    get_node,
+    load_plugin_module,
     workfile_path,
 )
 
@@ -115,3 +123,26 @@ def test_batch_publish(
     assert "unsaved_at_publish" in batch_setup_text(published)
     assert not any(r["name"] == "otio" for r in representations)
     assert product["task"] == SHOT_TASK
+
+    # Load it back, twice: the second batch group gets a free name.
+    LoadBatchgroup = load_plugin_module(
+        "load", "load_batch.py"
+    ).LoadBatchgroup
+    dialogs = []
+    monkeypatch.setattr(
+        flame.messages, "show_in_dialog",
+        lambda *args, **kwargs: dialogs.append(args),
+    )
+    repre_context = get_representation_context(project_name, batch_repre)
+    batch_name = batch_group.name.get_value()
+
+    load_with_repre_context(LoadBatchgroup, repre_context)
+
+    assert flame.batch.name.get_value() == f"{batch_name} (2)"
+    assert get_node(flame.batch, "unsaved_at_publish") is not None
+    assert flame.batch.batch_iterations, "Versions load as iterations."
+
+    load_with_repre_context(LoadBatchgroup, repre_context)
+
+    assert f"{batch_name} (3)" in get_batch_group_names()
+    assert len(dialogs) == 2

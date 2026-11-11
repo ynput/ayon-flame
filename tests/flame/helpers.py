@@ -1,5 +1,6 @@
 """Helpers of the tests that run inside Flame."""
 
+import importlib.util
 import json
 import os
 import time
@@ -12,6 +13,7 @@ from ayon_core.pipeline.template_data import get_template_data
 from ayon_core.pipeline.workfile import get_workdir, get_workfile_template_key
 from ayon_core.settings import get_project_settings
 
+from ayon_flame import FLAME_ADDON_ROOT
 from ayon_flame.api import batch_utils
 from ayon_flame.constants import BATCH_CREATOR_IDENTIFIER
 
@@ -20,6 +22,21 @@ SHOT_TASK = "compositing"
 SHOT_OTHER_TASK = "paint"
 EDIT_PATH = "/editorial"
 EDIT_TASK = "edit"
+
+
+_PLUGIN_MODULES = {}
+
+
+def load_plugin_module(kind, filename):
+    """Import a plugin file, plugins are not importable as modules."""
+    path = os.path.join(FLAME_ADDON_ROOT, "plugins", kind, filename)
+    if path not in _PLUGIN_MODULES:
+        name = f"ayon_flame_test_{kind}_{os.path.splitext(filename)[0]}"
+        spec = importlib.util.spec_from_file_location(name, path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _PLUGIN_MODULES[path] = module
+    return _PLUGIN_MODULES[path]
 
 
 def workfile_path(host, folder_entity, task_entity, version, ext=None):

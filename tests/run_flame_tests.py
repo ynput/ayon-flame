@@ -6,8 +6,9 @@ the prelaunch hooks of this checkout. A Flame window opens for the
 duration of the run.
 
 Usage:
-    ayon run tests/run_flame_tests.py [--app flame/2026-2] [--project NAME]
-        [--folder PATH] [--task NAME] [--core PATH] [-- PYTEST ARGS]
+    ayon run tests/run_flame_tests.py [--app flame/2026-2]
+        [--test-project NAME] [--folder PATH] [--task NAME] [--core PATH]
+        [-- PYTEST ARGS]
 
 The tests run in a dedicated AYON project (`flame_tests` by default), which
 is created when missing. See `tests/README.md`.
@@ -36,6 +37,9 @@ RESULTS_DIR = os.path.join(TESTS_DIR, ".results")
 
 DEFAULT_APP = "flame/2026-2"
 DEFAULT_PROJECT = "flame_tests"
+# The tests delete workfiles and publish into their project, only a
+# project named with this prefix is accepted.
+TEST_PROJECT_PREFIX = "flame_tests"
 DEFAULT_FOLDER = "/shots/sq01/sh010"
 DEFAULT_TASK = "compositing"
 
@@ -297,6 +301,13 @@ def _stop_flame(project_name):
 def run(args, pytest_args):
     from ayon_applications import ApplicationManager
 
+    if not args.project.startswith(TEST_PROJECT_PREFIX):
+        _log(
+            f"Project '{args.project}' is not a test project, its name must"
+            f" start with '{TEST_PROJECT_PREFIX}'."
+        )
+        return 4
+
     if _running_flame_pids():
         _log("Flame is running, close it first: one Flame at a time.")
         return 4
@@ -356,7 +367,7 @@ def run(args, pytest_args):
     _log(
         f"Launching {args.app} for {args.project} {args.folder} {args.task}"
     )
-    manager.launch(
+    process = manager.launch(
         args.app,
         project_name=args.project,
         folder_path=args.folder,
@@ -365,6 +376,7 @@ def run(args, pytest_args):
     )
 
     pattern = f"--start-project={args.project}"
+    start_deadline = time.time() + args.start_timeout
     deadline = time.time() + args.timeout
     position = 0
     started = False
@@ -376,6 +388,13 @@ def run(args, pytest_args):
             break
         if started and not running:
             _log("Flame exited without a test result.")
+            break
+        if not started and (
+            time.time() > start_deadline
+            or (process is not None and process.poll() not in (None, 0))
+        ):
+            _log("Flame did not start, see the launcher log above.")
+            _stop_flame(args.project)
             break
         if time.time() > deadline:
             _log(f"Timed out after {args.timeout} s, stopping Flame.")
@@ -405,7 +424,13 @@ def main(argv=None):
         default=os.environ.get("AYON_FLAME_TEST_APP", DEFAULT_APP),
         help=f"AYON application name (default {DEFAULT_APP})",
     )
-    parser.add_argument("--project", default=DEFAULT_PROJECT)
+    # Not '--project': the AYON launcher takes that argument for itself.
+    parser.add_argument(
+        "--test-project",
+        dest="project",
+        default=DEFAULT_PROJECT,
+        help=f"test project, its name starts with '{TEST_PROJECT_PREFIX}'",
+    )
     parser.add_argument("--folder", default=DEFAULT_FOLDER)
     parser.add_argument("--task", default=DEFAULT_TASK)
     parser.add_argument(
@@ -418,6 +443,12 @@ def main(argv=None):
     )
     parser.add_argument(
         "--timeout", type=int, default=1800, help="seconds (default 1800)"
+    )
+    parser.add_argument(
+        "--start-timeout",
+        type=int,
+        default=300,
+        help="seconds Flame gets to start (default 300)",
     )
     parser.add_argument(
         "--exit-timeout",

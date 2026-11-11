@@ -23,19 +23,20 @@ In a development workspace, `ayon` is
 
 Arguments after `--` go to pytest. The exit code is pytest's, 3 when no
 result came back from Flame, 4 when the run could not start (Flame already
-running, unknown application). A full run takes about a minute, most of
-it Flame starting and quitting.
+running, unknown application, not a test project). A full run takes about
+a minute, most of it Flame starting and quitting.
 
 Options:
 
 - `--app`: the AYON application, `flame/2026-2` by default (or
   `AYON_FLAME_TEST_APP`).
-- `--project`, `--folder`, `--task`: the test context, `flame_tests`,
-  `/shots/sq01/sh010`, `compositing` by default.
+- `--test-project`, `--folder`, `--task`: the test context, `flame_tests`,
+  `/shots/sq01/sh010`, `compositing` by default. The project name must
+  start with `flame_tests`. (`--project` is taken by the AYON launcher.)
 - `--core PATH`: an ayon-core checkout for Flame instead of the bundle's.
 - `--no-setup`: do not create the test project.
-- `--timeout`, `--exit-timeout`: seconds for the whole run (1800) and for
-  Flame to quit after the tests (120).
+- `--timeout`, `--start-timeout`, `--exit-timeout`: seconds for the whole
+  run (1800), for Flame to start (300) and to quit after the tests (120).
 
 ## What the runner needs
 
@@ -49,6 +50,8 @@ Options:
   tasks and publish into it. They refuse to run unless the runner started
   them.
 - **No Flame running.** One Flame at a time.
+- **ayon-core with `PublishLogic`** for the end-to-end publish test, it is
+  skipped with an older one (the skip and its reason show in the summary).
 - **pytest** for the Python of Flame: the launcher's own when the Python
   versions match (development launcher), otherwise `uv` installs
   `requirements-flame.txt` into `tests/.deps/`.
@@ -69,7 +72,8 @@ Options:
    JSON file, then closes Flame with the `Program Exit` shortcut. Flame is
    killed when it does not quit within the exit timeout.
 
-Each test deletes the batch groups and sequences it made, restores the
+A run first deletes batch groups and sequences left by a killed run. Each
+test deletes the batch groups and sequences it made, restores the
 AYON session and the module state of the host (current workfiles). The
 workfiles of the test tasks are deleted before each test, the ones of the
 last test stay for a look after a failure. Published versions stay in the
@@ -87,4 +91,5 @@ end-to-end test (`publish_batch_report.json`).
 | `test_editorial_workfile.py` | `FlameHost` editorial workfiles: save, open, current workfile per task, Batch menu context |
 | `test_project_saved_hook.py` | `project_saved` hook and the real `Save Project` shortcut rewriting the Batch workfile |
 | `test_publish_plugins.py` | publish and create plugins of the Batch and editorial workfiles, one by one |
-| `test_publish_batch.py` | a Batch menu publish end to end (`publish` marker) |
+| `test_publish_batch.py` | a Batch menu publish end to end, then the Batch loader (`publish` marker) |
+| `test_startup.py` | last workfile opened at launch (Batch or editorial), Workfiles tools of both menus |

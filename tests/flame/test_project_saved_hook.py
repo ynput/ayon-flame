@@ -5,7 +5,6 @@ calls `pipeline.refresh_batch_workfile`.
 """
 
 import os
-import sys
 import time
 
 import flame
@@ -14,21 +13,6 @@ import pytest
 from ayon_flame.api import batch_utils, pipeline
 
 from helpers import add_note, batch_setup_text, wait_for
-
-
-@pytest.fixture
-def startup_hook():
-    """The 'AYON_in_flame' hook module Flame loaded from this checkout."""
-    import ayon_flame
-
-    expected = os.path.join(
-        os.path.dirname(ayon_flame.__file__), "startup", "AYON_in_flame.py"
-    )
-    for module in list(sys.modules.values()):
-        module_file = getattr(module, "__file__", None) or ""
-        if os.path.normpath(module_file) == os.path.normpath(expected):
-            return module
-    pytest.fail(f"Flame did not load the hook {expected}")
 
 
 @pytest.fixture
