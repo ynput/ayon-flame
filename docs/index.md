@@ -80,11 +80,6 @@ placeholder:
   batch group's products. Without one (Flame was restarted, it was never
   saved, its products moved to another task) it is the last saved Batch
   workfile of that task.
-  When the source is the Batch workfile of the session, a Batch publish
-  saves the published batch group to it before extracting, so it holds
-  what is published. The last saved Batch workfile of the task is never
-  written: the publish logs a warning instead. Follows
-  `flame/update_batch_workfile`.
 - Editorial publish: the editorial workfile saved or opened for the current
   task. It is not used for another task, e.g. after the context was changed
   in the Publisher.
