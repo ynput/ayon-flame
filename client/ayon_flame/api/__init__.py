@@ -60,7 +60,8 @@ from .menu import (
     FlameMenuProjectConnect,
     FlameMenuTimeline,
     FlameMenuBatch,
-    FlameMenuUniversal
+    FlameMenuUniversal,
+    show_batch_workfiles,
 )
 from .plugin import (
     PublishableClip,
@@ -93,6 +94,9 @@ from .batch_utils import (
     clear_node_metadata,
     get_metadata_node,
     get_current_batch,
+    get_batch_product_data,
+    get_batch_products_context,
+    set_batch_products_context,
 )
 
 __all__ = [
@@ -158,6 +162,7 @@ __all__ = [
     "FlameMenuTimeline",
     "FlameMenuBatch",
     "FlameMenuUniversal",
+    "show_batch_workfiles",
 
     # plugin
     "Creator",
@@ -191,4 +196,7 @@ __all__ = [
     "read_node_metadata",
     "write_node_metadata",
     "clear_node_metadata",
+    "get_batch_product_data",
+    "get_batch_products_context",
+    "set_batch_products_context",
 ]
