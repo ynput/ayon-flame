@@ -29,7 +29,7 @@ class IncrementBatchRenderNextStagingDir(
 
     @staticmethod
     def _follows_workfile_version(instance):
-        """Whether render version follows the batch iteration.
+        """Whether render version follows the workfile version.
         """
         if "followWorkfileVersion" in instance.data:
             return instance.data["followWorkfileVersion"]
@@ -59,17 +59,13 @@ class IncrementBatchRenderNextStagingDir(
         context = instance.context
         template_data = copy.deepcopy(instance.data["anatomyData"])
 
-        # Sync with the actual batch iteration (incremented or not
-        # by 'IntegrateBatchIteration'), like Nuke 'IncrementWriteNodePath'.
-        if self._follows_workfile_version(instance):
-            batch_name = instance.data["batch_name"]
-            batch = flapi.get_batch_from_workspace(batch_name)
-            if batch is None:
-                self.log.warning(f"Batch group not found: {batch_name}")
-                return
-            template_data["version"] = batch.current_iteration_number
-
-        else:
+        # A Flame save keeps the workfile version, so the next publish of
+        # the same workfile has the same version. Without a Batch workfile
+        # core uses the next version.
+        if (
+            not self._follows_workfile_version(instance)
+            or context.data.get("version") is None
+        ):
             template_data["version"] += 1
 
         current_file = context.data.get("currentFile")

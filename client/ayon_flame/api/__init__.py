@@ -48,6 +48,7 @@ from .pipeline import (
     FlameBatchHost,
     FlameEditorialHost,
     get_last_batch_workfile,
+    refresh_batch_workfile,
     install,
     uninstall,
     ls,
@@ -74,6 +75,7 @@ from .menu import (
     FlameMenuBatch,
     FlameMenuUniversal,
     show_batch_workfiles,
+    show_editorial_workfiles,
 )
 from .plugin import (
     PublishableClip,
@@ -164,6 +166,7 @@ __all__ = [
     "FlameBatchHost",
     "FlameEditorialHost",
     "get_last_batch_workfile",
+    "refresh_batch_workfile",
     "install",
     "uninstall",
     "ls",
@@ -187,6 +190,7 @@ __all__ = [
     "FlameMenuBatch",
     "FlameMenuUniversal",
     "show_batch_workfiles",
+    "show_editorial_workfiles",
 
     # plugin
     "Creator",

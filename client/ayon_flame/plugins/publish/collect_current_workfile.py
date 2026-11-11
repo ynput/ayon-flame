@@ -14,10 +14,9 @@ class CollectCurrentWorkfile(pyblish.api.ContextPlugin):
     A Batch publish uses the Batch workfile saved or opened for the
     published batch group in this Flame session, when it belongs to the
     task of the batch group products. When there is none (Flame was
-    restarted, the batch group was renamed, it was never saved, its
-    products moved to another task), it uses the last saved Batch workfile
-    of that task. Any other publish uses the editorial workfile saved or
-    opened for the current task.
+    restarted, it was never saved, its products moved to another task), it
+    uses the last saved Batch workfile of that task. Any other publish uses
+    the editorial workfile saved or opened for the current task.
     The placeholder is kept when no workfile was saved.
     """
 
@@ -29,7 +28,7 @@ class CollectCurrentWorkfile(pyblish.api.ContextPlugin):
         workfile_path = None
         batches = flapi.get_instances_batches(context)
         if batches:
-            batch_name, batch = next(iter(batches.items()))
+            batch = next(iter(batches.values()))
             batch_context = (
                 flapi.get_batch_products_context(batch)
                 or get_current_context()
@@ -37,9 +36,9 @@ class CollectCurrentWorkfile(pyblish.api.ContextPlugin):
             folder_path = batch_context["folder_path"]
             task_name = batch_context["task_name"]
             workfile_path = flapi.get_session_batch_workfile(
-                batch_name, folder_path, task_name
+                batch, folder_path, task_name
             )
-            if not workfile_path:
+            if not workfile_path or not os.path.exists(workfile_path):
                 workfile_path = flapi.get_last_batch_workfile(
                     folder_path, task_name
                 )

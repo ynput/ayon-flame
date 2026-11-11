@@ -17,6 +17,7 @@ from ayon_core.pipeline import (
     register_loader_plugin_path,
     registered_host,
 )
+from ayon_core.pipeline.context_tools import get_current_project_settings
 from pyblish import api as pyblish
 
 from ayon_flame import FLAME_ADDON_ROOT
@@ -216,9 +217,11 @@ class FlameBatchHost(HostBase, IWorkfileHost):
         return [BATCH_WORKFILE_EXTENSION]
 
     def save_workfile(self, dst_path=None):
+        dst_path = dst_path or self.get_current_workfile()
         if not dst_path:
             raise RuntimeError(
-                "Batch groups do not keep their workfile path, use Save As."
+                "No Batch workfile was saved or opened for this batch group"
+                " yet, use Save As."
             )
 
         try:
@@ -260,11 +263,11 @@ class FlameBatchHost(HostBase, IWorkfileHost):
             raise RuntimeError(
                 f"Unable to save Flame Batch workfile '{dst_path}': {error}"
             ) from error
+        # The task of the batch group, not of the session. A save from a
+        # Flame project save keeps it when the session is on another task.
+        context = self.get_current_context()
         batch_utils.set_session_batch_workfile(
-            batch,
-            dst_path,
-            self.get_current_folder_path(),
-            self.get_current_task_name(),
+            batch, dst_path, context["folder_path"], context["task_name"]
         )
         log.info("Saved AYON workfile %r", dst_path)
 
@@ -294,10 +297,15 @@ class FlameBatchHost(HostBase, IWorkfileHost):
             filepath,
             unique_batch_name,
         )
-        flame.batch.create_batch_group(unique_batch_name)
-        batch = batch_utils.load_batch_from_consolidated_json(
-            filepath, name=unique_batch_name
-        )
+        new_batch = flame.batch.create_batch_group(unique_batch_name)
+        try:
+            batch = batch_utils.load_batch_from_consolidated_json(
+                filepath, name=unique_batch_name
+            )
+        except Exception:
+            # A file that fails to load leaves no empty batch group.
+            flame.delete(new_batch, confirm=False)
+            raise
         batch_utils.set_instances_batch_name(batch, unique_batch_name)
         # A workfile saved by another build, or moved between tasks, can
         # carry products of another task.
@@ -305,6 +313,7 @@ class FlameBatchHost(HostBase, IWorkfileHost):
         batch_utils.set_session_batch_workfile(
             batch, filepath, folder_path, task_name
         )
+        flame.set_current_tab("Batch")
         log.info(
             "Opened AYON workfile %r as batch group %r",
             filepath,
@@ -312,10 +321,20 @@ class FlameBatchHost(HostBase, IWorkfileHost):
         )
 
     def get_current_workfile(self):
-        # Batch groups do not store a workfile path, the one saved or
-        # opened for a batch group is kept for the Flame session, see
+        # Batch groups do not store their workfile path. This Flame session
+        # keeps the one saved or opened for each batch group, see
         # 'batch_utils.get_session_batch_workfile'.
-        return None
+        try:
+            batch = batch_utils.get_current_batch()
+        except RuntimeError:
+            return None
+
+        context = self.get_current_context()
+        return batch_utils.get_session_batch_workfile(
+            batch,
+            context["folder_path"],
+            context["task_name"],
+        )
 
     def _ensure_batch_product(self, folder_entity, task_entity):
         """Create the Batch product of the current batch group if missing.
@@ -383,6 +402,27 @@ def get_last_batch_workfile(folder_path, task_name):
     if not workfiles:
         return None
     return max(workfiles, key=lambda workfile: workfile.version).filepath
+
+
+def refresh_batch_workfile():
+    """Rewrite the Batch workfile of the current batch group.
+
+    Runs after a Flame project save. Nothing is saved when the batch group
+    has no Batch workfile in this Flame session.
+    """
+    host = FlameBatchHost()
+    filepath = host.get_current_workfile()
+    if not filepath:
+        return
+
+    project_settings = get_current_project_settings()
+    if not project_settings["flame"]["update_batch_workfile"]["enabled"]:
+        return
+
+    host.save_workfile(filepath)
+    flame.messages.show_in_console(
+        f"AYON: saved {os.path.basename(filepath)}", "info", 5
+    )
 
 
 def install():
