@@ -201,6 +201,20 @@ def get_write_node_from_batch(
     return None
 
 
+def set_write_node_output_dir(
+    write_node: flame.PyWriteFileNode,
+    directory: str,
+):
+    """Render Write File node output directly into directory.
+
+    Sub-folders from the media path pattern are dropped,
+    only the file name part is kept.
+    """
+    pattern = write_node.media_path_pattern.get_value()
+    write_node.media_path = directory
+    write_node.media_path_pattern = pattern.rsplit("/", 1)[-1]
+
+
 def save_batch_as_consolidated_json(
     batch: flame.PyBatch,
     filepath: str,

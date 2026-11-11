@@ -44,22 +44,6 @@ class ImageIORemappingModel(BaseSettingsModel):
     )
 
 
-class ProfileNamesMappingInputsModel(BaseSettingsModel):
-    _layout = "expanded"
-
-    flameName: str = SettingsField("", title="Flame name")
-    ocioName: str = SettingsField("", title="OCIO name")
-
-
-class ProfileNamesMappingModel(BaseSettingsModel):
-    _layout = "expanded"
-
-    inputs: list[ProfileNamesMappingInputsModel] = SettingsField(
-        default_factory=list,
-        title="Profile names mapping"
-    )
-
-
 class ImageIOProjectModel(BaseSettingsModel):
     colourPolicy: str = SettingsField(
         "ACES 1.1",
@@ -95,7 +79,11 @@ class FlameImageIOModel(BaseSettingsModel):
     )
     remapping: ImageIORemappingModel = SettingsField(
         title="Remapping colorspace names",
-        default_factory=ImageIORemappingModel
+        default_factory=ImageIORemappingModel,
+        description=(
+            "Remap SynColor native colorspace names to OCIO names "
+            "(Flame < 2026)."
+        )
     )
     file_rules: ImageIOFileRulesModel = SettingsField(
         default_factory=ImageIOFileRulesModel,
@@ -109,10 +97,6 @@ class FlameImageIOModel(BaseSettingsModel):
         default_factory=ImageIOProjectModel,
         title="Project"
     )
-    profilesMapping: ProfileNamesMappingModel = SettingsField(
-        default_factory=ProfileNamesMappingModel,
-        title="Profile names mapping"
-    )
 
 
 DEFAULT_IMAGEIO_SETTINGS = {
@@ -122,15 +106,15 @@ DEFAULT_IMAGEIO_SETTINGS = {
         "frameDepth": "16-bit fp",
         "fieldDominance": "PROGRESSIVE"
     },
-    "profilesMapping": {
-        "inputs": [
+    "remapping": {
+        "rules": [
             {
-                "flameName": "ACEScg",
-                "ocioName": "ACES - ACEScg"
+                "host_native_name": "ACEScg",
+                "ocio_name": "ACES - ACEScg"
             },
             {
-                "flameName": "Rec.709 video",
-                "ocioName": "Output - Rec.709"
+                "host_native_name": "Rec.709 video",
+                "ocio_name": "Output - Rec.709"
             }
         ]
     }

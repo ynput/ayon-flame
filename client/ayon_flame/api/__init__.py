@@ -15,6 +15,7 @@ from .lib import (
     get_current_project,
     get_current_sequence,
     parse_frame_rate,
+    get_ocio_colorspace,
     create_segment_data_marker,
     get_segment_data_marker,
     get_clip_data_marker,
@@ -33,6 +34,7 @@ from .lib import (
     maintained_object_duplication,
     maintained_temp_file_path,
     get_clip_segment,
+    get_project_ocio_config,
     MediaInfoFile,
     TimeEffectMetadata
 )
@@ -73,7 +75,6 @@ from .workio import (
     current_file,
     has_unsaved_changes,
     file_extensions,
-    work_root
 )
 from .render_utils import (
     export_clip,
@@ -87,6 +88,7 @@ from .batch_utils import (
     edit_batch_group_content,
     get_batch_from_workspace,
     get_write_node_from_batch,
+    set_write_node_output_dir,
     save_batch_as_consolidated_json,
     load_batch_from_consolidated_json,
     read_node_metadata,
@@ -111,6 +113,7 @@ __all__ = [
     "get_current_project",
     "get_current_sequence",
     "parse_frame_rate",
+    "get_ocio_colorspace",
     "create_segment_data_marker",
     "get_segment_data_marker",
     "get_clip_data_marker",
@@ -129,6 +132,7 @@ __all__ = [
     "maintained_object_duplication",
     "maintained_temp_file_path",
     "get_clip_segment",
+    "get_project_ocio_config",
     "MediaInfoFile",
     "TimeEffectMetadata",
 
@@ -172,7 +176,6 @@ __all__ = [
     "current_file",
     "has_unsaved_changes",
     "file_extensions",
-    "work_root",
 
     # render utils
     "export_clip",
@@ -188,6 +191,7 @@ __all__ = [
     "get_current_batch",
     "get_metadata_node",
     "get_write_node_from_batch",
+    "set_write_node_output_dir",
     "save_batch_as_consolidated_json",
     "load_batch_from_consolidated_json",
     "read_node_metadata",

@@ -1,5 +1,4 @@
 """Host API required Work Files tool"""
-import os
 
 exported_project_ext = ".otoc"
 
@@ -22,7 +21,3 @@ def open_file(filepath):
 
 def current_file():
     raise NotImplementedError("Flame uses native workfile management")
-
-
-def work_root(session):
-    return os.path.normpath(session["AYON_WORKDIR"])

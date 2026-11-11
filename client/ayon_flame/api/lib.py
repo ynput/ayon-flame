@@ -9,10 +9,15 @@ import tempfile
 from copy import copy, deepcopy
 from dataclasses import dataclass, field
 from pprint import pformat
+from typing import Optional
 from xml.etree import ElementTree as ET
 
 import clique
+
 from ayon_core.lib import Logger, run_subprocess
+from ayon_core.pipeline.colorspace import (
+    get_remapped_colorspace_from_native
+)
 
 from .constants import (
     COLOR_MAP,
@@ -183,6 +188,34 @@ def parse_frame_rate(frame_rate) -> float:
     return float(str(frame_rate).split(" ", 1)[0])
 
 
+def get_ocio_colorspace(colour_space, imageio_settings):
+    """Return OCIO colorspace name from Flame clip colour space.
+
+    Flame >= 2026 colour spaces are already OCIO names,
+    Flame < 2026 SynColor names are remapped from imageio settings.
+
+    Args:
+        colour_space (str): Flame clip colour space name
+        imageio_settings (dict): Flame imageio settings
+
+    Returns:
+        str or None: OCIO colorspace name, None if not found.
+    """
+    import flame
+
+    if not colour_space:
+        return None
+
+    if int(flame.get_version_major()) >= 2026:
+        return colour_space
+
+    return get_remapped_colorspace_from_native(
+        colour_space,
+        "flame",
+        imageio_settings
+    )
+
+
 def get_current_sequence(selection):
     import flame
 
@@ -248,6 +281,40 @@ def get_metadata(project_name, _log=None) -> str:
             )
         )
     return policy.c_str()
+
+
+def get_project_ocio_config(project_name) -> Optional[str]:
+    """Get Flame project OCIO config from WireTap project metadata.
+
+    Args:
+        project_name (str): Name of the Flame project
+
+    Returns:
+        str or None: OCIO config path if set.
+    """
+    from adsk.libwiretapPythonClientAPI import (
+        WireTapClient,
+        WireTapServerHandle,
+        WireTapNodeHandle,
+        WireTapStr
+    )
+    client = WireTapClient()
+    if not client.init():
+        raise RuntimeError("Could not initialize Wiretap Client")
+
+    host_name = os.getenv("FLAME_WIRETAP_HOSTNAME") or "localhost"
+    server = WireTapServerHandle(f"{host_name}:IFFFS")
+    node = WireTapNodeHandle(server, f"/projects/{project_name}")
+
+    metadata = WireTapStr()
+    if not node.getMetaData("XML", "", 1, metadata):
+        raise RuntimeError(
+            f"Could not retrieve project '{project_name}' metadata: "
+            f"{node.lastError()}"
+        )
+
+    project_xml = ET.fromstring(metadata.c_str())
+    return project_xml.findtext("OCIOConfigFile") or None
 
 
 def get_segment_data_marker(segment, with_marker=None):
