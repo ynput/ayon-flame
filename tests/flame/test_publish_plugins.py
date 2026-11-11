@@ -24,6 +24,7 @@ from helpers import (
     add_write_node,
     batch_product_data,
     batch_setup_text,
+    get_batch_group_names,
     load_plugin_module,
     read_consolidated,
     workfile_path,
@@ -376,6 +377,32 @@ def test_render_staging_dir_version(
     assert used["version"] == expected
     assert used["workfile_name"] == "fltst_sh010_compositing_v003"
     assert write_node.media_path.get_value() == f"/staging/v{expected:03}"
+
+
+# --- IntegrateBatchGroup ---------------------------------------------------
+
+
+def test_editorial_batch_group_named_like_work_files(make_batch_group):
+    """The batch group of an editorial publish is the one Work Files use."""
+    module = load_plugin_module("publish", "integrate_batch_group.py")
+    plugin = module.IntegrateBatchGroup()
+    context = make_context()
+    instance = context.create_instance("plate")
+    instance.data.update({
+        "folderPath": SHOT_PATH,
+        "frameStart": 1001,
+        "frameEnd": 1010,
+        "handleStart": 0,
+        "handleEnd": 0,
+    })
+    expected = batch_utils.get_task_batch_name(SHOT_PATH, SHOT_TASK)
+
+    batch = plugin._get_batch_group(instance, {"name": SHOT_TASK})
+    again = plugin._get_batch_group(instance, {"name": SHOT_TASK})
+
+    assert batch.name.get_value() == expected
+    assert again.uid.get_value() == batch.uid.get_value()
+    assert get_batch_group_names().count(expected) == 1
 
 
 # --- Creators ---------------------------------------------------------------
