@@ -65,19 +65,6 @@ written. Nothing is written for a batch group without a Batch workfile
 in this Flame session: after a Flame restart or a project switch, for a
 group from the Batch loader, or after a Batch Load And Replace.
 
-A project save warns in the Flame console when the current batch group
-has AYON products but no Batch workfile in this Flame session ("not
-linked to a workfile"), or when its workfile is older than the last one
-of the task. Open the right workfile from Work Files, or Save As.
-
-Work Files > Save As asks before saving a new version from such a batch
-group into its own task: the new version would become the last one, with
-older work in it. A save into another task is not checked.
-
-A Batch menu publish checks the same with the optional validator
-*Validate Batch Workfile Is Latest*
-(`flame/publish/ValidateBatchWorkfileLatest`, on by default).
-
 Work Files selects the Batch workfile of the current batch group, and
 Save As proposes its comment.
 
@@ -93,11 +80,6 @@ placeholder:
   batch group's products. Without one (Flame was restarted, it was never
   saved, its products moved to another task) it is the last saved Batch
   workfile of that task.
-  When the source is the Batch workfile of the session, a Batch publish
-  saves the published batch group to it before extracting, so it holds
-  what is published. The last saved Batch workfile of the task is never
-  written: the publish logs a warning instead. Follows
-  `flame/update_batch_workfile`.
 - Editorial publish: the editorial workfile saved or opened for the current
   task. It is not used for another task, e.g. after the context was changed
   in the Publisher.

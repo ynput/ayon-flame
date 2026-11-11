@@ -8,7 +8,7 @@ import ayon_api
 import flame
 
 from ayon_core.host import HostBase, ILoadHost, IPublishHost, IWorkfileHost
-from ayon_core.lib import Logger, get_version_from_path
+from ayon_core.lib import Logger
 from ayon_core.pipeline import (
     AYON_CONTAINER_ID,
     deregister_creator_plugin_path,
@@ -202,7 +202,6 @@ class FlameBatchHost(HostBase, IWorkfileHost):
     def save_workfile_with_context(
         self, filepath, folder_entity, task_entity, *args, **kwargs
     ):
-        self._confirm_save_from_batch(folder_entity, task_entity)
         # The AYON products are moved to the context in 'save_workfile',
         # which core calls after the context switch, their notes are part
         # of the saved content.
@@ -213,47 +212,6 @@ class FlameBatchHost(HostBase, IWorkfileHost):
             )
         finally:
             self._save_entities = None
-
-    def _confirm_save_from_batch(self, folder_entity, task_entity):
-        """Ask before a Save As from a batch group of an older workfile.
-
-        Only a batch group whose products are of the saved task is checked:
-        a new version saved from it becomes the last one of the task, with
-        older work in it. A save to another task is not checked.
-
-        Raises:
-            RuntimeError: The artist canceled the save.
-        """
-        try:
-            batch = batch_utils.get_current_batch()
-        except RuntimeError:
-            return
-
-        folder_path = folder_entity["path"]
-        task_name = task_entity["name"]
-        products_context = batch_utils.get_batch_products_context(batch)
-        if products_context != {
-            "folder_path": folder_path,
-            "task_name": task_name,
-        }:
-            return
-
-        issue = get_batch_workfile_issue(batch, folder_path, task_name)
-        if not issue:
-            return
-
-        from qtpy import QtWidgets
-
-        answer = QtWidgets.QMessageBox.question(
-            QtWidgets.QApplication.activeWindow(),
-            "Save from an older batch group?",
-            f"{issue}\n\nA new version saved from it becomes the last"
-            " workfile of the task. Save it anyway?",
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-            QtWidgets.QMessageBox.No,
-        )
-        if answer != QtWidgets.QMessageBox.Yes:
-            raise RuntimeError(f"Save As canceled: {issue}")
 
     def get_workfile_extensions(self):
         return [BATCH_WORKFILE_EXTENSION]
@@ -286,7 +244,25 @@ class FlameBatchHost(HostBase, IWorkfileHost):
             )
             self._ensure_batch_product(folder_entity, task_entity)
 
-        write_batch_workfile(batch, dst_path)
+        log.debug("Writing AYON workfile %r", dst_path)
+        dirpath = os.path.dirname(os.path.abspath(dst_path))
+        os.makedirs(dirpath, exist_ok=True)
+
+        # Write next to the destination and replace it at the end, so
+        # a failure never leaves a partial or corrupted workfile behind.
+        tmp_path = os.path.join(
+            dirpath,
+            ".{}.{}.tmp".format(os.path.basename(dst_path), os.getpid())
+        )
+        try:
+            batch_utils.save_batch_as_consolidated_json(batch, tmp_path)
+            os.replace(tmp_path, dst_path)
+        except Exception as error:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+            raise RuntimeError(
+                f"Unable to save Flame Batch workfile '{dst_path}': {error}"
+            ) from error
         # The task of the batch group, not of the session. A save from a
         # Flame project save keeps it when the session is on another task.
         context = self.get_current_context()
@@ -399,31 +375,6 @@ class FlameBatchHost(HostBase, IWorkfileHost):
 
 
 
-def write_batch_workfile(batch, dst_path):
-    """Write a batch group to a Batch workfile.
-
-    The file is written next to the destination and replaces it at the
-    end, so a failure never leaves a partial or corrupted workfile.
-    """
-    log.debug("Writing AYON workfile %r", dst_path)
-    dirpath = os.path.dirname(os.path.abspath(dst_path))
-    os.makedirs(dirpath, exist_ok=True)
-
-    tmp_path = os.path.join(
-        dirpath,
-        ".{}.{}.tmp".format(os.path.basename(dst_path), os.getpid())
-    )
-    try:
-        batch_utils.save_batch_as_consolidated_json(batch, tmp_path)
-        os.replace(tmp_path, dst_path)
-    except Exception as error:
-        if os.path.exists(tmp_path):
-            os.remove(tmp_path)
-        raise RuntimeError(
-            f"Unable to save Flame Batch workfile '{dst_path}': {error}"
-        ) from error
-
-
 def get_last_batch_workfile(folder_path, task_name):
     """Return the path of the last saved Batch workfile of a task.
 
@@ -453,93 +404,25 @@ def get_last_batch_workfile(folder_path, task_name):
     return max(workfiles, key=lambda workfile: workfile.version).filepath
 
 
-def get_batch_workfile_issue(batch, folder_path, task_name):
-    """Return why a batch group is not on the last workfile of its task.
-
-    Args:
-        batch (flame.PyBatch): Batch group.
-        folder_path (str): Folder path of the batch group products.
-        task_name (str): Task name of the batch group products.
-
-    Returns:
-        Optional[str]: The reason, None when the batch group is on the last
-            Batch workfile or the task has none yet.
-    """
-    last_filepath = get_last_batch_workfile(folder_path, task_name)
-    if not last_filepath:
-        return None
-    last_name = os.path.basename(last_filepath)
-
-    filepath = batch_utils.get_session_batch_workfile(
-        batch, folder_path, task_name
-    )
-    if not filepath:
-        return (
-            f"{batch.name.get_value()} is not linked to a workfile in this"
-            f" Flame session, the last one of the task is {last_name}."
-        )
-
-    version = get_version_from_path(os.path.basename(filepath))
-    last_version = get_version_from_path(last_name)
-    if version and last_version and int(last_version) > int(version):
-        return f"{os.path.basename(filepath)} is older than {last_name}."
-    return None
-
-
 def refresh_batch_workfile():
     """Rewrite the Batch workfile of the current batch group.
 
     Runs after a Flame project save. Nothing is saved when the batch group
-    has no Batch workfile in this Flame session. The artist is warned when
-    a batch group with AYON products has none, or comes from an older
-    version than the last one of its task.
+    has no Batch workfile in this Flame session.
     """
-    project_settings = get_current_project_settings()
-    if not project_settings["flame"]["update_batch_workfile"]["enabled"]:
-        return
-
     host = FlameBatchHost()
     filepath = host.get_current_workfile()
     if not filepath:
-        # A batch group without AYON products is not an AYON workfile.
-        if batch_utils.get_batch_products_context():
-            batch_name = batch_utils.get_current_batch().name.get_value()
-            flame.messages.show_in_console(
-                f"AYON: {batch_name} is not linked to a workfile, use Work"
-                " Files > Open or Save As.",
-                "warning",
-                10,
-            )
+        return
+
+    project_settings = get_current_project_settings()
+    if not project_settings["flame"]["update_batch_workfile"]["enabled"]:
         return
 
     host.save_workfile(filepath)
     flame.messages.show_in_console(
         f"AYON: saved {os.path.basename(filepath)}", "info", 5
     )
-
-    # Another artist, or another batch group, may have saved a newer
-    # version since this one was opened. The file is saved already, a
-    # failed lookup must not report a failed save.
-    context = host.get_current_context()
-    try:
-        last_filepath = get_last_batch_workfile(
-            context["folder_path"], context["task_name"]
-        )
-    except Exception:
-        log.warning("Unable to find the last Batch workfile.", exc_info=True)
-        return
-    if not last_filepath:
-        return
-    version = get_version_from_path(os.path.basename(filepath))
-    last_version = get_version_from_path(os.path.basename(last_filepath))
-    if version and last_version and int(last_version) > int(version):
-        last_name = os.path.basename(last_filepath)
-        flame.messages.show_in_console(
-            f"AYON: {os.path.basename(filepath)} is older than {last_name}."
-            f" Open {last_name} from Work Files.",
-            "warning",
-            10,
-        )
 
 
 def install():
