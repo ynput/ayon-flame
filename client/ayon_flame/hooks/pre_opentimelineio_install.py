@@ -11,7 +11,7 @@ from ayon_core import lib
 class InstallOpenTimelineIOToFlame(PreLaunchHook):
     """Automatically install OpenTimelineIO to Flame python environment."""
 
-    app_groups = {"flame"}
+    app_groups = {"flame", "flameassist", "flare"}
     order = 2
     launch_types = {LaunchTypes.local}
 
