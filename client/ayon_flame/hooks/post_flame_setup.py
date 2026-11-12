@@ -26,7 +26,7 @@ class NoProjectRootSettingsFound(BaseProjectRootException):
 
 class FlamePostLaunch(PostLaunchHook):
 
-    app_groups = {"flame"}
+    app_groups = {"flame", "flameassist", "flare"}
     order = 1
     launch_types = {LaunchTypes.local}
 
