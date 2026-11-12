@@ -46,6 +46,11 @@ from .utils import (
 from .pipeline import (
     FlameHost,
     FlameBatchHost,
+    FlameEditorialHost,
+    get_last_batch_workfile,
+    get_batch_workfile_issue,
+    refresh_batch_workfile,
+    write_batch_workfile,
     install,
     uninstall,
     ls,
@@ -56,12 +61,23 @@ from .pipeline import (
     imprint,
     maintained_selection
 )
+from ..constants import (
+    BATCH_WORKFILE_EXTENSION,
+    EDITORIAL_WORKFILE_EXTENSION,
+)
+from .editorial_workfile import (
+    EDITORIAL_WORKFILE_CREATOR,
+    get_current_editorial_workfile,
+    get_timeline_sequence,
+    save_flame_project,
+)
 from .menu import (
     FlameMenuProjectConnect,
     FlameMenuTimeline,
     FlameMenuBatch,
     FlameMenuUniversal,
     show_batch_workfiles,
+    show_editorial_workfiles,
 )
 from .plugin import (
     PublishableClip,
@@ -97,6 +113,8 @@ from .batch_utils import (
     get_batch_product_data,
     get_batch_products_context,
     set_batch_products_context,
+    get_instances_batches,
+    get_session_batch_workfile,
 )
 
 __all__ = [
@@ -137,9 +155,22 @@ __all__ = [
     "MediaInfoFile",
     "TimeEffectMetadata",
 
+    # editorial workfile
+    "BATCH_WORKFILE_EXTENSION",
+    "EDITORIAL_WORKFILE_EXTENSION",
+    "EDITORIAL_WORKFILE_CREATOR",
+    "get_current_editorial_workfile",
+    "get_timeline_sequence",
+    "save_flame_project",
+
     # pipeline
     "FlameHost",
     "FlameBatchHost",
+    "FlameEditorialHost",
+    "get_last_batch_workfile",
+    "get_batch_workfile_issue",
+    "refresh_batch_workfile",
+    "write_batch_workfile",
     "install",
     "uninstall",
     "ls",
@@ -163,6 +194,7 @@ __all__ = [
     "FlameMenuBatch",
     "FlameMenuUniversal",
     "show_batch_workfiles",
+    "show_editorial_workfiles",
 
     # plugin
     "Creator",
@@ -199,4 +231,6 @@ __all__ = [
     "get_batch_product_data",
     "get_batch_products_context",
     "set_batch_products_context",
+    "get_instances_batches",
+    "get_session_batch_workfile",
 ]
