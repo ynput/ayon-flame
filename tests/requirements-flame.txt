@@ -1,0 +1,4 @@
+# Installed into tests/.deps/py<version> for the Python that Flame runs,
+# only when the AYON launcher does not provide pytest for that Python.
+# Everything else comes from the AYON dependency package.
+pytest>=8
