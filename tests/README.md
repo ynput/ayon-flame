@@ -88,6 +88,7 @@ end-to-end test (`publish_batch_report.json`).
 | --- | --- |
 | `test_batch_utils.py` | node metadata, batch group names, consolidated JSON save and load, products context, session Batch workfiles |
 | `test_batch_workfile_host.py` | `FlameBatchHost`: save, save with context (Batch product, products moved to the task), open, last workfile |
+| `test_batch_workfile_latest.py` | batch group on an older Batch workfile: warning on project save, Save As question, `ValidateBatchWorkfileLatest` |
 | `test_editorial_workfile.py` | `FlameHost` editorial workfiles: save, open, current workfile per task, Batch menu context |
 | `test_project_saved_hook.py` | `project_saved` hook and the real `Save Project` shortcut rewriting the Batch workfile |
 | `test_publish_plugins.py` | publish and create plugins of the Batch and editorial workfiles, one by one |
