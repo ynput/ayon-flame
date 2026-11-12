@@ -286,25 +286,7 @@ class FlameBatchHost(HostBase, IWorkfileHost):
             )
             self._ensure_batch_product(folder_entity, task_entity)
 
-        log.debug("Writing AYON workfile %r", dst_path)
-        dirpath = os.path.dirname(os.path.abspath(dst_path))
-        os.makedirs(dirpath, exist_ok=True)
-
-        # Write next to the destination and replace it at the end, so
-        # a failure never leaves a partial or corrupted workfile behind.
-        tmp_path = os.path.join(
-            dirpath,
-            ".{}.{}.tmp".format(os.path.basename(dst_path), os.getpid())
-        )
-        try:
-            batch_utils.save_batch_as_consolidated_json(batch, tmp_path)
-            os.replace(tmp_path, dst_path)
-        except Exception as error:
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
-            raise RuntimeError(
-                f"Unable to save Flame Batch workfile '{dst_path}': {error}"
-            ) from error
+        write_batch_workfile(batch, dst_path)
         # The task of the batch group, not of the session. A save from a
         # Flame project save keeps it when the session is on another task.
         context = self.get_current_context()
@@ -415,6 +397,31 @@ class FlameBatchHost(HostBase, IWorkfileHost):
         finally:
             CTX.context = previous_context
 
+
+
+def write_batch_workfile(batch, dst_path):
+    """Write a batch group to a Batch workfile.
+
+    The file is written next to the destination and replaces it at the
+    end, so a failure never leaves a partial or corrupted workfile.
+    """
+    log.debug("Writing AYON workfile %r", dst_path)
+    dirpath = os.path.dirname(os.path.abspath(dst_path))
+    os.makedirs(dirpath, exist_ok=True)
+
+    tmp_path = os.path.join(
+        dirpath,
+        ".{}.{}.tmp".format(os.path.basename(dst_path), os.getpid())
+    )
+    try:
+        batch_utils.save_batch_as_consolidated_json(batch, tmp_path)
+        os.replace(tmp_path, dst_path)
+    except Exception as error:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        raise RuntimeError(
+            f"Unable to save Flame Batch workfile '{dst_path}': {error}"
+        ) from error
 
 
 def get_last_batch_workfile(folder_path, task_name):
