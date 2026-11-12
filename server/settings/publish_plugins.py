@@ -354,6 +354,15 @@ class PublishPluginsModel(BaseSettingsModel):
         title="Validate Editorial Workfile Saved"
     )
 
+    ValidateBatchWorkfileLatest: OptionalValidatorModel = SettingsField(
+        default_factory=OptionalValidatorModel,
+        title="Validate Batch Workfile Is Latest",
+        description=(
+            "Batch menu publishing: the batch group is on the last Batch"
+            " workfile of its task."
+        ),
+    )
+
     ExtractBatchRender: ExtractBatchRenderModel = SettingsField(
         default_factory=ExtractBatchRenderModel,
         title="Extract Batch Render"
@@ -429,6 +438,11 @@ DEFAULT_PUBLISH_SETTINGS = {
         "optional": True
     },
     "ValidateEditorialWorkfileSaved": {
+        "enabled": True,
+        "active": True,
+        "optional": True
+    },
+    "ValidateBatchWorkfileLatest": {
         "enabled": True,
         "active": True,
         "optional": True
