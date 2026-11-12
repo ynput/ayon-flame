@@ -1,3 +1,5 @@
+from typing import Literal
+
 from ayon_server.settings import BaseSettingsModel, SettingsField
 
 from .bookmarks import BookmarksModel, DEFAULT_BOOKMARK_SETTINGS
@@ -23,6 +25,14 @@ class FlameHooksModel(BaseSettingsModel):
             default_factory=InstallOpenTimelineIOToFlameModel,
             title="Install OpenTimelineIO to Flame"
         )
+    project_setup: Literal["wiretap", "skip"] = SettingsField(
+        default="wiretap",
+        title="Project setup",
+        description=(
+            "**wiretap**: create/prepare the Flame project through WireTap\n"
+            "**skip**: skip project setup (project must already exist)."
+        ),
+    )
 
 
 class FlameSettings(BaseSettingsModel):

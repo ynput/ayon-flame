@@ -57,6 +57,23 @@ class FlamePrelaunch(PreLaunchHook):
         project_name = project_entity["name"]
         volume_name = _env.get("FLAME_WIRETAP_VOLUME")
 
+        # skip all WireTap interaction
+        # project creation, colour policy, user prep)
+        # The Flame project must then already exist
+        flame_settings = self.data["project_settings"]["flame"]
+        hooks_settings = flame_settings.get("hooks", {})
+        if hooks_settings.get("project_setup", "wiretap") == "skip":
+            self.log.warning(
+                "Project setup is set to 'skip' in settings: skipping "
+                "WireTap setup. "
+                "Project '%s' must already exist in Flame.", project_name
+            )
+            self.launch_context.launch_args.extend([
+                f"--start-project={project_name}",
+                "--create-workspace",
+            ])
+            return
+
         # get image io
         project_settings = self.data["project_settings"]
 
