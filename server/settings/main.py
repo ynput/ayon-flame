@@ -1,3 +1,5 @@
+from typing import Literal
+
 from ayon_server.settings import BaseSettingsModel, SettingsField
 
 from .bookmarks import BookmarksModel, DEFAULT_BOOKMARK_SETTINGS
@@ -23,13 +25,12 @@ class FlameHooksModel(BaseSettingsModel):
             default_factory=InstallOpenTimelineIOToFlameModel,
             title="Install OpenTimelineIO to Flame"
         )
-    skip_wiretap: bool = SettingsField(
-        default=False,
-        title="Skip WireTap setup on launch",
+    project_setup: Literal["wiretap", "skip"] = SettingsField(
+        default="wiretap",
+        title="Project setup",
         description=(
-            "Skip all WireTap interaction (project/workspace creation, "
-            "color policy, user prep) when launching Flame. The Flame "
-            "project must already exist, it is only opened by name."
+            "**wiretap**: create/prepare the Flame project through WireTap\n"
+            "**skip**: skip project setup (project must already exist)."
         ),
     )
 

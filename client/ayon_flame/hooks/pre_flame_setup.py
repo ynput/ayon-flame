@@ -61,9 +61,10 @@ class FlamePrelaunch(PreLaunchHook):
         # project creation, colour policy, user prep)
         # The Flame project must then already exist
         flame_settings = self.data["project_settings"]["flame"]
-        if flame_settings.get("hooks", {}).get("skip_wiretap"):
+        hooks_settings = flame_settings.get("hooks", {})
+        if hooks_settings.get("project_setup", "wiretap") == "skip":
             self.log.warning(
-                "'Skip WireTap setup' is enabled in settings: skipping "
+                "Project setup is set to 'skip' in settings: skipping "
                 "WireTap setup. "
                 "Project '%s' must already exist in Flame.", project_name
             )
