@@ -110,11 +110,15 @@ class FlamePostLaunch(PostLaunchHook):
         if remove_default_bookmarks:
             all_bookmark_paths.update(FLAME_DEFAULT_BOOKMARK_PATHS)
 
-        for section in data["DlBookmark"]["Sections"]:
+        sections = data["DlBookmark"]["Sections"]
+        if not any(section["Section"] == "Project" for section in sections):
+            sections.append({"Section": "Project", "Bookmarks": []})
+
+        for section in sections:
             if section["Section"] == "Project":
                 filtered_bookmarks = [
                     bookmark
-                    for bookmark in section["Bookmarks"]
+                    for bookmark in section.get("Bookmarks", [])
                     if bookmark["Path"] not in all_bookmark_paths
                     and bookmark["Bookmark"] not in bookmark_paths
                 ]
