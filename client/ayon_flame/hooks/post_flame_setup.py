@@ -10,6 +10,10 @@ from ayon_core.pipeline.anatomy import AnatomyStringTemplate
 from ayon_core.pipeline.template_data import get_project_template_data
 
 
+# Paths of the default bookmarks Flame adds to every project
+FLAME_DEFAULT_BOOKMARK_PATHS = {"<project home>", "<project setups>"}
+
+
 class BaseProjectRootException(Exception):
     """Base exception for this module"""
 
@@ -34,7 +38,8 @@ class FlamePostLaunch(PostLaunchHook):
         self,
         project_name: str,
         projects_root: str,
-        bookmark_paths: Dict[str, str]
+        bookmark_paths: Dict[str, str],
+        remove_default_bookmarks: bool = False
     ) -> None:
         """Create bookmarks for project.
 
@@ -48,6 +53,8 @@ class FlamePostLaunch(PostLaunchHook):
             project_name (str): Name of the project
             projects_root (str): Path to flame projects' location on disk.
             bookmark_paths (dict[str, str]): Bookmark paths
+            remove_default_bookmarks (bool): Remove the bookmarks Flame
+                adds to every project, e.g. Project Home.
         """
         project_dir = os.path.join(projects_root, project_name)
         if not os.path.isdir(project_dir):
@@ -100,6 +107,8 @@ class FlamePostLaunch(PostLaunchHook):
                 }
             )
             all_bookmark_paths.add(path)
+        if remove_default_bookmarks:
+            all_bookmark_paths.update(FLAME_DEFAULT_BOOKMARK_PATHS)
 
         for section in data["DlBookmark"]["Sections"]:
             if section["Section"] == "Project":
@@ -231,6 +240,7 @@ class FlamePostLaunch(PostLaunchHook):
                 self.data["project_entity"]["name"],
                 project_root,
                 bookmark_paths,
+                bookmark_settings["remove_default_bookmarks"],
             )
         except (OSError, ValueError) as error:
             self.log.error("Unable to update bookmarks file")
