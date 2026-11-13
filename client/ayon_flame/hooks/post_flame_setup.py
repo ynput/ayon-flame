@@ -10,6 +10,10 @@ from ayon_core.pipeline.anatomy import AnatomyStringTemplate
 from ayon_core.pipeline.template_data import get_project_template_data
 
 
+# Paths of the default bookmarks Flame adds to every project
+FLAME_DEFAULT_BOOKMARK_PATHS = {"<project home>", "<project setups>"}
+
+
 class BaseProjectRootException(Exception):
     """Base exception for this module"""
 
@@ -34,27 +38,41 @@ class FlamePostLaunch(PostLaunchHook):
         self,
         project_name: str,
         projects_root: str,
-        bookmark_paths: Dict[str, str]
+        bookmark_paths: Dict[str, str],
+        remove_default_bookmarks: bool = False
     ) -> None:
         """Create bookmarks for project.
 
         As multiple roots can be defined, this will create a bookmark for each
         root respectively.
 
-        This will respect previously set up bookmarks, only removing duplicate
-        bookmarked paths in favour of the new ones.
+        This will respect previously set up bookmarks, only removing those
+        with the same label or path in favour of the new ones.
 
         Args:
             project_name (str): Name of the project
             projects_root (str): Path to flame projects' location on disk.
             bookmark_paths (dict[str, str]): Bookmark paths
+            remove_default_bookmarks (bool): Remove the bookmarks Flame
+                adds to every project, e.g. Project Home.
         """
+        project_dir = os.path.join(projects_root, project_name)
+        if not os.path.isdir(project_dir):
+            self.log.error(
+                f"Unable to create bookmarks, Flame project folder "
+                f"'{project_dir}' does not exist"
+            )
+            return
+        # Flame 2026+ keeps the project's status files in its 'setups' folder
+        setups_dir = os.path.join(project_dir, "setups")
+        if os.path.isdir(setups_dir):
+            project_dir = setups_dir
         bookmarks_path = os.path.join(
-            projects_root,
-            project_name,
+            project_dir,
             "status",
             "cf_bookmarks.json"
         )
+        self.log.info(f"Creating bookmarks at '{bookmarks_path}'")
         if os.path.exists(bookmarks_path):
             with open(bookmarks_path, "r") as bookmark_file:
                 data = json.load(bookmark_file)
@@ -89,30 +107,51 @@ class FlamePostLaunch(PostLaunchHook):
                 }
             )
             all_bookmark_paths.add(path)
+        if remove_default_bookmarks:
+            all_bookmark_paths.update(FLAME_DEFAULT_BOOKMARK_PATHS)
 
-        for section in data["DlBookmark"]["Sections"]:
+        sections = data["DlBookmark"]["Sections"]
+        if not any(section["Section"] == "Project" for section in sections):
+            sections.append({"Section": "Project", "Bookmarks": []})
+
+        for section in sections:
             if section["Section"] == "Project":
                 filtered_bookmarks = [
                     bookmark
-                    for bookmark in section["Bookmarks"]
+                    for bookmark in section.get("Bookmarks", [])
                     if bookmark["Path"] not in all_bookmark_paths
+                    and bookmark["Bookmark"] not in bookmark_paths
                 ]
-                # insert directly after the default "Project Home" bookmark
+                # insert after Flame's own bookmarks, e.g. "<project home>"
+                index = next(
+                    (
+                        index
+                        for index, bookmark in enumerate(filtered_bookmarks)
+                        if not bookmark["Path"].startswith("<")
+                    ),
+                    len(filtered_bookmarks)
+                )
                 section["Bookmarks"] = (
-                    filtered_bookmarks[:1]   # default Project Home bookmark
-                    + bookmarks               # project root bookmarks
-                    + filtered_bookmarks[1:]  # remaining preexisting bookmarks
+                    filtered_bookmarks[:index]   # Flame's own bookmarks
+                    + bookmarks                   # project root bookmarks
+                    + filtered_bookmarks[index:]  # remaining bookmarks
                 )
 
+        is_new_file = not os.path.exists(bookmarks_path)
         os.makedirs(os.path.dirname(bookmarks_path), exist_ok=True)
         with open(bookmarks_path, "w") as bookmark_file:
             json.dump(data, bookmark_file, ensure_ascii=True, indent=4)
+        if is_new_file:
+            # let other users update it too, like Flame's own files
+            os.chmod(bookmarks_path, 0o666)
 
     def _get_projects_root(
         self,
         variants: List[Dict[str, Union[List[str], str]]]
     ) -> str:
-        flame_app_name = os.getenv("AYON_APP_NAME", "")
+        # AYON_APP_NAME is only set in the launch environment, not in the
+        # launcher process running this hook
+        flame_app_name = self.app_name or ""
         flame_variant = flame_app_name.split("/", 1)[-1]
         filter_profile = {"name": flame_variant}
 
@@ -200,8 +239,13 @@ class FlamePostLaunch(PostLaunchHook):
             self.log.info("No bookmarks to create.")
             return
 
-        self._create_bookmarks(
-            self.data["project_entity"]["name"],
-            project_root,
-            bookmark_paths,
-        )
+        try:
+            self._create_bookmarks(
+                self.data["project_entity"]["name"],
+                project_root,
+                bookmark_paths,
+                bookmark_settings["remove_default_bookmarks"],
+            )
+        except (OSError, ValueError) as error:
+            self.log.error("Unable to update bookmarks file")
+            self.log.exception(error)
