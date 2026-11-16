@@ -235,7 +235,10 @@ class FlamePostLaunch(PostLaunchHook):
         bookmark_paths = self._get_bookmark_paths(
             bookmark_settings["bookmark_paths"]
         )
-        if not bookmark_paths:
+        remove_default_bookmarks = (
+            bookmark_settings["remove_default_bookmarks"]
+        )
+        if not bookmark_paths and not remove_default_bookmarks:
             self.log.info("No bookmarks to create.")
             return
 
@@ -244,7 +247,7 @@ class FlamePostLaunch(PostLaunchHook):
                 self.data["project_entity"]["name"],
                 project_root,
                 bookmark_paths,
-                bookmark_settings["remove_default_bookmarks"],
+                remove_default_bookmarks,
             )
         except (OSError, ValueError) as error:
             self.log.error("Unable to update bookmarks file")
