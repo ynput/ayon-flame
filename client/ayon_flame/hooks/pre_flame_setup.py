@@ -128,9 +128,10 @@ class FlamePrelaunch(PreLaunchHook):
         self.log.info(pformat(dict(_env)))
         self.log.info(pformat(data_to_script))
 
-        app_arguments, volume_name = self._get_launch_arguments(
-            data_to_script
+        app_arguments, volume_name, project_setups_dir = (
+            self._get_launch_arguments(data_to_script)
         )
+        self.data["flame_project_setups_dir"] = project_setups_dir
 
         # fix project data permission issue
         self._fix_permissions(project_name, volume_name)
@@ -239,7 +240,11 @@ class FlamePrelaunch(PreLaunchHook):
             if not app_args:
                 RuntimeError("App arguments were not solved")
 
-        return app_args, returned_data.get("volume_name")
+        return (
+            app_args,
+            returned_data.get("volume_name"),
+            returned_data.get("project_setups_dir"),
+        )
 
 
 @contextlib.contextmanager

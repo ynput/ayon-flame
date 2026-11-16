@@ -1,10 +1,8 @@
 import os
 import json
-import platform
-from typing import Dict, List, Union
+from typing import Dict, List
 
 from ayon_applications import PostLaunchHook, LaunchTypes
-from ayon_core.lib import filter_profiles
 from ayon_core.pipeline import Anatomy
 from ayon_core.pipeline.anatomy import AnatomyStringTemplate
 from ayon_core.pipeline.template_data import get_project_template_data
@@ -12,20 +10,6 @@ from ayon_core.pipeline.template_data import get_project_template_data
 
 # Paths of the default bookmarks Flame adds to every project
 FLAME_DEFAULT_BOOKMARK_PATHS = {"<project home>", "<project setups>"}
-
-
-class BaseProjectRootException(Exception):
-    """Base exception for this module"""
-
-
-class NoProjectRootFoldersFound(BaseProjectRootException):
-    """Raised when no project folders are found on disk"""
-
-
-class NoProjectRootSettingsFound(BaseProjectRootException):
-    """Raised when there are no project root folders specified in the
-    settings or when the settings do not contain the required system paths.
-    """
 
 
 class FlamePostLaunch(PostLaunchHook):
@@ -36,8 +20,7 @@ class FlamePostLaunch(PostLaunchHook):
 
     def _create_bookmarks(
         self,
-        project_name: str,
-        projects_root: str,
+        setups_dir: str,
         bookmark_paths: Dict[str, str],
         remove_default_bookmarks: bool = False
     ) -> None:
@@ -50,25 +33,20 @@ class FlamePostLaunch(PostLaunchHook):
         with the same label or path in favour of the new ones.
 
         Args:
-            project_name (str): Name of the project
-            projects_root (str): Path to flame projects' location on disk.
+            setups_dir (str): Flame project setups directory, read
+                from Wiretap by the prelaunch hook.
             bookmark_paths (dict[str, str]): Bookmark paths
             remove_default_bookmarks (bool): Remove the bookmarks Flame
                 adds to every project, e.g. Project Home.
         """
-        project_dir = os.path.join(projects_root, project_name)
-        if not os.path.isdir(project_dir):
+        if not os.path.isdir(setups_dir):
             self.log.error(
-                f"Unable to create bookmarks, Flame project folder "
-                f"'{project_dir}' does not exist"
+                f"Unable to create bookmarks, Flame project setups folder "
+                f"'{setups_dir}' does not exist"
             )
             return
-        # Flame 2026+ keeps the project's status files in its 'setups' folder
-        setups_dir = os.path.join(project_dir, "setups")
-        if os.path.isdir(setups_dir):
-            project_dir = setups_dir
         bookmarks_path = os.path.join(
-            project_dir,
+            setups_dir,
             "status",
             "cf_bookmarks.json"
         )
@@ -145,40 +123,6 @@ class FlamePostLaunch(PostLaunchHook):
             # let other users update it too, like Flame's own files
             os.chmod(bookmarks_path, 0o666)
 
-    def _get_projects_root(
-        self,
-        variants: List[Dict[str, Union[List[str], str]]]
-    ) -> str:
-        # AYON_APP_NAME is only set in the launch environment, not in the
-        # launcher process running this hook
-        flame_app_name = self.app_name or ""
-        flame_variant = flame_app_name.split("/", 1)[-1]
-        filter_profile = {"name": flame_variant}
-
-        root_profile = filter_profiles(
-            variants, filter_profile, logger=self.log
-        )
-
-        if not root_profile:
-            raise NoProjectRootSettingsFound(
-                f"No project roots for `{flame_app_name}` found in settings"
-            )
-        system_name = platform.system().lower()
-        project_paths = root_profile["project_path"][system_name]
-        if not project_paths:
-            raise NoProjectRootSettingsFound(
-                f"No project roots for `{flame_app_name}` ({system_name}) "
-                "found in settings"
-            )
-        for project_path in project_paths:
-            if os.path.isdir(project_path):
-                return project_path
-            self.log.debug(f"{project_path} does not exist, skipped")
-
-        raise NoProjectRootFoldersFound(
-            "Could not find a project root folder on disk."
-        )
-
     def _get_bookmark_paths(
         self, bookmark_settings: List[Dict[str, str]]
     ) -> Dict[str, str]:
@@ -212,8 +156,9 @@ class FlamePostLaunch(PostLaunchHook):
         """Collects the bookmark path templates defined in the flame settings
         and sets up the bookmarks file for flame to point to them.
 
-        Will not run if bookmarks are disabled, there are no valid project
-        roots defined, or no bookmarks defined in the settings.
+        Will not run if bookmarks are disabled, the Flame project setups
+        folder was not found from Wiretap, or no bookmarks defined in
+        the settings.
         """
         project_settings = self.data["project_settings"]
 
@@ -223,13 +168,12 @@ class FlamePostLaunch(PostLaunchHook):
             self.log.info("Bookmarks disabled")
             return
 
-        try:
-            project_root = self._get_projects_root(
-                bookmark_settings["flame_projects_root"]["variants"]
+        setups_dir = self.data.get("flame_project_setups_dir")
+        if not setups_dir:
+            self.log.error(
+                "Unable to create bookmarks, Flame project setups folder "
+                "was not found from Wiretap"
             )
-        except BaseProjectRootException as error:
-            self.log.error("Unable to create bookmarks")
-            self.log.exception(error)
             return
 
         bookmark_paths = self._get_bookmark_paths(
@@ -244,8 +188,7 @@ class FlamePostLaunch(PostLaunchHook):
 
         try:
             self._create_bookmarks(
-                self.data["project_entity"]["name"],
-                project_root,
+                setups_dir,
                 bookmark_paths,
                 remove_default_bookmarks,
             )

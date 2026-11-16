@@ -134,6 +134,44 @@ class WireTapCom(object):
             launch_args.append("--start-workspace={}".format(workspace_name))
             return launch_args
 
+    def get_project_setups_dir(self, project_name):
+        """Return project setups directory, where Flame stores the
+        project's 'status' files (e.g. bookmarks).
+
+        Args:
+            project_name (str): name of project
+
+        Returns:
+            str or None: setups directory path
+        """
+        project_node = WireTapNodeHandle(
+            self._server, "/projects/{}".format(project_name))
+        metadata = WireTapStr()
+        if not project_node.getMetaData("XML", "", 1, metadata):
+            print(
+                "WARNING: Unable to get project '{}' metadata: {}".format(
+                    project_name, project_node.lastError())
+            )
+            return None
+
+        setup_dir = minidom.parseString(metadata.c_str()).getElementsByTagName(
+            "SetupDir")
+        if not setup_dir or not setup_dir[0].firstChild:
+            print(
+                "WARNING: No SetupDir found in project '{}' "
+                "metadata.".format(project_name)
+            )
+            return None
+
+        setup_dir = setup_dir[0].firstChild.data.strip()
+
+        # Flame < 2026 returns a name relative to the projects folder
+        if not os.path.isabs(setup_dir):
+            setup_dir = os.path.join("/opt/Autodesk/project", setup_dir)
+
+        print("Project setups directory: {}".format(setup_dir))
+        return setup_dir
+
     def _get_flame_version(self):
         """Get the flame version.
 
@@ -649,13 +687,16 @@ if __name__ == "__main__":
     # initialize class
     wiretap_handler = WireTapCom(host_name, volume_name, group_name)
 
+    project_name = in_data.pop("project_name")
     try:
         app_args = wiretap_handler.get_launch_args(
-            project_name=in_data.pop("project_name"),
+            project_name=project_name,
             project_data=in_data.pop("project_data"),
             user_name=in_data.pop("user_name"),
             **in_data
         )
+        project_setups_dir = wiretap_handler.get_project_setups_dir(
+            project_name)
     finally:
         wiretap_handler.close()
 
@@ -663,6 +704,7 @@ if __name__ == "__main__":
     out_data.update({
         "app_args": app_args,
         "volume_name": wiretap_handler.volume_name,
+        "project_setups_dir": project_setups_dir,
     })
 
     # write it out back to the exchange json file
