@@ -4,6 +4,7 @@ import base64
 import pathlib
 import json
 import os
+import re
 import tempfile
 
 from ayon_core.lib import Logger
@@ -19,6 +20,10 @@ AYON_NOTE_MARKER = "__ayon__"
 
 # Name of the hidden Note node used to embed instance data inside the batch.
 _METADATA_NODE_NAME = "AYON_metadata"
+
+# Number added to the name of a batch group that is taken: ' (2)', see
+# 'get_unique_batch_name'.
+FLAME_NUMBER_SUFFIX = re.compile(r"^(?P<name>.*\S)\s*\((?P<number>\d+)\)\s*$")
 
 
 def read_node_metadata(node: flame.PyNode) -> Optional[Dict[str, Any]]:

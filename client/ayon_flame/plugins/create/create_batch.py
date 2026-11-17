@@ -12,9 +12,6 @@ import ayon_flame.api as flapi
 from ayon_flame.api import batch_utils
 from ayon_flame.constants import BATCH_CREATOR_IDENTIFIER
 
-# Number Flame adds to the name of a batch group that is taken: ' (2)'.
-_FLAME_NUMBER_SUFFIX = re.compile(r"^(?P<name>.*\S)\s*\((?P<number>\d+)\)\s*$")
-
 
 def get_batch_product_name(batch_name: str, fallback: str) -> str:
     """ Return a product name valid for the server from a batch group name.
@@ -34,7 +31,7 @@ def get_batch_product_name(batch_name: str, fallback: str) -> str:
     Returns:
         str: Product name.
     """
-    match = _FLAME_NUMBER_SUFFIX.match(batch_name)
+    match = batch_utils.FLAME_NUMBER_SUFFIX.match(batch_name)
     if match:
         batch_name = "{}_{}".format(match["name"].rstrip(), match["number"])
 
