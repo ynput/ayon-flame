@@ -7,7 +7,9 @@ class ExportPresetsModel(BaseSettingsModel):
         title="Enable Export Presets",
         description=(
             "Copy export presets from a central folder into the Flame "
-            "project on each launch, so they appear under Project presets"
+            "project on each launch, so they appear under Project presets. "
+            "Kept in sync: presets removed centrally are removed from the "
+            "project, presets made in the project are kept."
         ),
     )
     source_dir: str = SettingsField(
