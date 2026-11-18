@@ -204,7 +204,10 @@ def open_launch_workfile():
             task_entity = ayon_api.get_task_by_name(
                 project_name, folder_entity["id"], context["task_name"]
             )
-            host_class().open_workfile_with_context(
+            host = host_class()
+            if isinstance(host, flame_api.FlameBatchHost):
+                host.reuse_linked_batch_group = True
+            host.open_workfile_with_context(
                 filepath, folder_entity, task_entity
             )
     except Exception as error:
@@ -321,16 +324,18 @@ def project_saved(project_name, save_time, is_auto_save):
     if flame_api.CTX.app_framework:
         flame_api.CTX.app_framework.save_prefs()
 
-    if is_auto_save:
-        return
+    if not is_auto_save:
+        # Project saves are control+S, the Save Project menu and each
+        # iteration. The Batch Save button and Save Desktop do not save
+        # the project.
+        try:
+            flame_api.refresh_batch_workfile()
+        except Exception as error:
+            _show_error("save the Batch workfile", error)
 
-    # Project saves are control+S, the Save Project menu and each
-    # iteration. The Batch Save button and Save Desktop do not save the
-    # project.
-    try:
-        flame_api.refresh_batch_workfile()
-    except Exception as error:
-        _show_error("save the Batch workfile", error)
+    # Every project save, auto-saves too, stores every batch group, so
+    # their links can be kept for the next Flame launch.
+    flame_api.keep_session_batch_workfiles()
 
 
 def get_main_menu_custom_ui_actions():
