@@ -115,6 +115,7 @@ from .batch_utils import (
     set_batch_products_context,
     get_instances_batches,
     get_session_batch_workfile,
+    set_session_batch_workfile,
 )
 
 __all__ = [
@@ -233,4 +234,5 @@ __all__ = [
     "set_batch_products_context",
     "get_instances_batches",
     "get_session_batch_workfile",
+    "set_session_batch_workfile",
 ]

@@ -475,7 +475,7 @@ def get_batch_workfile_issue(batch, folder_path, task_name):
     Returns:
         Optional[str]: The reason. None when the batch group is on the last
             Batch workfile, the task has none yet, or the batch group
-            workfile is not among the task workfiles on disk.
+            workfile is not one the Work Files tool lists.
     """
     versions = _get_batch_workfile_versions(folder_path, task_name)
     if not versions:
@@ -493,8 +493,8 @@ def get_batch_workfile_issue(batch, folder_path, task_name):
         )
 
     # Versions are the ones the Workfiles tool shows. A Save As comment
-    # with its own "v2" does not count. A workfile that is not on disk
-    # has no version and is not reported.
+    # with its own "v2" does not count. A workfile the Work Files tool does
+    # not list has no version and is not reported.
     version = versions.get(os.path.normpath(filepath))
     if version is not None and version < versions[last_filepath]:
         return f"{os.path.basename(filepath)} is older than {last_name}."
@@ -507,7 +507,8 @@ def refresh_batch_workfile():
     Runs after a Flame project save. Nothing is saved when the batch group
     has no Batch workfile in this Flame session. The artist is warned when
     a batch group with AYON products has none, or comes from an older
-    version than the last one of its task.
+    version than the last one of its task. A dialog tells the artist once
+    when its workfile was not written because it was saved elsewhere.
     """
     project_settings = get_current_project_settings()
     if not project_settings["flame"]["update_batch_workfile"]["enabled"]:
@@ -516,9 +517,31 @@ def refresh_batch_workfile():
     host = FlameBatchHost()
     filepath = host.get_current_workfile()
     if not filepath:
+        try:
+            batch = batch_utils.get_current_batch()
+        except RuntimeError:
+            return
+        batch_name = batch.name.get_value()
+
+        # The artist believes the work is saved. A console line is easy to
+        # miss, a dialog is not. The batch group is unlinked, so the dialog
+        # shows once.
+        context = host.get_current_context()
+        saved_elsewhere = batch_utils.pop_batch_workfile_saved_elsewhere(
+            batch, context["folder_path"], context["task_name"]
+        )
+        if saved_elsewhere:
+            flame.messages.show_in_dialog(
+                "AYON: workfile not saved",
+                f"{os.path.basename(saved_elsewhere)} was saved elsewhere."
+                "\n\nYour work is safe in Flame. Use Work Files > Save As.",
+                "warning",
+                ["OK"],
+            )
+            return
+
         # A batch group without AYON products is not an AYON workfile.
-        if batch_utils.get_batch_products_context():
-            batch_name = batch_utils.get_current_batch().name.get_value()
+        if batch_utils.get_batch_products_context(batch):
             flame.messages.show_in_console(
                 f"AYON: {batch_name} is not linked to a workfile, use Work"
                 " Files > Open or Save As.",
