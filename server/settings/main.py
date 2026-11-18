@@ -23,13 +23,11 @@ class FlameHooksModel(BaseSettingsModel):
             default_factory=InstallOpenTimelineIOToFlameModel,
             title="Install OpenTimelineIO to Flame"
         )
-    skip_wiretap: bool = SettingsField(
-        default=False,
-        title="Skip WireTap setup on launch",
+    project_setup: bool = SettingsField(
+        default=True,
+        title="Automated Project setup",
         description=(
-            "Skip all WireTap interaction (project/workspace creation, "
-            "color policy, user prep) when launching Flame. The Flame "
-            "project must already exist, it is only opened by name."
+            "Create and setup a Flame project matching AYON project."
         ),
     )
 
