@@ -356,8 +356,9 @@ class FlamePostLaunch(PostLaunchHook):
             )
             return
 
-        # Flame keeps the project's export presets next to its status files
-        presets_dir = os.path.join(setups_dir, "export", "presets")
+        # Flame keeps the project's export presets in an extra 'flame'
+        # folder, unlike shared presets: export/presets/flame/<type>
+        presets_dir = os.path.join(setups_dir, "export", "presets", "flame")
         try:
             self._sync_export_presets(source_dir, presets_dir)
         except OSError as error:
