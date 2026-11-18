@@ -49,6 +49,14 @@ class BookmarkItem(BaseSettingsModel):
 
 class BookmarksModel(BaseSettingsModel):
     enabled: bool = SettingsField(default=True, title="Enable Bookmarks")
+    remove_default_bookmarks: bool = SettingsField(
+        default=False,
+        title="Remove Flame Default Bookmarks",
+        description=(
+            "Remove the default Autodesk bookmarks in Project category: "
+            "Project Home and Project Setups"
+        ),
+    )
     flame_projects_root: ProjectRoots = SettingsField(
         default_factory=ProjectRoots,
         title="Flame Projects' Location",
@@ -84,6 +92,7 @@ class BookmarksModel(BaseSettingsModel):
 
 DEFAULT_BOOKMARK_SETTINGS = {
     "enabled": True,
+    "remove_default_bookmarks": False,
     "flame_projects_root": {
         "variants": [
             {
