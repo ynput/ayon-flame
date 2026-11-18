@@ -6,36 +6,6 @@ from ayon_server.settings import (
 )
 
 
-class MultiplatformStrList(BaseSettingsModel):
-    windows: list[str] = SettingsField(default_factory=list, title="Windows")
-    linux: list[str] = SettingsField(default_factory=list, title="Linux")
-    darwin: list[str] = SettingsField(default_factory=list, title="MacOS")
-
-
-class AppVariant(BaseSettingsModel):
-    name: str = SettingsField("", title="Name")
-    label: str = SettingsField("", title="Label")
-    project_path: MultiplatformStrList = SettingsField(
-        default_factory=MultiplatformStrList,
-        title="Path to Projects Folder",
-    )
-
-
-class ProjectRoots(BaseSettingsModel):
-    variants: list[AppVariant] = SettingsField(
-        default_factory=list,
-        title="Variants",
-        description=(
-            "Where projects may be saved for different installations of Flame"
-        ),
-    )
-
-    @validator("variants")
-    def validate_unique_name(cls, value):
-        ensure_unique_names(value)
-        return value
-
-
 class BookmarkItem(BaseSettingsModel):
     name: str = SettingsField("", title="Name")
     bookmark_label: str = SettingsField(
@@ -56,11 +26,6 @@ class BookmarksModel(BaseSettingsModel):
             "Remove the default Autodesk bookmarks in Project category: "
             "Project Home and Project Setups"
         ),
-    )
-    flame_projects_root: ProjectRoots = SettingsField(
-        default_factory=ProjectRoots,
-        title="Flame Projects' Location",
-        description="Required for saving bookmarks",
     )
     bookmark_paths: list[BookmarkItem] = SettingsField(
         default_factory=list,
@@ -93,19 +58,6 @@ class BookmarksModel(BaseSettingsModel):
 DEFAULT_BOOKMARK_SETTINGS = {
     "enabled": True,
     "remove_default_bookmarks": False,
-    "flame_projects_root": {
-        "variants": [
-            {
-                "name": "",
-                "label": "Default",
-                "project_path": {
-                    "windows": [],
-                    "linux": ["/opt/Autodesk/project"],
-                    "darwin": ["/opt/Autodesk/project"],
-                },
-            },
-        ],
-    },
     "bookmark_paths": [
         {
             "name": "Project Root",

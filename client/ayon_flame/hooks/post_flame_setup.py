@@ -1,7 +1,11 @@
 import os
 import json
+import stat
+import shutil
+import filecmp
 import platform
-from typing import Dict, List, Union
+from functools import cached_property
+from typing import Dict, List, Optional, Union
 
 from ayon_applications import PostLaunchHook, LaunchTypes
 from ayon_core.lib import filter_profiles
@@ -12,6 +16,10 @@ from ayon_core.pipeline.template_data import get_project_template_data
 
 # Paths of the default bookmarks Flame adds to every project
 FLAME_DEFAULT_BOOKMARK_PATHS = {"<project home>", "<project setups>"}
+
+# Lists the export presets installed from the central folder, so presets
+# removed from it can be removed from the project too
+EXPORT_PRESETS_MANIFEST = ".ayon_export_presets.json"
 
 
 class BaseProjectRootException(Exception):
@@ -36,8 +44,7 @@ class FlamePostLaunch(PostLaunchHook):
 
     def _create_bookmarks(
         self,
-        project_name: str,
-        projects_root: str,
+        setups_dir: str,
         bookmark_paths: Dict[str, str],
         remove_default_bookmarks: bool = False
     ) -> None:
@@ -50,25 +57,13 @@ class FlamePostLaunch(PostLaunchHook):
         with the same label or path in favour of the new ones.
 
         Args:
-            project_name (str): Name of the project
-            projects_root (str): Path to flame projects' location on disk.
+            setups_dir (str): The Flame project's setups folder.
             bookmark_paths (dict[str, str]): Bookmark paths
             remove_default_bookmarks (bool): Remove the bookmarks Flame
                 adds to every project, e.g. Project Home.
         """
-        project_dir = os.path.join(projects_root, project_name)
-        if not os.path.isdir(project_dir):
-            self.log.error(
-                f"Unable to create bookmarks, Flame project folder "
-                f"'{project_dir}' does not exist"
-            )
-            return
-        # Flame 2026+ keeps the project's status files in its 'setups' folder
-        setups_dir = os.path.join(project_dir, "setups")
-        if os.path.isdir(setups_dir):
-            project_dir = setups_dir
         bookmarks_path = os.path.join(
-            project_dir,
+            setups_dir,
             "status",
             "cf_bookmarks.json"
         )
@@ -145,6 +140,100 @@ class FlamePostLaunch(PostLaunchHook):
             # let other users update it too, like Flame's own files
             os.chmod(bookmarks_path, 0o666)
 
+    def _sync_export_presets(self, source_dir: str, presets_dir: str) -> None:
+        """Mirror export presets from a central folder into the project.
+
+        Presets installed by a previous launch but no longer in the central
+        folder are removed. Presets made in the project are left alone,
+        unless the central folder has one with the same name.
+
+        Args:
+            source_dir (str): Central folder with one subfolder per export
+                type, e.g. 'movie_file'.
+            presets_dir (str): The Flame project's export presets folder.
+        """
+        self.log.info(
+            f"Syncing export presets from '{source_dir}' to '{presets_dir}'"
+        )
+        manifest_path = os.path.join(presets_dir, EXPORT_PRESETS_MANIFEST)
+        previous_presets = set()
+        if os.path.exists(manifest_path):
+            try:
+                with open(manifest_path, "r") as manifest_file:
+                    previous_presets = set(json.load(manifest_file))
+            except ValueError:
+                self.log.warning(
+                    f"Unable to read '{manifest_path}', "
+                    "no presets will be removed"
+                )
+
+        presets = []
+        for root, dirs, files in os.walk(source_dir):
+            dirs[:] = [name for name in dirs if not name.startswith(".")]
+            for filename in files:
+                if filename.startswith(".") or not filename.endswith(".xml"):
+                    continue
+                source_path = os.path.join(root, filename)
+                preset = os.path.relpath(source_path, source_dir)
+                presets.append(preset)
+
+                target_path = os.path.join(presets_dir, preset)
+                is_new_file = not os.path.exists(target_path)
+                if not is_new_file and filecmp.cmp(
+                    source_path, target_path, shallow=False
+                ):
+                    continue
+                self._makedirs(os.path.dirname(target_path))
+                shutil.copyfile(source_path, target_path)
+                if is_new_file:
+                    self._make_writable(target_path)
+
+        removed_count = 0
+        for preset in previous_presets - set(presets):
+            preset_path = os.path.join(presets_dir, preset)
+            # only remove presets inside the project's presets folder
+            if (
+                preset.endswith(".xml")
+                and self._is_inside(preset_path, presets_dir)
+                and os.path.isfile(preset_path)
+            ):
+                os.remove(preset_path)
+                removed_count += 1
+
+        is_new_file = not os.path.exists(manifest_path)
+        self._makedirs(presets_dir)
+        with open(manifest_path, "w") as manifest_file:
+            json.dump(sorted(presets), manifest_file, indent=4)
+        if is_new_file:
+            self._make_writable(manifest_path)
+
+        self.log.info(
+            f"Synced {len(presets)} export presets, "
+            f"removed {removed_count}"
+        )
+
+    def _makedirs(self, path: str) -> None:
+        """Create missing folders, writable by all users like Flame's own."""
+        missing = []
+        while path and not os.path.isdir(path):
+            missing.append(path)
+            path = os.path.dirname(path)
+        for folder in reversed(missing):
+            os.mkdir(folder)
+            self._make_writable(folder)
+
+    @staticmethod
+    def _make_writable(path: str) -> None:
+        """Let other users update a file or folder this hook created."""
+        mode = 0o777 if os.path.isdir(path) else 0o666
+        os.chmod(path, stat.S_IMODE(os.stat(path).st_mode) | mode)
+
+    @staticmethod
+    def _is_inside(path: str, folder: str) -> bool:
+        path = os.path.realpath(path)
+        folder = os.path.realpath(folder)
+        return os.path.commonpath([path, folder]) == folder
+
     def _get_projects_root(
         self,
         variants: List[Dict[str, Union[List[str], str]]]
@@ -179,59 +268,59 @@ class FlamePostLaunch(PostLaunchHook):
             "Could not find a project root folder on disk."
         )
 
+    def _get_project_setups_dir(self, projects_root: str) -> Optional[str]:
+        """Get the launched Flame project's setups folder.
+
+        Flame 2026+ keeps it in the project's 'setups' folder, older
+        versions use the project folder itself.
+        """
+        project_dir = os.path.join(
+            projects_root, self.data["project_entity"]["name"]
+        )
+        if not os.path.isdir(project_dir):
+            self.log.error(
+                f"Flame project folder '{project_dir}' does not exist"
+            )
+            return None
+
+        setups_dir = os.path.join(project_dir, "setups")
+        if os.path.isdir(setups_dir):
+            return setups_dir
+        return project_dir
+
+    @cached_property
+    def _anatomy(self) -> Anatomy:
+        project_entity = self.data["project_entity"]
+        return Anatomy(project_entity["name"], project_entity=project_entity)
+
+    def _format_template(self, template: str) -> str:
+        """Format a template with the project's 'root' and 'project' data."""
+        template_data = get_project_template_data(self.data["project_entity"])
+        return AnatomyStringTemplate(
+            self._anatomy.templates_obj, template
+        ).format(template_data)
+
     def _get_bookmark_paths(
         self, bookmark_settings: List[Dict[str, str]]
     ) -> Dict[str, str]:
         if not bookmark_settings:
             return {}
 
-        project_entity = self.data["project_entity"]
-        project_name = project_entity["name"]
-        anatomy = Anatomy(project_name, project_entity=project_entity)
-        template_data = get_project_template_data(project_entity)
-
         paths = {}
         for item in bookmark_settings:
             self.log.debug(item["name"])
-            template = AnatomyStringTemplate(
-                anatomy.templates_obj, item["path_template"]
-            )
-            path = template.format(template_data)
+            path = self._format_template(item["path_template"])
             # we need to add a "/" at the end if not already there
             # to keep in line with how flame likes to store the paths
             if not path.endswith(os.path.sep):
                 path += os.path.sep
-            label_template = AnatomyStringTemplate(
-                anatomy.templates_obj, item["bookmark_label"]
-            )
-            label = label_template.format(template_data)
+            label = self._format_template(item["bookmark_label"])
             paths[label] = path
         return paths
 
-    def execute(self) -> None:
-        """Collects the bookmark path templates defined in the flame settings
-        and sets up the bookmarks file for flame to point to them.
-
-        Will not run if bookmarks are disabled, there are no valid project
-        roots defined, or no bookmarks defined in the settings.
-        """
-        project_settings = self.data["project_settings"]
-
-        bookmark_settings = project_settings["flame"]["bookmarks"]
-
-        if not bookmark_settings["enabled"]:
-            self.log.info("Bookmarks disabled")
-            return
-
-        try:
-            project_root = self._get_projects_root(
-                bookmark_settings["flame_projects_root"]["variants"]
-            )
-        except BaseProjectRootException as error:
-            self.log.error("Unable to create bookmarks")
-            self.log.exception(error)
-            return
-
+    def _setup_bookmarks(
+        self, setups_dir: str, bookmark_settings: Dict
+    ) -> None:
         bookmark_paths = self._get_bookmark_paths(
             bookmark_settings["bookmark_paths"]
         )
@@ -244,11 +333,70 @@ class FlamePostLaunch(PostLaunchHook):
 
         try:
             self._create_bookmarks(
-                self.data["project_entity"]["name"],
-                project_root,
+                setups_dir,
                 bookmark_paths,
                 remove_default_bookmarks,
             )
         except (OSError, ValueError) as error:
             self.log.error("Unable to update bookmarks file")
             self.log.exception(error)
+
+    def _setup_export_presets(
+        self, setups_dir: str, presets_settings: Dict
+    ) -> None:
+        if not presets_settings["source_dir"]:
+            self.log.warning("No central export presets folder set.")
+            return
+
+        source_dir = self._format_template(presets_settings["source_dir"])
+        if not os.path.isdir(source_dir):
+            self.log.error(
+                f"Central export presets folder '{source_dir}' "
+                "does not exist"
+            )
+            return
+
+        # Flame keeps the project's export presets in an extra 'flame'
+        # folder, unlike shared presets: export/presets/flame/<type>
+        presets_dir = os.path.join(setups_dir, "export", "presets", "flame")
+        try:
+            self._sync_export_presets(source_dir, presets_dir)
+        except OSError as error:
+            self.log.error("Unable to sync export presets")
+            self.log.exception(error)
+
+    def execute(self) -> None:
+        """Sets up the launched Flame project's bookmarks and export presets
+        from the flame settings.
+
+        Will not run if both are disabled or there are no valid project
+        roots defined.
+        """
+        flame_settings = self.data["project_settings"]["flame"]
+        bookmark_settings = flame_settings["bookmarks"]
+        presets_settings = flame_settings["export_presets"]
+
+        if not bookmark_settings["enabled"]:
+            self.log.info("Bookmarks disabled")
+        if not presets_settings["enabled"]:
+            self.log.info("Export presets disabled")
+        if not (bookmark_settings["enabled"] or presets_settings["enabled"]):
+            return
+
+        try:
+            projects_root = self._get_projects_root(
+                flame_settings["flame_projects_root"]["variants"]
+            )
+        except BaseProjectRootException as error:
+            self.log.error("Unable to find the Flame projects folder")
+            self.log.exception(error)
+            return
+
+        setups_dir = self._get_project_setups_dir(projects_root)
+        if not setups_dir:
+            return
+
+        if bookmark_settings["enabled"]:
+            self._setup_bookmarks(setups_dir, bookmark_settings)
+        if presets_settings["enabled"]:
+            self._setup_export_presets(setups_dir, presets_settings)

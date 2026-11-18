@@ -59,7 +59,20 @@ def export_clip(export_path, clip, preset_path, **kwargs):
         ))
 
 
-def get_preset_path_by_xml_name(xml_preset_name):
+def get_preset_path_by_xml_name(xml_preset_name, extra_search_dirs=None):
+    """Find the folder of an export preset by its file name.
+
+    Searches Flame's shared export presets first, then `extra_search_dirs`
+    (e.g. the central export presets folder from settings), then the
+    presets installed with Flame.
+
+    Args:
+        xml_preset_name (str): Preset file name, e.g. "OpenEXR.xml".
+        extra_search_dirs (Optional[list[str]]): More folders to search.
+
+    Returns:
+        Union[str, bool]: Folder of the preset, or False if not found.
+    """
     def _search_path(root):
         output = []
         for subroot, _dirs, files in os.walk(root):
@@ -109,6 +122,12 @@ def get_preset_path_by_xml_name(xml_preset_name):
 
     if shared_preset_path:
         return os.path.dirname(shared_preset_path)
+
+    # then try the extra folders
+    for search_dir in extra_search_dirs or []:
+        extra_preset_path = _validate_results(_search_path(search_dir))
+        if extra_preset_path:
+            return os.path.dirname(extra_preset_path)
 
     # then try installed results
     installed_preset_path = _validate_results(installed_results)
