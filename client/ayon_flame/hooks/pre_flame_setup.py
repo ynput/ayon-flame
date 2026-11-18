@@ -23,7 +23,7 @@ class FlamePrelaunch(PreLaunchHook):
     Will make sure flame_script_dirs are copied to user's folder defined
     in environment var FLAME_SCRIPT_DIR.
     """
-    app_groups = {"flame"}
+    app_groups = {"flame", "flameassist", "flare"}
     order = 1
     permissions = 0o777
 
