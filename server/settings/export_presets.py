@@ -14,11 +14,10 @@ class ExportPresetsModel(BaseSettingsModel):
         "",
         title="Central Presets Folder",
         description=(
-            "Folder with one subfolder per export type, like Flame's shared "
-            "export presets (file_sequence, movie_file, sequence_publish...). "
-            "Presets removed from it are also removed from projects; presets "
-            "made in the project are kept. Available template fields are "
-            "'root' and 'project' only."
+            "One subfolder per Flame export type: audio_file, "
+            "distribution_package, file_sequence, movie_file, "
+            "sequence_publish. Presets can be grouped in folders inside "
+            "these, e.g. movie_file/AYON. Template fields: 'root', 'project'."
         ),
     )
 
