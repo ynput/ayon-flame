@@ -30,7 +30,7 @@ class FlameHooksModel(BaseSettingsModel):
 class FlameSettings(BaseSettingsModel):
     flame_projects_root: ProjectRoots = SettingsField(
         default_factory=ProjectRoots,
-        title="Flame Projects",
+        title="Flame Project Management",
         description="Required for Project Bookmarks and Export Presets",
     )
     bookmarks: BookmarksModel = SettingsField(
