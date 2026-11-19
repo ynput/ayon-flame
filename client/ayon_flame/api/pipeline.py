@@ -6,7 +6,7 @@ import os
 from copy import deepcopy
 import flame
 
-from ayon_core.host import HostBase, ILoadHost, IPublishHost
+from ayon_core.host import HostBase, ILoadHost, IPublishHost, IWorkfileHost
 from ayon_core.lib import Logger
 from ayon_core.pipeline import (
     AYON_CONTAINER_ID,
@@ -18,7 +18,9 @@ from ayon_core.pipeline import (
 from pyblish import api as pyblish
 
 from ayon_flame import FLAME_ADDON_ROOT
+from ayon_flame.constants import BATCH_WORKFILE_EXTENSION
 
+from . import batch_utils
 from .lib import (
     get_current_sequence,
     maintained_segment_selection,
@@ -82,6 +84,70 @@ class FlameHost(HostBase, ILoadHost, IPublishHost):
                     )
 
         return current_ctx
+
+
+class FlameBatchHost(HostBase, IWorkfileHost):
+    """Workfile host of the Batch page, saving batch groups as workfiles.
+
+    A Batch workfile is a consolidated JSON document with its own
+    '.flamebatch' extension, so it never matches other files or workfile
+    hosts of Flame. The host has the name of the registered 'FlameHost':
+    the workfile templates and settings of Flame are found by that name.
+    It is not registered, the Workfiles tool of the Batch menu is built
+    with it. Its context comes from the session, which core updates on
+    every open and save.
+    """
+    name = "flame"
+
+    def get_workfile_extensions(self):
+        return [BATCH_WORKFILE_EXTENSION]
+
+    def save_workfile(self, dst_path=None):
+        if not dst_path:
+            raise RuntimeError(
+                "Batch groups do not keep their workfile path, use Save As."
+            )
+
+        batch = batch_utils.get_current_batch()
+        log.info("Writing AYON workfile %r", dst_path)
+        batch_utils.save_batch_as_consolidated_json(batch, dst_path)
+
+    def open_workfile(self, filepath):
+        folder_path = self.get_current_folder_path()
+        task_name = self.get_current_task_name()
+        if not folder_path or not task_name:
+            raise RuntimeError(
+                "Batch workfile can be opened only in a task context, "
+                f"got folder '{folder_path}' and task '{task_name}'."
+            )
+
+        batch_name = batch_utils.get_task_batch_name(folder_path, task_name)
+        # Unique like the Batch loader does, so several versions of a
+        # workfile can be open together: none replaces another, which is
+        # not how workfiles of other DCCs behave.
+        unique_batch_name = batch_utils.get_unique_batch_name(batch_name)
+        if unique_batch_name != batch_name:
+            log.warning(
+                "Batch group %r already exists, opening workfile as %r.",
+                batch_name,
+                unique_batch_name,
+            )
+
+        log.info(
+            "Opening AYON workfile %r as batch group %r",
+            filepath,
+            unique_batch_name,
+        )
+        flame.batch.create_batch_group(unique_batch_name)
+        batch = batch_utils.load_batch_from_consolidated_json(
+            filepath, name=unique_batch_name
+        )
+        batch_utils.set_instances_batch_name(batch, unique_batch_name)
+
+    def get_current_workfile(self):
+        # Batch groups do not store a workfile path.
+        return None
+
 
 def install():
     pyblish.register_host("flame")
