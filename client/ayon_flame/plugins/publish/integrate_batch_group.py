@@ -178,7 +178,7 @@ class IntegrateBatchGroup(pyblish.api.InstancePlugin):
         folder_path = instance.data["folderPath"]
 
         task_name = task_data["name"]
-        batchgroup_name = "{}_{}".format(folder_path, task_name)
+        batchgroup_name = ayfapi.get_task_batch_name(folder_path, task_name)
 
         # check if parent batch group exists
         bgroup = ayfapi.get_batch_from_workspace(batchgroup_name)

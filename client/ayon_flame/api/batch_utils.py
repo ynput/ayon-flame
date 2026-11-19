@@ -3,6 +3,7 @@ from typing import Optional, List, Dict, Any
 import base64
 import pathlib
 import json
+import os
 import tempfile
 
 from ayon_core.lib import Logger
@@ -353,6 +354,82 @@ def get_batch_products_context(
                 "task_name": data["task"],
             }
     return None
+
+
+# Batch workfile saved or opened for each batch group in this Flame
+# session. The key is the Flame project and the batch group uid. The value
+# keeps the AYON folder and task of the file. It is not stored in the
+# batch: a path in a note went stale and was saved with the file.
+_SESSION_BATCH_WORKFILES: Dict[tuple, Dict[str, str]] = {}
+
+
+def _get_session_batch_key(batch: flame.PyBatch) -> tuple:
+    return (flame.project.current_project.name, batch.uid.get_value())
+
+
+def set_session_batch_workfile(
+    batch: flame.PyBatch, filepath: str, folder_path: str, task_name: str
+):
+    """ Remember the workfile saved or opened for the batch group.
+
+    It lasts for the Flame session and follows the batch group uid. A
+    renamed batch group keeps it. A batch group created again, or replaced
+    with Batch Load And Replace, does not.
+    """
+    key = _get_session_batch_key(batch)
+    _SESSION_BATCH_WORKFILES[key] = {
+        "path": os.path.normpath(filepath),
+        "folder_path": folder_path,
+        "task_name": task_name,
+    }
+
+
+def get_session_batch_workfile(
+    batch: flame.PyBatch, folder_path: str, task_name: str
+) -> Optional[str]:
+    """ Return the workfile saved or opened for the batch group, if any.
+
+    Args:
+        batch (flame.PyBatch): Batch group.
+        folder_path (str): Folder path of the products of the batch group.
+        task_name (str): Task name of the products of the batch group.
+
+    Returns:
+        Optional[str]: Path of the workfile when it belongs to the given
+            task, None otherwise. The file may be missing.
+    """
+    data = _SESSION_BATCH_WORKFILES.get(_get_session_batch_key(batch))
+    if (
+        not data
+        or data["folder_path"] != folder_path
+        or data["task_name"] != task_name
+    ):
+        return None
+    return data["path"]
+
+
+def get_instances_batches(instances) -> Dict[str, flame.PyBatch]:
+    """ Return batch groups of active Batch menu instances, by name.
+
+    Batch groups which are not found in the workspace are skipped.
+    """
+    batches = {}
+    for instance in instances:
+        if (
+            instance.data.get("flame_context") != "FlameMenuBatch"
+            or not instance.data.get("publish", True)
+            or not instance.data.get("active", True)
+        ):
+            continue
+
+        batch_name = instance.data.get("batch_name")
+        if not batch_name or batch_name in batches:
+            continue
+
+        batch = get_batch_from_workspace(batch_name)
+        if batch is not None:
+            batches[batch_name] = batch
+    return batches
 
 
 def set_batch_products_context(

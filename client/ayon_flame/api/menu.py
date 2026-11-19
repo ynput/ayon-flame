@@ -53,36 +53,49 @@ def _get_main_window():
     return _MAIN_WINDOW
 
 
-_BATCH_WORKFILES_TOOL = None
+# Workfiles tool window of each kind of workfile ('batch', 'editorial').
+_WORKFILES_TOOLS = {}
 
 
-def show_batch_workfiles():
-    """ Show the Workfiles tool for the current batch group.
+def _show_workfiles_tool(kind, host):
+    """ Show the Workfiles tool of a kind of workfile, with its host.
 
     The window is created again on every call, so its selection starts
-    from the context of the current batch group, not from the selection
-    left by a previous batch group.
+    from the current context, not from the selection left by a previous
+    call. Every kind of workfile has its own window and host.
     """
-    global _BATCH_WORKFILES_TOOL
     from ayon_core.tools.workfiles.control import BaseWorkfileController
     from ayon_core.tools.workfiles.widgets import WorkfilesToolWindow
 
-    from .pipeline import FlameBatchHost
-
-    if _BATCH_WORKFILES_TOOL is not None:
+    tool = _WORKFILES_TOOLS.pop(kind, None)
+    if tool is not None:
         try:
-            _BATCH_WORKFILES_TOOL.close()
-            _BATCH_WORKFILES_TOOL.deleteLater()
+            tool.close()
+            tool.deleteLater()
         except RuntimeError:
             # Qt object was already deleted.
             pass
 
-    controller = BaseWorkfileController(host=FlameBatchHost())
-    _BATCH_WORKFILES_TOOL = WorkfilesToolWindow(
-        controller=controller,
+    tool = WorkfilesToolWindow(
+        controller=BaseWorkfileController(host=host),
         parent=_get_main_window(),
     )
-    _BATCH_WORKFILES_TOOL.ensure_visible()
+    _WORKFILES_TOOLS[kind] = tool
+    tool.ensure_visible()
+
+
+def show_batch_workfiles():
+    """ Show the Workfiles tool for the current batch group."""
+    from .pipeline import FlameBatchHost
+
+    _show_workfiles_tool("batch", FlameBatchHost())
+
+
+def show_editorial_workfiles():
+    """ Show the Workfiles tool of the editorial workfiles."""
+    from .pipeline import FlameEditorialHost
+
+    _show_workfiles_tool("editorial", FlameEditorialHost())
 
 
 class _FlameMenuApp(object):
@@ -162,6 +175,13 @@ class FlameMenuProjectConnect(_FlameMenuApp):
         menu['actions'].append({
             "name": "1 - Load...",
             "execute": lambda x: self.tools_helper.show_loader()
+        })
+        # Editorial workfiles. Batch workfiles have their own entry in the
+        # Batch menu. 'CTX' is left untouched, it belongs to the
+        # Create/Publish tools of the context menus.
+        menu["actions"].append({
+            "name": "2 - Work Files...",
+            "execute": lambda x: show_editorial_workfiles(),
         })
 
         return menu

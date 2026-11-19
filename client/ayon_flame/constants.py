@@ -14,3 +14,6 @@ BATCH_WORKFILE_EXTENSION = ".flamebatch"
 # loaded by file path and cannot be imported, so the host and the creator
 # share the identifier from here.
 BATCH_CREATOR_IDENTIFIER = "io.ayon.creators.flame.batch.workfile"
+
+# Editorial workfile, a small JSON reference to a Flame project sequence.
+EDITORIAL_WORKFILE_EXTENSION = ".flameedit"
