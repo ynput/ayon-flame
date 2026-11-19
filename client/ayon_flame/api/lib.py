@@ -845,18 +845,16 @@ class MediaInfoFile(object):
     """Class to get media info file clip data
 
     Raises:
-        IOError: MEDIA_SCRIPT_PATH path doesn't exists
+        IOError: Result of :meth:`get_media_script_path` doesn't exist
         TypeError: Not able to generate clip xml data file
         ET.ParseError: Missing clip in xml clip data
         IOError: Not able to save xml clip data to file
 
     Attributes:
-        str: `MEDIA_SCRIPT_PATH` path to flame binary
         logging.Logger: `log` logger
 
     TODO: add method for getting metadata to dict
     """
-    MEDIA_SCRIPT_PATH = "/opt/Autodesk/mio/current/dl_get_media_info"
 
     log = log
 
@@ -865,6 +863,22 @@ class MediaInfoFile(object):
     _fps = None
     _drop_mode = None
     _file_pattern = None
+
+    @staticmethod
+    def get_media_script_path() -> str:
+        """Gets the version-specific path to `dl_get_media_info`.
+
+        Fixes issue where multiple flame versions are installed on a box
+        and the user is not using the latest version. Previous iteration
+        would use the symlink "/opt/Autodesk/mio/current/dl_get_media_info".
+        This method will return the path that belongs to the active flame
+        version instead
+
+        Returns:
+            str: e.g. "/opt/Autodesk/mio/2025.2.7/dl_get_media_info"
+        """
+        import flame
+        return f"/opt/Autodesk/mio/{flame.get_version()}/dl_get_media_info"
 
     def __init__(self, path, logger=None):
 
@@ -1130,9 +1144,9 @@ class MediaInfoFile(object):
         self._file_pattern = fpattern
 
     def _validate_media_script_path(self):
-        if not os.path.isfile(self.MEDIA_SCRIPT_PATH):
+        if not os.path.isfile(self.get_media_script_path()):
             raise IOError("Media Script does not exist: `{}`".format(
-                self.MEDIA_SCRIPT_PATH))
+                self.get_media_script_path()))
 
     def _generate_media_info_file(self, fpath, feed_ext, feed_dir):
         """ Generate media info xml .clip file
@@ -1147,7 +1161,7 @@ class MediaInfoFile(object):
         """
         # Create cmd arguments for gettig xml file info file
         cmd_args = [
-            self.MEDIA_SCRIPT_PATH,
+            self.get_media_script_path(),
             "-e", feed_ext,
             "-o", fpath,
             feed_dir
