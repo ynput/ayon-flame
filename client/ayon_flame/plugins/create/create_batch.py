@@ -9,6 +9,7 @@ from ayon_core.pipeline import CreatedInstance
 from ayon_core.pipeline.create import PRODUCT_NAME_ALLOWED_SYMBOLS
 
 import ayon_flame.api as flapi
+from ayon_flame.api import batch_utils
 from ayon_flame.constants import BATCH_CREATOR_IDENTIFIER
 
 # Number Flame adds to the name of a batch group that is taken: ' (2)'.
@@ -115,6 +116,7 @@ Publishing batch from Batch panel.
             data=instance_data,
             creator=self,
         )
+        batch_utils.remember_instance_batch(instance, batch)
         self._add_instance_to_context(instance)
         self._dump_instance_data(instance.data_to_store())
 
@@ -133,17 +135,27 @@ Publishing batch from Batch panel.
             data=data,
             creator=self,
         )
+        batch_utils.remember_instance_batch(
+            instance, flapi.get_current_batch()
+        )
         self._add_instance_to_context(instance)
 
     def update_instances(self, update_list: List[Tuple[CreatedInstance, Any]]):
         """ Persist updated instance data to the metadata Note node.
         """
+        batch_utils.check_instances_batch(
+            (created_inst for created_inst, _ in update_list),
+            flapi.get_current_batch(),
+        )
         for created_inst, _ in update_list:
             self._dump_instance_data(created_inst.data_to_store())
 
     def remove_instances(self, instances: List[CreatedInstance]):
         """Remove instance and delete the metadata Note node from the batch.
         """
+        batch_utils.check_instances_batch(
+            instances, flapi.get_current_batch()
+        )
         for instance in instances:
             self._remove_instance_from_context(instance)
 
