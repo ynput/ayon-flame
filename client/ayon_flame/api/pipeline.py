@@ -8,7 +8,7 @@ import ayon_api
 import flame
 
 from ayon_core.host import HostBase, ILoadHost, IPublishHost, IWorkfileHost
-from ayon_core.lib import Logger, get_version_from_path
+from ayon_core.lib import Logger
 from ayon_core.pipeline import (
     AYON_CONTAINER_ID,
     deregister_creator_plugin_path,
@@ -174,6 +174,11 @@ class FlameBatchHost(HostBase, IWorkfileHost):
     """
     name = "flame"
 
+    # Set by the launch only: it shows the batch group linked to the
+    # workfile instead of adding a copy. Work Files Open always adds a
+    # batch group.
+    reuse_linked_batch_group = False
+
     def __init__(self):
         super().__init__()
         self._save_entities = None
@@ -304,6 +309,11 @@ class FlameBatchHost(HostBase, IWorkfileHost):
                 f"got folder '{folder_path}' and task '{task_name}'."
             )
 
+        if self.reuse_linked_batch_group and self._open_linked_batch_group(
+            filepath, folder_path, task_name
+        ):
+            return
+
         batch_name = batch_utils.get_task_batch_name(folder_path, task_name)
         # Unique like the Batch loader does, so several versions of a
         # workfile can be open together: none replaces another, which is
@@ -344,9 +354,74 @@ class FlameBatchHost(HostBase, IWorkfileHost):
             unique_batch_name,
         )
 
+    def _open_linked_batch_group(self, filepath, folder_path, task_name):
+        """Make the batch group linked to the workfile the current one.
+
+        A batch group is linked when AYON last saved or opened the workfile
+        from it, for the given task, and the file is unchanged since. When
+        several are linked, only the current one is used: any other choice
+        would be a guess.
+
+        Returns:
+            bool: True when the linked batch group is now the current one.
+        """
+        filepath = os.path.normpath(filepath)
+        desktop = flame.project.current_project.current_workspace.desktop
+        linked = [
+            batch
+            for batch in desktop.batch_groups
+            if batch_utils.get_session_batch_workfile(
+                batch, folder_path, task_name
+            ) == filepath
+        ]
+        if not linked:
+            return False
+
+        uids = [batch.uid.get_value() for batch in linked]
+        current_uid = flame.batch.uid.get_value()
+        if current_uid in uids:
+            batch = linked[uids.index(current_uid)]
+        elif len(linked) == 1:
+            batch = linked[0]
+        else:
+            log.info(
+                "%d batch groups are linked to %r and none is current,"
+                " opening it as a new batch group.",
+                len(linked),
+                filepath,
+            )
+            return False
+
+        batch_name = batch.name.get_value()
+        uid = batch.uid.get_value()
+        if uid != current_uid:
+            # 'PyBatch.open' opens a closed batch group only, and makes it
+            # the current one. The Flame API has no call to select an open
+            # batch group. Closing it first keeps its content.
+            if batch.opened:
+                batch.close()
+            batch.open()
+            if flame.batch.uid.get_value() != uid:
+                log.warning(
+                    "Unable to make batch group %r the current one,"
+                    " opening %r as a new batch group.",
+                    batch_name,
+                    filepath,
+                )
+                return False
+        flame.set_current_tab("Batch")
+
+        log.info(
+            "Opened AYON workfile %r in its linked batch group %r",
+            filepath,
+            batch_name,
+        )
+        return True
+
     def get_current_workfile(self):
-        # Batch groups do not store their workfile path. This Flame session
-        # keeps the one saved or opened for each batch group, see
+        # Batch groups do not store their workfile path. The one saved or
+        # opened for each batch group is linked to its uid, and kept on
+        # disk at each Flame project save, see
         # 'batch_utils.get_session_batch_workfile'.
         try:
             batch = batch_utils.get_current_batch()
@@ -424,33 +499,44 @@ def write_batch_workfile(batch, dst_path):
         ) from error
 
 
+def _get_batch_workfile_versions(folder_path, task_name):
+    """Return the versions of the Batch workfiles of a task found on disk.
+
+    Returns:
+        dict[str, int]: Version by normalized path. Empty when the folder
+            or task does not exist, or the task has no workfile with a
+            version.
+    """
+    host = FlameBatchHost()
+    project_name = host.get_current_project_name()
+    folder_entity = ayon_api.get_folder_by_path(project_name, folder_path)
+    if not folder_entity:
+        return {}
+    task_entity = ayon_api.get_task_by_name(
+        project_name, folder_entity["id"], task_name
+    )
+    if not task_entity:
+        return {}
+
+    return {
+        os.path.normpath(workfile.filepath): workfile.version
+        for workfile in host.list_workfiles(
+            project_name, folder_entity, task_entity
+        )
+        if workfile.available and workfile.version is not None
+    }
+
+
 def get_last_batch_workfile(folder_path, task_name):
     """Return the path of the last saved Batch workfile of a task.
 
     Returns:
         Optional[str]: Path of the highest version available on disk.
     """
-    host = FlameBatchHost()
-    project_name = host.get_current_project_name()
-    folder_entity = ayon_api.get_folder_by_path(project_name, folder_path)
-    if not folder_entity:
+    versions = _get_batch_workfile_versions(folder_path, task_name)
+    if not versions:
         return None
-    task_entity = ayon_api.get_task_by_name(
-        project_name, folder_entity["id"], task_name
-    )
-    if not task_entity:
-        return None
-
-    workfiles = [
-        workfile
-        for workfile in host.list_workfiles(
-            project_name, folder_entity, task_entity
-        )
-        if workfile.available and workfile.version is not None
-    ]
-    if not workfiles:
-        return None
-    return max(workfiles, key=lambda workfile: workfile.version).filepath
+    return max(versions, key=versions.get)
 
 
 def get_batch_workfile_issue(batch, folder_path, task_name):
@@ -462,12 +548,14 @@ def get_batch_workfile_issue(batch, folder_path, task_name):
         task_name (str): Task name of the batch group products.
 
     Returns:
-        Optional[str]: The reason, None when the batch group is on the last
-            Batch workfile or the task has none yet.
+        Optional[str]: The reason. None when the batch group is on the last
+            Batch workfile, the task has none yet, or the batch group
+            workfile is not one the Work Files tool lists.
     """
-    last_filepath = get_last_batch_workfile(folder_path, task_name)
-    if not last_filepath:
+    versions = _get_batch_workfile_versions(folder_path, task_name)
+    if not versions:
         return None
+    last_filepath = max(versions, key=versions.get)
     last_name = os.path.basename(last_filepath)
 
     filepath = batch_utils.get_session_batch_workfile(
@@ -475,13 +563,15 @@ def get_batch_workfile_issue(batch, folder_path, task_name):
     )
     if not filepath:
         return (
-            f"{batch.name.get_value()} is not linked to a workfile in this"
-            f" Flame session, the last one of the task is {last_name}."
+            f"{batch.name.get_value()} is not linked to a workfile, the"
+            f" last one of the task is {last_name}."
         )
 
-    version = get_version_from_path(os.path.basename(filepath))
-    last_version = get_version_from_path(last_name)
-    if version and last_version and int(last_version) > int(version):
+    # Versions are the ones the Workfiles tool shows. A Save As comment
+    # with its own "v2" does not count. A workfile the Work Files tool does
+    # not list has no version and is not reported.
+    version = versions.get(os.path.normpath(filepath))
+    if version is not None and version < versions[last_filepath]:
         return f"{os.path.basename(filepath)} is older than {last_name}."
     return None
 
@@ -490,9 +580,10 @@ def refresh_batch_workfile():
     """Rewrite the Batch workfile of the current batch group.
 
     Runs after a Flame project save. Nothing is saved when the batch group
-    has no Batch workfile in this Flame session. The artist is warned when
-    a batch group with AYON products has none, or comes from an older
-    version than the last one of its task.
+    is not linked to a Batch workfile. The artist is warned when a batch
+    group with AYON products has none, or comes from an older version
+    than the last one of its task. A dialog tells the artist once
+    when its workfile was not written because it was saved elsewhere.
     """
     project_settings = get_current_project_settings()
     if not project_settings["flame"]["update_batch_workfile"]["enabled"]:
@@ -501,9 +592,31 @@ def refresh_batch_workfile():
     host = FlameBatchHost()
     filepath = host.get_current_workfile()
     if not filepath:
+        try:
+            batch = batch_utils.get_current_batch()
+        except RuntimeError:
+            return
+        batch_name = batch.name.get_value()
+
+        # The artist believes the work is saved. A console line is easy to
+        # miss, a dialog is not. The batch group is unlinked, so the dialog
+        # shows once.
+        context = host.get_current_context()
+        saved_elsewhere = batch_utils.pop_batch_workfile_saved_elsewhere(
+            batch, context["folder_path"], context["task_name"]
+        )
+        if saved_elsewhere:
+            flame.messages.show_in_dialog(
+                "AYON: workfile not saved",
+                f"{os.path.basename(saved_elsewhere)} was saved elsewhere."
+                "\n\nYour work is safe in Flame. Use Work Files > Save As.",
+                "warning",
+                ["OK"],
+            )
+            return
+
         # A batch group without AYON products is not an AYON workfile.
-        if batch_utils.get_batch_products_context():
-            batch_name = batch_utils.get_current_batch().name.get_value()
+        if batch_utils.get_batch_products_context(batch):
             flame.messages.show_in_console(
                 f"AYON: {batch_name} is not linked to a workfile, use Work"
                 " Files > Open or Save As.",
@@ -522,21 +635,17 @@ def refresh_batch_workfile():
     # failed lookup must not report a failed save.
     context = host.get_current_context()
     try:
-        last_filepath = get_last_batch_workfile(
-            context["folder_path"], context["task_name"]
+        issue = get_batch_workfile_issue(
+            batch_utils.get_current_batch(),
+            context["folder_path"],
+            context["task_name"],
         )
     except Exception:
         log.warning("Unable to find the last Batch workfile.", exc_info=True)
         return
-    if not last_filepath:
-        return
-    version = get_version_from_path(os.path.basename(filepath))
-    last_version = get_version_from_path(os.path.basename(last_filepath))
-    if version and last_version and int(last_version) > int(version):
-        last_name = os.path.basename(last_filepath)
+    if issue:
         flame.messages.show_in_console(
-            f"AYON: {os.path.basename(filepath)} is older than {last_name}."
-            f" Open {last_name} from Work Files.",
+            f"AYON: {issue} Open the last one from Work Files.",
             "warning",
             10,
         )

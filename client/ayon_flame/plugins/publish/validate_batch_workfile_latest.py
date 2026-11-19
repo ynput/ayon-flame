@@ -30,9 +30,9 @@ class ValidateBatchWorkfileLatest(
     """Validate published batch groups are on the last Batch workfile.
 
     Batch groups stay on the shared Flame desktop between sessions. A batch
-    group opened from an older workfile, or not linked to a workfile in
-    this Flame session, may hold older work than the last workfile of its
-    task. Available only for Batch menu publishing.
+    group opened from an older workfile, or not linked to a workfile, may
+    hold older work than the last workfile of its task. Available only for
+    Batch menu publishing.
     """
 
     label = "Validate Batch Workfile Is Latest"

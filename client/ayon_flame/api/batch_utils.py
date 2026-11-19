@@ -356,15 +356,100 @@ def get_batch_products_context(
     return None
 
 
-# Batch workfile saved or opened for each batch group in this Flame
-# session. The key is the Flame project and the batch group uid. The value
-# keeps the AYON folder and task of the file. It is not stored in the
-# batch: a path in a note went stale and was saved with the file.
-_SESSION_BATCH_WORKFILES: Dict[tuple, Dict[str, str]] = {}
+# Batch workfile saved or opened for each batch group. The key is the Flame
+# project and the batch group uid. The value keeps the AYON folder and task
+# of the file, and its size and date. It is not stored in the batch: a path
+# in a note went stale and was saved with the file.
+# The links are kept in the Flame project folder after each Flame project
+# save, so they survive a Flame restart. Flame has just saved every batch
+# group then: after a crash, a batch group holds at least what AYON last
+# wrote to its kept workfile.
+# An AYON write removes the kept link of its batch group until the next
+# Flame project save.
+_SESSION_BATCH_WORKFILES: Dict[tuple, dict] = {}
 
 
 def _get_session_batch_key(batch: flame.PyBatch) -> tuple:
     return (flame.project.current_project.name, batch.uid.get_value())
+
+
+def _get_kept_links_folder() -> str:
+    """ Return the folder of the kept links of the current Flame project."""
+    return os.path.join(
+        flame.project.current_project.project_folder,
+        "ayon",
+        "batch_workfiles",
+    )
+
+
+def _get_kept_link_path(uid: str) -> str:
+    return os.path.join(_get_kept_links_folder(), f"{uid}.json")
+
+
+def _remove_kept_link(key: tuple):
+    """ Remove the kept link of the batch group, if any.
+
+    A failure is only logged. A raise would report a good save or open as
+    failed.
+    """
+    filepath = _get_kept_link_path(key[1])
+    try:
+        os.remove(filepath)
+    except FileNotFoundError:
+        pass
+    except OSError:
+        log.warning(
+            "Unable to remove the kept link %r.", filepath, exc_info=True
+        )
+
+
+def _get_link(key: tuple) -> Optional[dict]:
+    """ Return the link of the batch group, from memory or its kept file.
+
+    A kept file is loaded into memory. A missing or bad kept file gives
+    None, a bad one is logged.
+    """
+    data = _SESSION_BATCH_WORKFILES.get(key)
+    if data:
+        return data
+
+    filepath = _get_kept_link_path(key[1])
+    try:
+        with open(filepath, "r") as stream:
+            data = json.load(stream)
+    except FileNotFoundError:
+        return None
+    except (OSError, ValueError):
+        log.warning(
+            "Unable to read the kept link %r.", filepath, exc_info=True
+        )
+        return None
+
+    stat = data.get("stat") if isinstance(data, dict) else None
+    if (
+        not isinstance(data, dict)
+        or not all(
+            isinstance(data.get(name), str)
+            for name in ("path", "folder_path", "task_name")
+        )
+        or not isinstance(stat, list)
+        or len(stat) != 2
+        or not all(
+            isinstance(value, int) and not isinstance(value, bool)
+            for value in stat
+        )
+    ):
+        log.warning("Kept link %r is not valid, ignoring it.", filepath)
+        return None
+
+    data = {
+        "path": data["path"],
+        "folder_path": data["folder_path"],
+        "task_name": data["task_name"],
+        "stat": tuple(stat),
+    }
+    _SESSION_BATCH_WORKFILES[key] = data
+    return data
 
 
 def set_session_batch_workfile(
@@ -372,16 +457,78 @@ def set_session_batch_workfile(
 ):
     """ Remember the workfile saved or opened for the batch group.
 
-    It lasts for the Flame session and follows the batch group uid. A
-    renamed batch group keeps it. A batch group created again, or replaced
-    with Batch Load And Replace, does not.
+    It follows the batch group uid. A renamed batch group keeps it. A batch
+    group created again, or replaced with Batch Load And Replace, does not.
+    It survives a Flame restart only once a Flame project save kept it, see
+    'keep_session_batch_workfiles'.
+
+    The size and date of the file are kept too, so a save made elsewhere
+    is noticed. Call it right after AYON wrote or opened the file.
     """
+    filepath = os.path.normpath(filepath)
     key = _get_session_batch_key(batch)
+    # Flame has not saved the batch group since this write or open. After
+    # a crash it would come back older than the file.
+    _remove_kept_link(key)
+    stat = os.stat(filepath)
     _SESSION_BATCH_WORKFILES[key] = {
-        "path": os.path.normpath(filepath),
+        "path": filepath,
         "folder_path": folder_path,
         "task_name": task_name,
+        "stat": (stat.st_mtime_ns, stat.st_size),
     }
+
+
+def keep_session_batch_workfiles():
+    """ Keep the batch group links of the current Flame project on disk.
+
+    Call it right after a Flame project save. Flame has just saved every
+    batch group, each one holds at least what AYON last wrote to its
+    workfile. The links then survive a Flame restart.
+
+    Each link keeps the size and date of the last AYON write or open, not
+    the ones of now. A file saved elsewhere is still noticed after a
+    restart. Failures are logged, never raised.
+    """
+    try:
+        project_name = flame.project.current_project.name
+        links = [
+            (uid, data)
+            for (link_project, uid), data in _SESSION_BATCH_WORKFILES.items()
+            if link_project == project_name
+        ]
+        # No folder in a Flame project without Batch workfiles.
+        if not links:
+            return
+        os.makedirs(_get_kept_links_folder(), exist_ok=True)
+    except Exception:
+        log.warning("Unable to keep the Batch workfile links.", exc_info=True)
+        return
+
+    for uid, data in links:
+        filepath = _get_kept_link_path(uid)
+        tmp_path = f"{filepath}.{os.getpid()}.tmp"
+        try:
+            with open(tmp_path, "w") as stream:
+                json.dump(data, stream)
+            os.replace(tmp_path, filepath)
+        except Exception:
+            log.warning(
+                "Unable to keep the link %r.", filepath, exc_info=True
+            )
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
+
+
+def _get_file_stat(filepath: str) -> Optional[tuple]:
+    """ Return the date and size of the file, None when it is missing."""
+    try:
+        stat = os.stat(filepath)
+    except OSError:
+        return None
+    return (stat.st_mtime_ns, stat.st_size)
 
 
 def get_session_batch_workfile(
@@ -396,15 +543,50 @@ def get_session_batch_workfile(
 
     Returns:
         Optional[str]: Path of the workfile when it belongs to the given
-            task, None otherwise. The file may be missing.
+            task, None otherwise. None also when the file is missing or was
+            saved elsewhere since AYON last saved or opened it.
     """
-    data = _SESSION_BATCH_WORKFILES.get(_get_session_batch_key(batch))
+    data = _get_link(_get_session_batch_key(batch))
+    # Another batch group, Flame or machine may have saved the file.
+    # Saving over it would lose that work.
+    if (
+        not data
+        or data["folder_path"] != folder_path
+        or data["task_name"] != task_name
+        or _get_file_stat(data["path"]) != data["stat"]
+    ):
+        return None
+    return data["path"]
+
+
+def pop_batch_workfile_saved_elsewhere(
+    batch: flame.PyBatch, folder_path: str, task_name: str
+) -> Optional[str]:
+    """ Unlink the batch group when its workfile was saved elsewhere.
+
+    Args:
+        batch (flame.PyBatch): Batch group.
+        folder_path (str): Folder path of the products of the batch group.
+        task_name (str): Task name of the products of the batch group.
+
+    Returns:
+        Optional[str]: Path of the workfile linked for the given task when
+            it was saved elsewhere since AYON last saved or opened it. None
+            otherwise, and when the file is missing.
+    """
+    key = _get_session_batch_key(batch)
+    data = _get_link(key)
     if (
         not data
         or data["folder_path"] != folder_path
         or data["task_name"] != task_name
     ):
         return None
+    stat = _get_file_stat(data["path"])
+    if stat is None or stat == data["stat"]:
+        return None
+    del _SESSION_BATCH_WORKFILES[key]
+    _remove_kept_link(key)
     return data["path"]
 
 

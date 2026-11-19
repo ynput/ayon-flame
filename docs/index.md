@@ -40,8 +40,10 @@ for every host (core `last_workfile_on_startup`). Add a profile for
   workfile selected in the launcher. Each kind has its own version
   numbers, so a task with both kinds opens the higher number, not the
   most recent file.
-- Each launch adds a batch group, like opening from the Workfiles tool.
-  Batch groups of earlier sessions stay on the desktop.
+- A launch reopens the batch group linked to the workfile when a Flame
+  project save kept its link and the workfile is unchanged since.
+  Otherwise it adds a batch group, like opening from the Workfiles
+  tool. Batch groups of earlier sessions stay on the desktop.
 - A task without a workfile opens nothing. Save its first workfile from
   the Workfiles tool.
 - The Workfiles tool on start matches the workfile kind. For a task
@@ -61,13 +63,27 @@ saves too while "Iterate Batch After Publish" is on. Auto-saves are
 skipped. The Batch Save button and Save Desktop do not save the project.
 
 Save before switching to another batch group: only the current one is
-written. Nothing is written for a batch group without a Batch workfile
-in this Flame session: after a Flame restart or a project switch, for a
-group from the Batch loader, or after a Batch Load And Replace.
+written. Nothing is written for a batch group not linked to a Batch
+workfile: a group from the Batch loader, after a Batch Load And Replace,
+or after a Flame restart or a project switch with no project save since
+the last Save As, Open or publish.
+
+The link of each batch group is kept in the Flame project folder
+(`ayon/batch_workfiles`) after each Flame project save, auto-saves too.
+Flame has just saved every batch group then, so the link survives a
+Flame restart or crash. Known limit: when Flame quits after a Work
+Files Save As or a publish, with no Flame project save in between, the
+link is not kept. The next launch adds a copy, and that batch group is
+not linked.
+
+A Flame save or a publish does not write over a Batch workfile saved
+elsewhere (another batch group, another Flame, another machine) since
+AYON opened or saved it. A Flame save then shows a dialog once, and the
+batch group is no longer linked. The artist uses Save As.
 
 A project save warns in the Flame console when the current batch group
-has AYON products but no Batch workfile in this Flame session ("not
-linked to a workfile"), or when its workfile is older than the last one
+has AYON products but is not linked to a Batch workfile ("not linked to
+a workfile"), or when its workfile is older than the last one
 of the task. Open the right workfile from Work Files, or Save As.
 
 Work Files > Save As asks before saving a new version from such a batch
@@ -88,12 +104,12 @@ Setting: `flame/update_batch_workfile`, on by default.
 The version source of a publish is the saved AYON workfile, not the Flame
 placeholder:
 
-- Batch publish: the Batch workfile saved or opened for the published batch
-  group in the current Flame session, when it belongs to the task of the
-  batch group's products. Without one (Flame was restarted, it was never
-  saved, its products moved to another task) it is the last saved Batch
-  workfile of that task.
-  When the source is the Batch workfile of the session, a Batch publish
+- Batch publish: the Batch workfile linked to the published batch group,
+  when it belongs to the task of the batch group's products. Without one
+  (it was never saved, Flame was restarted before a project save, its
+  products moved to another task) it is the last saved Batch workfile of
+  that task.
+  When the source is the linked Batch workfile, a Batch publish
   saves the published batch group to it before extracting, so it holds
   what is published. The last saved Batch workfile of the task is never
   written: the publish logs a warning instead. Follows
