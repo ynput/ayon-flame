@@ -7,6 +7,7 @@ from ayon_core.lib import BoolDef
 from ayon_core.pipeline import CreatedInstance, CreatorError
 
 import ayon_flame.api as flapi
+from ayon_flame.api import batch_utils
 
 import flame
 
@@ -167,6 +168,7 @@ current batch group.
             creator=self,
         )
         self._apply_staging_dir_to_node(instance, node)
+        batch_utils.remember_instance_batch(instance, flame.batch)
         self._add_instance_to_context(instance)
         flapi.write_node_metadata(node, instance.data_to_store())
         self.log.info(
@@ -193,15 +195,22 @@ current batch group.
                 data=data,
                 creator=self,
             )
+            batch_utils.remember_instance_batch(instance, flame.batch)
             self._add_instance_to_context(instance)
 
     def update_instances(self, update_list: List[Tuple[CreatedInstance, Any]]):
         """ Persist updated instance data back to the Write File node. """
+        batch_utils.check_instances_batch(
+            (created_inst for created_inst, _ in update_list), flame.batch
+        )
         all_nodes = {
             node.name.get_value(): node
             for node in list(flame.batch.nodes)
             if isinstance(node, flame.PyWriteFileNode)
         }
+        # The Publisher may hold an older batch group name. A Save As can
+        # rename the group. The notes always get the current name.
+        batch_name = flame.batch.name.get_value()
         for created_inst, changes in update_list:
             node_name = created_inst.data.get("write_node_name")
             node = all_nodes.get(node_name)
@@ -217,6 +226,7 @@ current batch group.
             ):
                 self._apply_staging_dir_to_node(created_inst, node)
 
+            created_inst["batch_name"] = batch_name
             flapi.write_node_metadata(node, created_inst.data_to_store())
 
     def _apply_staging_dir_to_node(
@@ -231,6 +241,7 @@ current batch group.
 
     def remove_instances(self, instances: List[CreatedInstance]):
         """ Clear AYON metadata from the associated Write File nodes. """
+        batch_utils.check_instances_batch(instances, flame.batch)
         all_nodes = {
             node.name.get_value(): node
             for node in list(flame.batch.nodes)

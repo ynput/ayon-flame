@@ -4,9 +4,11 @@ import base64
 import pathlib
 import json
 import os
+import re
 import tempfile
 
 from ayon_core.lib import Logger
+from ayon_core.pipeline.create import CreatorError
 
 import flame
 
@@ -18,6 +20,10 @@ AYON_NOTE_MARKER = "__ayon__"
 
 # Name of the hidden Note node used to embed instance data inside the batch.
 _METADATA_NODE_NAME = "AYON_metadata"
+
+# Number added to the name of a batch group that is taken: ' (2)', see
+# 'get_unique_batch_name'.
+FLAME_NUMBER_SUFFIX = re.compile(r"^(?P<name>.*\S)\s*\((?P<number>\d+)\)\s*$")
 
 
 def read_node_metadata(node: flame.PyNode) -> Optional[Dict[str, Any]]:
@@ -406,6 +412,37 @@ def get_session_batch_workfile(
     ):
         return None
     return data["path"]
+
+
+def remember_instance_batch(instance, batch: flame.PyBatch):
+    """ Remember the batch group a creator instance comes from.
+
+    The uid is kept in memory with the instance, not in the note. The note
+    is saved with the workfile, so a uid there would go stale.
+    """
+    instance.transient_data["flame_batch_uid"] = batch.uid.get_value()
+
+
+def check_instances_batch(instances, batch: flame.PyBatch):
+    """ Raise when an instance does not come from the given batch group.
+
+    The Publisher keeps its instances when the artist opens another batch
+    group of the same task. Saving or removing them would change the wrong
+    group.
+
+    The instances must have gone through 'remember_instance_batch'. An
+    instance with a missing or different batch group uid is refused.
+
+    Raises:
+        CreatorError: An instance comes from another or unknown batch group.
+    """
+    batch_uid = batch.uid.get_value()
+    for instance in instances:
+        if instance.transient_data.get("flame_batch_uid") != batch_uid:
+            raise CreatorError(
+                "The Publisher shows another batch group. "
+                "Refresh the Publisher."
+            )
 
 
 def get_instances_batches(instances) -> Dict[str, flame.PyBatch]:

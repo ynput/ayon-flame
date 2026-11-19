@@ -281,6 +281,26 @@ class FlameBatchHost(HostBase, IWorkfileHost):
             # product, or with products of another task, is not a valid
             # result and nothing is written yet.
             folder_entity, task_entity = self._save_entities
+            # Named after the task, like Open does. The rename comes first,
+            # as a new Batch product takes its name from the batch group. A
+            # task name with the ' (2)' that Open adds is kept. The notes may
+            # hold an old name, so they are always rewritten, like Open does.
+            task_batch_name = batch_utils.get_task_batch_name(
+                folder_entity["path"], task_entity["name"]
+            )
+            batch_name = batch.name.get_value()
+            match = batch_utils.FLAME_NUMBER_SUFFIX.match(batch_name)
+            if (match["name"] if match else batch_name) != task_batch_name:
+                new_batch_name = batch_utils.get_unique_batch_name(
+                    task_batch_name
+                )
+                batch.name = new_batch_name
+                log.info(
+                    "Renamed batch group %r to %r",
+                    batch_name,
+                    new_batch_name,
+                )
+            batch_utils.set_instances_batch_name(batch, batch.name.get_value())
             batch_utils.set_batch_products_context(
                 batch, folder_entity["path"], task_entity["name"]
             )
