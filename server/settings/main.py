@@ -23,6 +23,13 @@ class FlameHooksModel(BaseSettingsModel):
             default_factory=InstallOpenTimelineIOToFlameModel,
             title="Install OpenTimelineIO to Flame"
         )
+    project_setup: bool = SettingsField(
+        default=True,
+        title="Automated Project setup",
+        description=(
+            "Create and setup a Flame project matching AYON project."
+        ),
+    )
 
 
 class FlameSettings(BaseSettingsModel):
