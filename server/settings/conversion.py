@@ -105,6 +105,22 @@ def _convert_collect_shots_plugins_1_1_0(
     overrides["publish"]["CollectShot"] = collect_shot_data
 
 
+def _convert_flame_projects_root(
+    overrides: dict[str, Any]
+):
+    """Moves "bookmarks/flame_projects_root" to "flame_projects_root".
+
+    It's now shared by Project Bookmarks and Export Presets.
+    """
+    bookmarks_overrides = overrides.get("bookmarks", {})
+    if "flame_projects_root" not in bookmarks_overrides:
+        # Legacy settings not found
+        return
+
+    projects_root = bookmarks_overrides.pop("flame_projects_root")
+    overrides.setdefault("flame_projects_root", projects_root)
+
+
 def convert_settings_overrides(
     source_version: str,
     overrides: dict[str, Any],
@@ -112,4 +128,5 @@ def convert_settings_overrides(
     _convert_collect_shots_plugins_1_1_0(overrides)
     _convert_collect_shots_plugins_1_3_1(overrides)
     _convert_imageio_profiles_mapping_1_4_5(overrides, source_version)
+    _convert_flame_projects_root(overrides)
     return overrides

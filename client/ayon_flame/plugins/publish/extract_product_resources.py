@@ -571,8 +571,13 @@ class ExtractProductResources(
 
         # resolve xml preset dir if not filled
         if preset_dir == "":
+            # also search the central export presets folder, if enabled
+            central_presets_dir = instance.context.data.get(
+                "flameExportPresetsDir")
             preset_dir = ayfapi.get_preset_path_by_xml_name(
-                preset_file)
+                preset_file,
+                [central_presets_dir] if central_presets_dir else None
+            )
 
             if not preset_dir:
                 raise ValueError(
