@@ -8,8 +8,6 @@ from pathlib import Path
 from pprint import pformat
 
 from ayon_core.pipeline import publish
-from ayon_core.pipeline.anatomy import AnatomyStringTemplate
-from ayon_core.pipeline.template_data import get_project_template_data
 from ayon_flame import api as ayfapi
 from ayon_flame.api import MediaInfoFile
 from ayon_core.pipeline.editorial import (
@@ -573,9 +571,12 @@ class ExtractProductResources(
 
         # resolve xml preset dir if not filled
         if preset_dir == "":
+            # also search the central export presets folder, if enabled
+            central_presets_dir = instance.context.data.get(
+                "flameExportPresetsDir")
             preset_dir = ayfapi.get_preset_path_by_xml_name(
                 preset_file,
-                self._get_central_presets_dirs(instance.context)
+                [central_presets_dir] if central_presets_dir else None
             )
 
             if not preset_dir:
@@ -770,27 +771,6 @@ class ExtractProductResources(
         )
 
         return representation_data
-
-    def _get_central_presets_dirs(self, context):
-        """Get the central export presets folder from settings, if enabled.
-
-        Its presets are copied into each Flame project on launch.
-        """
-        presets_settings = (
-            context.data["project_settings"]["flame"]["export_presets"])
-        if (
-            not presets_settings["enabled"]
-            or not presets_settings["source_dir"]
-        ):
-            return []
-
-        template = AnatomyStringTemplate(
-            context.data["anatomy"].templates_obj,
-            presets_settings["source_dir"]
-        )
-        template_data = get_project_template_data(
-            context.data["projectEntity"])
-        return [template.format(template_data)]
 
     def _should_skip(self, preset_config, clip_path, unique_name):
         # get activating attributes
