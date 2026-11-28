@@ -75,4 +75,12 @@ class ExtractBatchWorkfileSave(pyblish.api.ContextPlugin):
             return
 
         flapi.write_batch_workfile(batch, workfile_path)
+        # Keeps the link: the next Flame save sees AYON's own write, not a
+        # save made elsewhere.
+        flapi.set_session_batch_workfile(
+            batch,
+            workfile_path,
+            batch_context["folder_path"],
+            batch_context["task_name"],
+        )
         self.log.info(f"Saved batch group '{batch_name}' to {workfile_path}")
