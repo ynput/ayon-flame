@@ -208,6 +208,9 @@ current batch group.
             for node in list(flame.batch.nodes)
             if isinstance(node, flame.PyWriteFileNode)
         }
+        # The Publisher may hold an older batch group name. A Save As can
+        # rename the group. The notes always get the current name.
+        batch_name = flame.batch.name.get_value()
         for created_inst, changes in update_list:
             node_name = created_inst.data.get("write_node_name")
             node = all_nodes.get(node_name)
@@ -223,6 +226,7 @@ current batch group.
             ):
                 self._apply_staging_dir_to_node(created_inst, node)
 
+            created_inst["batch_name"] = batch_name
             flapi.write_node_metadata(node, created_inst.data_to_store())
 
     def _apply_staging_dir_to_node(

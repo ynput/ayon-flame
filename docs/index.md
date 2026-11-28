@@ -86,6 +86,10 @@ A Batch menu publish checks the same with the optional validator
 Work Files selects the Batch workfile of the current batch group, and
 Save As proposes its comment.
 
+Save As names the batch group after the task, like Open does. A batch
+group already named after the task keeps its name, also with the ` (2)`
+that Open adds to a taken name. An existing Batch product keeps its name.
+
 Setting: `flame/update_batch_workfile`, on by default.
 
 ### Publish source
