@@ -112,6 +112,32 @@ def test_issue_when_older_than_last(saved_batch, newer_version):
     )
 
 
+def test_issue_ignores_version_in_comment(
+    batch_host, batch_group, shot_context
+):
+    """The versions are the ones the Work Files tool shows: a Save As
+    comment with its own version ('fix_v5') does not count."""
+    folder_entity, task_entity = shot_context
+    root, ext = os.path.splitext(
+        workfile_path(batch_host, folder_entity, task_entity, 1)
+    )
+    path = f"{root}_fix_v5{ext}"
+    batch_host.save_workfile_with_context(
+        path, folder_entity, task_entity, version=1, comment="fix_v5"
+    )
+    newer = workfile_path(batch_host, folder_entity, task_entity, 2)
+    with open(newer, "w", encoding="utf-8") as stream:
+        stream.write("{}")
+
+    issue = pipeline.get_batch_workfile_issue(
+        batch_group, SHOT_PATH, SHOT_TASK
+    )
+
+    assert issue == (
+        f"{os.path.basename(path)} is older than {os.path.basename(newer)}."
+    )
+
+
 def test_no_issue_on_the_last_workfile(saved_batch):
     batch, _path = saved_batch
 
