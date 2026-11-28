@@ -4,10 +4,16 @@ import pyblish.api
 
 from ayon_core.pipeline import publish
 import ayon_flame.api as flapi
+from ayon_flame.constants import BATCH_WORKFILE_EXTENSION
 
 
 class ExtractBatchWorkfile(publish.Extractor):
-    """Export the current batch group as a consolidated JSON workfile."""
+    """Export the current batch group as a Batch workfile.
+
+    The file is a consolidated JSON document with the '.flamebatch'
+    extension of Batch workfiles, so the Workfiles tool lists it among
+    the published workfiles of the task.
+    """
 
     label = "Extract Batch Workfile"
     order = pyblish.api.ExtractorOrder - 0.45
@@ -28,13 +34,13 @@ class ExtractBatchWorkfile(publish.Extractor):
             raise ValueError(f"Batch group not found: {batch_name}")
 
         staging_dir = self.staging_dir(instance)
-        filename = f"{batch_name}.json"
+        filename = f"{batch_name}{BATCH_WORKFILE_EXTENSION}"
         filepath = os.path.join(staging_dir, filename)
         flapi.save_batch_as_consolidated_json(batch, filepath)
 
         representation = {
             "name": "batch",
-            "ext": "json",
+            "ext": BATCH_WORKFILE_EXTENSION.lstrip("."),
             "files": filename,
             "stagingDir": staging_dir,
         }

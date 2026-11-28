@@ -1,6 +1,7 @@
 import os
 from ayon_core.addon import AYONAddon, IHostAddon
 
+from .constants import BATCH_WORKFILE_EXTENSION
 from .version import __version__
 
 FLAME_ADDON_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -44,4 +45,4 @@ class FlameAddon(AYONAddon, IHostAddon):
         ]
 
     def get_workfile_extensions(self):
-        return [".otoc"]
+        return [BATCH_WORKFILE_EXTENSION]
