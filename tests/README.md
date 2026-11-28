@@ -90,6 +90,7 @@ end-to-end test (`publish_batch_report.json`).
 | `test_batch_workfile_host.py` | `FlameBatchHost`: save, save with context (Batch product, products moved to the task), open, last workfile |
 | `test_batch_workfile_latest.py` | batch group on an older Batch workfile (versions as the Work Files tool shows them): warning on project save, Save As question, `ValidateBatchWorkfileLatest` |
 | `test_batch_workfile_saved_elsewhere.py` | Batch workfile saved by another batch group, Flame or machine: no Flame save or publish writes over it, one dialog; AYON's own saves and publishes keep the link |
+| `test_publisher_batch_guard.py` | Publisher instances of another batch group: the Batch and Batch Render creators refuse to save or remove them; after a Publisher refresh the instances of the current batch group save |
 | `test_editorial_workfile.py` | `FlameHost` editorial workfiles: save, open, current workfile per task, Batch menu context |
 | `test_project_saved_hook.py` | `project_saved` hook and the real `Save Project` shortcut rewriting the Batch workfile |
 | `test_publish_plugins.py` | publish and create plugins of the Batch and editorial workfiles, one by one |
