@@ -65,6 +65,11 @@ written. Nothing is written for a batch group without a Batch workfile
 in this Flame session: after a Flame restart or a project switch, for a
 group from the Batch loader, or after a Batch Load And Replace.
 
+A Flame save or a publish does not write over a Batch workfile saved
+elsewhere (another batch group, another Flame, another machine) since
+AYON opened or saved it. A Flame save then shows a dialog once, and the
+batch group is no longer linked. The artist uses Save As.
+
 A project save warns in the Flame console when the current batch group
 has AYON products but no Batch workfile in this Flame session ("not
 linked to a workfile"), or when its workfile is older than the last one
