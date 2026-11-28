@@ -174,6 +174,11 @@ class FlameBatchHost(HostBase, IWorkfileHost):
     """
     name = "flame"
 
+    # Set by the launch only: it shows the batch group linked to the
+    # workfile instead of adding a copy. Work Files Open always adds a
+    # batch group.
+    reuse_linked_batch_group = False
+
     def __init__(self):
         super().__init__()
         self._save_entities = None
@@ -304,6 +309,11 @@ class FlameBatchHost(HostBase, IWorkfileHost):
                 f"got folder '{folder_path}' and task '{task_name}'."
             )
 
+        if self.reuse_linked_batch_group and self._open_linked_batch_group(
+            filepath, folder_path, task_name
+        ):
+            return
+
         batch_name = batch_utils.get_task_batch_name(folder_path, task_name)
         # Unique like the Batch loader does, so several versions of a
         # workfile can be open together: none replaces another, which is
@@ -344,9 +354,74 @@ class FlameBatchHost(HostBase, IWorkfileHost):
             unique_batch_name,
         )
 
+    def _open_linked_batch_group(self, filepath, folder_path, task_name):
+        """Make the batch group linked to the workfile the current one.
+
+        A batch group is linked when AYON last saved or opened the workfile
+        from it, for the given task, and the file is unchanged since. When
+        several are linked, only the current one is used: any other choice
+        would be a guess.
+
+        Returns:
+            bool: True when the linked batch group is now the current one.
+        """
+        filepath = os.path.normpath(filepath)
+        desktop = flame.project.current_project.current_workspace.desktop
+        linked = [
+            batch
+            for batch in desktop.batch_groups
+            if batch_utils.get_session_batch_workfile(
+                batch, folder_path, task_name
+            ) == filepath
+        ]
+        if not linked:
+            return False
+
+        uids = [batch.uid.get_value() for batch in linked]
+        current_uid = flame.batch.uid.get_value()
+        if current_uid in uids:
+            batch = linked[uids.index(current_uid)]
+        elif len(linked) == 1:
+            batch = linked[0]
+        else:
+            log.info(
+                "%d batch groups are linked to %r and none is current,"
+                " opening it as a new batch group.",
+                len(linked),
+                filepath,
+            )
+            return False
+
+        batch_name = batch.name.get_value()
+        uid = batch.uid.get_value()
+        if uid != current_uid:
+            # 'PyBatch.open' opens a closed batch group only, and makes it
+            # the current one. The Flame API has no call to select an open
+            # batch group. Closing it first keeps its content.
+            if batch.opened:
+                batch.close()
+            batch.open()
+            if flame.batch.uid.get_value() != uid:
+                log.warning(
+                    "Unable to make batch group %r the current one,"
+                    " opening %r as a new batch group.",
+                    batch_name,
+                    filepath,
+                )
+                return False
+        flame.set_current_tab("Batch")
+
+        log.info(
+            "Opened AYON workfile %r in its linked batch group %r",
+            filepath,
+            batch_name,
+        )
+        return True
+
     def get_current_workfile(self):
-        # Batch groups do not store their workfile path. This Flame session
-        # keeps the one saved or opened for each batch group, see
+        # Batch groups do not store their workfile path. The one saved or
+        # opened for each batch group is linked to its uid, and kept on
+        # disk at each Flame project save, see
         # 'batch_utils.get_session_batch_workfile'.
         try:
             batch = batch_utils.get_current_batch()
@@ -488,8 +563,8 @@ def get_batch_workfile_issue(batch, folder_path, task_name):
     )
     if not filepath:
         return (
-            f"{batch.name.get_value()} is not linked to a workfile in this"
-            f" Flame session, the last one of the task is {last_name}."
+            f"{batch.name.get_value()} is not linked to a workfile, the"
+            f" last one of the task is {last_name}."
         )
 
     # Versions are the ones the Workfiles tool shows. A Save As comment
@@ -505,9 +580,9 @@ def refresh_batch_workfile():
     """Rewrite the Batch workfile of the current batch group.
 
     Runs after a Flame project save. Nothing is saved when the batch group
-    has no Batch workfile in this Flame session. The artist is warned when
-    a batch group with AYON products has none, or comes from an older
-    version than the last one of its task. A dialog tells the artist once
+    is not linked to a Batch workfile. The artist is warned when a batch
+    group with AYON products has none, or comes from an older version
+    than the last one of its task. A dialog tells the artist once
     when its workfile was not written because it was saved elsewhere.
     """
     project_settings = get_current_project_settings()

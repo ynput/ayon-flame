@@ -12,9 +12,9 @@ class ExtractBatchWorkfileSave(pyblish.api.ContextPlugin):
     The Batch workfile is the source ('currentFile') of a Batch publish, so
     it has to hold what is published, as Nuke, Maya and Houdini save their
     workfile before extracting. The source is written only when it is the
-    Batch workfile saved or opened for the batch group in this Flame
-    session. The last workfile of the task, used as the source when there
-    is none, is not: it may hold another batch group.
+    Batch workfile linked to the batch group. The last workfile of the
+    task, used as the source when there is none, is not: it may hold
+    another batch group.
 
     Follows the setting 'flame/update_batch_workfile', like a Flame project
     save.
@@ -68,8 +68,8 @@ class ExtractBatchWorkfileSave(pyblish.api.ContextPlugin):
             != os.path.normpath(current_file)
         ):
             self.log.warning(
-                f"Batch group '{batch_name}' has no Batch workfile in this"
-                " Flame session, the publish source may not hold what is"
+                f"Batch group '{batch_name}' is not linked to a Batch"
+                " workfile, the publish source may not hold what is"
                 " published. Use Work Files > Open or Save As."
             )
             return

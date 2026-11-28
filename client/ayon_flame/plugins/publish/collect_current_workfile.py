@@ -11,12 +11,12 @@ class CollectCurrentWorkfile(pyblish.api.ContextPlugin):
 
     Flame keeps its work in the project database, so earlier collectors
     set 'currentFile' to a 'Flame/<project>[/<sequence>]' placeholder.
-    A Batch publish uses the Batch workfile saved or opened for the
-    published batch group in this Flame session, when it belongs to the
-    task of the batch group products. When there is none (Flame was
-    restarted, it was never saved, its products moved to another task), it
-    uses the last saved Batch workfile of that task. Any other publish uses
-    the editorial workfile saved or opened for the current task.
+    A Batch publish uses the Batch workfile linked to the published batch
+    group, when it belongs to the task of the batch group products. When
+    there is none (it was never saved, Flame was restarted before a project
+    save, its products moved to another task), it uses the last saved
+    Batch workfile of that task. Any other publish uses the editorial
+    workfile saved or opened for the current task.
     The placeholder is kept when no workfile was saved.
     """
 
