@@ -24,7 +24,3 @@ class CollectBatchInstance(pyblish.api.InstancePlugin):
         batch = flapi.get_batch_from_workspace(batch_name)
         if not batch:
             raise ValueError(f"Batch group not found: {batch_name}")
-
-        instance.data["version"] = batch.current_iteration_number
-        instance.data["followWorkfileVersion"] = False
-        self.log.debug(f"Collected batch version: {instance.data['version']}")

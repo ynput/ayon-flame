@@ -1,7 +1,10 @@
 import os
 from ayon_core.addon import AYONAddon, IHostAddon
 
-from .constants import BATCH_WORKFILE_EXTENSION
+from .constants import (
+    BATCH_WORKFILE_EXTENSION,
+    EDITORIAL_WORKFILE_EXTENSION,
+)
 from .version import __version__
 
 FLAME_ADDON_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -45,4 +48,6 @@ class FlameAddon(AYONAddon, IHostAddon):
         ]
 
     def get_workfile_extensions(self):
-        return [BATCH_WORKFILE_EXTENSION]
+        # Editorial workfiles first, the extension of the first one is the
+        # default of the registered host.
+        return [EDITORIAL_WORKFILE_EXTENSION, BATCH_WORKFILE_EXTENSION]

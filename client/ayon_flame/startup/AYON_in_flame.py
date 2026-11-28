@@ -19,8 +19,10 @@ except ImportError:
 
 import traceback
 
+import ayon_api
 import ayon_flame.api as flame_api
-from ayon_core.pipeline import install_host
+from ayon_core.lib import env_value_to_bool
+from ayon_core.pipeline import get_global_context, install_host
 from ayon_flame.api import FlameHost
 from qtpy import QtWidgets
 
@@ -154,11 +156,83 @@ def check_project_ocio_config():
     )
 
 
-def app_initialized(parent=None):
+def open_launch_workfile():
+    """Open the last workfile of the launch task and show the Workfiles tool.
+
+    Follows the core Workfiles settings: last workfile on startup, and
+    Workfiles tool on startup. The workfile extension picks the host and
+    the tool. A task without a workfile opens nothing.
+
+    Runs from an idle event, so errors show in the Flame message bar, not
+    in a blocking dialog.
+    """
+    # Run once per launch. A project change starts a new Flame process
+    # with this environment, and 'app_initialized' runs again.
+    open_last_workfile = env_value_to_bool(
+        value=os.environ.pop("AVALON_OPEN_LAST_WORKFILE", None)
+    )
+    show_workfiles_tool = env_value_to_bool(
+        value=os.environ.pop("AYON_WORKFILE_TOOL_ON_START", None)
+    )
+    if not open_last_workfile and not show_workfiles_tool:
+        return
+
+    context = get_global_context()
+    if not context["folder_path"] or not context["task_name"]:
+        return
+
+    # The launcher sets it even for a task without a workfile. It then
+    # ends with the first extension of the addon, '.flameedit'.
+    filepath = os.environ.get("AYON_LAST_WORKFILE", "")
+    if filepath.endswith(flame_api.BATCH_WORKFILE_EXTENSION):
+        host_class = flame_api.FlameBatchHost
+        show_workfiles = flame_api.show_batch_workfiles
+    else:
+        host_class = flame_api.FlameEditorialHost
+        show_workfiles = flame_api.show_editorial_workfiles
+
+    # Two steps, so the tool still shows when the workfile fails to open.
+    try:
+        # Only the menu hooks install the host, they may not have run yet.
+        ayon_flame_install()
+
+        if open_last_workfile and os.path.exists(filepath):
+            project_name = context["project_name"]
+            folder_entity = ayon_api.get_folder_by_path(
+                project_name, context["folder_path"]
+            )
+            task_entity = ayon_api.get_task_by_name(
+                project_name, folder_entity["id"], context["task_name"]
+            )
+            host_class().open_workfile_with_context(
+                filepath, folder_entity, task_entity
+            )
+    except Exception as error:
+        _show_error(f"open {os.path.basename(filepath)}", error)
+
+    if show_workfiles_tool:
+        try:
+            show_workfiles()
+        except Exception as error:
+            _show_error("show the Workfiles tool", error)
+
+
+def _show_error(action, error):
+    import flame
+
+    print(f"!!!! AYON: not able to {action}: {error} !!!!")
+    traceback.print_exc()
+    flame.messages.show_in_console(
+        f"AYON: not able to {action}: {error}", "error", 20
+    )
+
+
+def app_initialized(project_name=None):
     """Inicialization of Framework
 
     Args:
-        parent (obj, optional): Parent object. Defaults to None.
+        project_name (str, optional): Flame project. Flame passes it after
+            each project load. Defaults to None.
     """
     flame_api.CTX.app_framework = flame_api.FlameAppFramework()
 
@@ -166,6 +240,11 @@ def app_initialized(parent=None):
 
     load_apps()
     check_project_ocio_config()
+
+    if project_name:
+        import flame
+
+        flame.schedule_idle_event(open_launch_workfile)
 
 
 """
@@ -183,7 +262,7 @@ except ImportError:
     print("!!!! not able to import flame module !!!!")
 
 try:
-    app_initialized(parent=None)
+    app_initialized()
 except Exception as error:
     print(f"!!!! not able to initialize the app: {error} !!!!")
 
@@ -236,11 +315,22 @@ def project_saved(project_name, save_time, is_auto_save):
 
     Args:
         project_name (str): name of project
-        save_time (str): time when it was saved
-        is_auto_save (bool): autosave is on or off
+        save_time (float): seconds Flame took to save
+        is_auto_save (bool): True for an automatic save
     """
     if flame_api.CTX.app_framework:
         flame_api.CTX.app_framework.save_prefs()
+
+    if is_auto_save:
+        return
+
+    # Project saves are control+S, the Save Project menu and each
+    # iteration. The Batch Save button and Save Desktop do not save the
+    # project.
+    try:
+        flame_api.refresh_batch_workfile()
+    except Exception as error:
+        _show_error("save the Batch workfile", error)
 
 
 def get_main_menu_custom_ui_actions():

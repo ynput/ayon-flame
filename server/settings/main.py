@@ -34,6 +34,11 @@ class FlameHooksModel(BaseSettingsModel):
     )
 
 
+class UpdateBatchWorkfileModel(BaseSettingsModel):
+    """Rewrite the Batch workfile on each Flame project save."""
+    enabled: bool = SettingsField(default=True, title="Enabled")
+
+
 class FlameSettings(BaseSettingsModel):
     flame_projects_root: ProjectRoots = SettingsField(
         default_factory=ProjectRoots,
@@ -56,6 +61,10 @@ class FlameSettings(BaseSettingsModel):
     hooks: FlameHooksModel = SettingsField(
         default_factory=FlameHooksModel,
         title="Hooks"
+    )
+    update_batch_workfile: UpdateBatchWorkfileModel = SettingsField(
+        default_factory=UpdateBatchWorkfileModel,
+        title="Update Batch Workfile on Project Save"
     )
     create: CreatePluginsModel = SettingsField(
         default_factory=CreatePluginsModel,
