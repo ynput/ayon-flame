@@ -265,6 +265,10 @@ def test_set_instances_batch_name(batch_group):
 
 
 def test_session_workfile_belongs_to_its_task(batch_group, tmp_path):
+    # The link keeps the size and date of the file: it is made only for a
+    # file AYON wrote or opened.
+    (tmp_path / "a").mkdir()
+    (tmp_path / "work_v001.flamebatch").write_text("{}")
     path = str(tmp_path / "a" / ".." / "work_v001.flamebatch")
 
     batch_utils.set_session_batch_workfile(
@@ -283,6 +287,7 @@ def test_session_workfile_follows_batch_group_uid(make_batch_group, tmp_path):
     batch = make_batch_group()
     other = make_batch_group()
     path = str(tmp_path / "work_v001.flamebatch")
+    (tmp_path / "work_v001.flamebatch").write_text("{}")
     batch_utils.set_session_batch_workfile(batch, path, SHOT_PATH, SHOT_TASK)
 
     batch.name = f"{batch.name.get_value()}_renamed"
